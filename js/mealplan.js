@@ -69,8 +69,15 @@ function updateRecipeList() {
     const searchTerm = document.getElementById('recipe-search').value.toLowerCase();
     const category = document.getElementById('meal-category-filter').value;
     
+    // Ensure recipes are available
+    if (!window.recipes || !Array.isArray(window.recipes)) {
+        console.error('Recipes not available:', window.recipes);
+        recipeList.innerHTML = '<div class="recipe-option">No recipes available</div>';
+        return;
+    }
+    
     // Filter recipes based on search term and category
-    const filteredRecipes = recipes.filter(recipe => {
+    const filteredRecipes = window.recipes.filter(recipe => {
         const matchesSearch = recipe.name.toLowerCase().includes(searchTerm);
         const matchesCategory = category === 'all' || recipe.category === category;
         return matchesSearch && matchesCategory;
@@ -210,17 +217,14 @@ function loadMealPlan() {
             const addButton = document.createElement('button');
             addButton.className = 'add-meal-btn';
             addButton.innerHTML = '<i class="fas fa-plus"></i> Add Meal';
-            
-            // Add click event listener directly to the button
             addButton.addEventListener('click', (e) => {
                 e.stopPropagation();
                 openMealPlanModal(slot);
             });
-            
             slot.appendChild(addButton);
         } else {
             meals.forEach(mealData => {
-                const recipe = recipes.find(r => r.id === mealData.recipeId);
+                const recipe = window.recipes.find(r => r.id === mealData.recipeId);
                 if (recipe) {
                     const mealItem = createMealItem(recipe, mealData.servings);
                     mealItem.dataset.recipeId = recipe.id;
@@ -247,7 +251,7 @@ function calculateDayNutrition(date) {
         const meals = mealPlan[key] || [];
         
         meals.forEach(mealData => {
-            const recipe = recipes.find(r => r.id === mealData.recipeId);
+            const recipe = window.recipes.find(r => r.id === mealData.recipeId);
             if (recipe && recipe.nutrition) {
                 nutrition.calories += recipe.nutrition.calories * mealData.servings;
                 nutrition.protein += recipe.nutrition.protein * mealData.servings;
@@ -285,14 +289,17 @@ document.querySelectorAll('.meal-slot').forEach(slot => {
     slot.removeEventListener('click', () => {});
 });
 
-// Initialize modals and event listeners when the page loads
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize modals and event listeners when the page loads AND recipes are available
+function initializeMealPlanner() {
+    console.log('Initializing meal planner with recipes:', window.recipes);
+    
     // Initialize the meal planner
     updateWeekDisplay();
     
     // Ensure modal is properly initialized
     if (!mealPlanModal) {
         console.error('Meal plan modal not found!');
+        return;
     }
     
     // Add event listeners for modal close buttons
@@ -322,6 +329,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const mealPlanForm = document.getElementById('meal-plan-form');
     if (mealPlanForm) {
         mealPlanForm.addEventListener('submit', handleMealPlanSubmit);
+    }
+}
+
+// Wait for both DOM content and recipes to be loaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if recipes are already available
+    if (window.recipes) {
+        initializeMealPlanner();
+    } else {
+        // If recipes aren't available yet, wait for them
+        const checkRecipes = setInterval(() => {
+            if (window.recipes) {
+                clearInterval(checkRecipes);
+                initializeMealPlanner();
+            }
+        }, 100);
+        
+        // Stop checking after 5 seconds to prevent infinite loop
+        setTimeout(() => {
+            clearInterval(checkRecipes);
+            console.error('Timeout waiting for recipes to load');
+        }, 5000);
     }
 });
 

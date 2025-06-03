@@ -810,4 +810,10 @@ function updateRecipeList() {
     filteredRecipes.forEach(recipe => {
         recipeList.appendChild(createRecipeCard(recipe));
     });
-} 
+}
+
+// Make recipes available globally for other modules
+window.recipes = recipes;
+window.addRecipe = addRecipe;
+window.editRecipe = editRecipe;
+window.deleteRecipe = deleteRecipe; 
