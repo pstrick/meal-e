@@ -1,6 +1,7 @@
 // Meal Planning functionality
 let currentWeek = new Date();
 let selectedSlot = null;
+let selectedRecipe = null;
 const mealPlanModal = document.getElementById('meal-plan-modal');
 const mealPlanForm = document.getElementById('meal-plan-form');
 const cancelMeal = document.getElementById('cancel-meal');
@@ -41,23 +42,95 @@ function updateWeekDisplay() {
 
 function openMealPlanModal(slot) {
     selectedSlot = slot;
-    const recipeSelect = document.getElementById('meal-recipe');
-    recipeSelect.innerHTML = '<option value="">Select a recipe...</option>';
+    selectedRecipe = null;
+    const recipeList = document.querySelector('.recipe-list');
+    const selectedRecipeDiv = document.querySelector('.selected-recipe');
+    const submitButton = document.querySelector('#meal-plan-form button[type="submit"]');
     
-    // Populate recipe options
-    recipes.forEach(recipe => {
-        const option = document.createElement('option');
-        option.value = recipe.id;
-        option.textContent = recipe.name;
-        recipeSelect.appendChild(option);
-    });
-
+    // Reset the form and filters
+    document.getElementById('recipe-search').value = '';
+    document.getElementById('meal-category-filter').value = 'all';
+    document.getElementById('meal-servings').value = '1';
+    selectedRecipeDiv.style.display = 'none';
+    submitButton.disabled = true;
+    
+    // Initial population of recipes
+    updateRecipeList();
+    
     mealPlanModal.classList.add('active');
+}
+
+function updateRecipeList() {
+    const recipeList = document.querySelector('.recipe-list');
+    const searchTerm = document.getElementById('recipe-search').value.toLowerCase();
+    const category = document.getElementById('meal-category-filter').value;
+    
+    // Filter recipes based on search term and category
+    const filteredRecipes = recipes.filter(recipe => {
+        const matchesSearch = recipe.name.toLowerCase().includes(searchTerm);
+        const matchesCategory = category === 'all' || recipe.category === category;
+        return matchesSearch && matchesCategory;
+    });
+    
+    // Clear the current list
+    recipeList.innerHTML = '';
+    
+    if (filteredRecipes.length === 0) {
+        recipeList.innerHTML = '<div class="recipe-option">No recipes found</div>';
+        return;
+    }
+    
+    // Add filtered recipes to the list
+    filteredRecipes.forEach(recipe => {
+        const div = document.createElement('div');
+        div.className = 'recipe-option';
+        if (selectedRecipe && selectedRecipe.id === recipe.id) {
+            div.classList.add('selected');
+        }
+        
+        div.innerHTML = `
+            <h4>${recipe.name}</h4>
+            <div class="recipe-meta">
+                <span>${recipe.category}</span> • 
+                <span>${recipe.nutrition.calories} cal</span> • 
+                <span>${recipe.nutrition.protein}g protein</span>
+            </div>
+        `;
+        
+        div.addEventListener('click', () => selectRecipe(recipe));
+        recipeList.appendChild(div);
+    });
+}
+
+function selectRecipe(recipe) {
+    selectedRecipe = recipe;
+    const selectedRecipeDiv = document.querySelector('.selected-recipe');
+    const submitButton = document.querySelector('#meal-plan-form button[type="submit"]');
+    
+    // Update selected recipe display
+    selectedRecipeDiv.style.display = 'block';
+    selectedRecipeDiv.querySelector('.recipe-name').textContent = recipe.name;
+    selectedRecipeDiv.querySelector('.calories').textContent = recipe.nutrition.calories;
+    selectedRecipeDiv.querySelector('.protein').textContent = recipe.nutrition.protein;
+    selectedRecipeDiv.querySelector('.carbs').textContent = recipe.nutrition.carbs;
+    selectedRecipeDiv.querySelector('.fat').textContent = recipe.nutrition.fat;
+    
+    // Enable submit button
+    submitButton.disabled = false;
+    
+    // Update recipe list selection
+    document.querySelectorAll('.recipe-option').forEach(option => {
+        option.classList.remove('selected');
+        if (option.querySelector('h4').textContent === recipe.name) {
+            option.classList.add('selected');
+        }
+    });
 }
 
 function closeMealPlanModal() {
     mealPlanModal.classList.remove('active');
     selectedSlot = null;
+    selectedRecipe = null;
     mealPlanForm.reset();
 }
 
@@ -210,21 +283,22 @@ document.querySelectorAll('.meal-slot').forEach(slot => {
     });
 });
 
+document.getElementById('recipe-search').addEventListener('input', updateRecipeList);
+document.getElementById('meal-category-filter').addEventListener('change', updateRecipeList);
+
 mealPlanForm.addEventListener('submit', (e) => {
     e.preventDefault();
     
-    const recipeId = document.getElementById('meal-recipe').value;
-    const servings = parseFloat(document.getElementById('meal-servings').value);
-    const recipe = recipes.find(r => r.id === parseInt(recipeId));
+    if (!selectedRecipe || !selectedSlot) return;
     
-    if (recipe && selectedSlot) {
-        const mealItem = createMealItem(recipe, servings);
-        mealItem.dataset.recipeId = recipe.id;
-        mealItem.dataset.servings = servings;
-        selectedSlot.appendChild(mealItem);
-        saveMealPlan();
-        updateNutritionSummary();
-    }
+    const servings = parseFloat(document.getElementById('meal-servings').value);
+    const mealItem = createMealItem(selectedRecipe, servings);
+    mealItem.dataset.recipeId = selectedRecipe.id;
+    mealItem.dataset.servings = servings;
+    selectedSlot.innerHTML = ''; // Clear the "Add Meal" button
+    selectedSlot.appendChild(mealItem);
+    saveMealPlan();
+    updateNutritionSummary();
     
     closeMealPlanModal();
 });
