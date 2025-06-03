@@ -1,5 +1,6 @@
 import config from './config.js';
 import { version } from './version.js';
+import './mealplan.js';
 
 // Update version in footer
 document.querySelector('footer p').innerHTML = `&copy; ${version.year} Meal-E <span class="version">v${version.toString()}</span>`;

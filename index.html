@@ -40,8 +40,71 @@
         <!-- Meal Plan Section -->
         <section id="meal-plan" class="section">
             <h2>Meal Plan</h2>
-            <div id="calendar" class="calendar-grid">
-                <!-- Calendar will be generated here -->
+            <div class="meal-plan-controls">
+                <button id="prev-week" class="btn">&lt; Previous Week</button>
+                <h3 id="week-display">Week of </h3>
+                <button id="next-week" class="btn">Next Week &gt;</button>
+            </div>
+            <div class="meal-plan-grid">
+                <div class="meal-plan-header">
+                    <div class="time-slot"></div>
+                    <div class="day-header">Monday</div>
+                    <div class="day-header">Tuesday</div>
+                    <div class="day-header">Wednesday</div>
+                    <div class="day-header">Thursday</div>
+                    <div class="day-header">Friday</div>
+                    <div class="day-header">Saturday</div>
+                    <div class="day-header">Sunday</div>
+                </div>
+                <div class="meal-plan-body">
+                    <!-- Breakfast Row -->
+                    <div class="time-slot">Breakfast</div>
+                    <div class="meal-slot" data-day="monday" data-meal="breakfast"></div>
+                    <div class="meal-slot" data-day="tuesday" data-meal="breakfast"></div>
+                    <div class="meal-slot" data-day="wednesday" data-meal="breakfast"></div>
+                    <div class="meal-slot" data-day="thursday" data-meal="breakfast"></div>
+                    <div class="meal-slot" data-day="friday" data-meal="breakfast"></div>
+                    <div class="meal-slot" data-day="saturday" data-meal="breakfast"></div>
+                    <div class="meal-slot" data-day="sunday" data-meal="breakfast"></div>
+
+                    <!-- Lunch Row -->
+                    <div class="time-slot">Lunch</div>
+                    <div class="meal-slot" data-day="monday" data-meal="lunch"></div>
+                    <div class="meal-slot" data-day="tuesday" data-meal="lunch"></div>
+                    <div class="meal-slot" data-day="wednesday" data-meal="lunch"></div>
+                    <div class="meal-slot" data-day="thursday" data-meal="lunch"></div>
+                    <div class="meal-slot" data-day="friday" data-meal="lunch"></div>
+                    <div class="meal-slot" data-day="saturday" data-meal="lunch"></div>
+                    <div class="meal-slot" data-day="sunday" data-meal="lunch"></div>
+
+                    <!-- Dinner Row -->
+                    <div class="time-slot">Dinner</div>
+                    <div class="meal-slot" data-day="monday" data-meal="dinner"></div>
+                    <div class="meal-slot" data-day="tuesday" data-meal="dinner"></div>
+                    <div class="meal-slot" data-day="wednesday" data-meal="dinner"></div>
+                    <div class="meal-slot" data-day="thursday" data-meal="dinner"></div>
+                    <div class="meal-slot" data-day="friday" data-meal="dinner"></div>
+                    <div class="meal-slot" data-day="saturday" data-meal="dinner"></div>
+                    <div class="meal-slot" data-day="sunday" data-meal="dinner"></div>
+
+                    <!-- Snacks Row -->
+                    <div class="time-slot">Snacks</div>
+                    <div class="meal-slot" data-day="monday" data-meal="snacks"></div>
+                    <div class="meal-slot" data-day="tuesday" data-meal="snacks"></div>
+                    <div class="meal-slot" data-day="wednesday" data-meal="snacks"></div>
+                    <div class="meal-slot" data-day="thursday" data-meal="snacks"></div>
+                    <div class="meal-slot" data-day="friday" data-meal="snacks"></div>
+                    <div class="meal-slot" data-day="saturday" data-meal="snacks"></div>
+                    <div class="meal-slot" data-day="sunday" data-meal="snacks"></div>
+                </div>
+            </div>
+
+            <!-- Daily Nutrition Summary -->
+            <div class="daily-nutrition">
+                <h3>Daily Nutrition Summary</h3>
+                <div class="nutrition-grid">
+                    <!-- Will be populated by JavaScript -->
+                </div>
             </div>
         </section>
 
@@ -136,6 +199,30 @@
             <div id="search-results" class="search-results">
                 <!-- Search results will be added here -->
             </div>
+        </div>
+    </div>
+
+    <!-- Meal Plan Modal -->
+    <div id="meal-plan-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Meal</h2>
+            <form id="meal-plan-form">
+                <div class="form-group">
+                    <label for="meal-recipe">Recipe:</label>
+                    <select id="meal-recipe" required>
+                        <!-- Will be populated with recipes -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="meal-servings">Number of Servings:</label>
+                    <input type="number" id="meal-servings" min="0.5" step="0.5" value="1" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn">Add to Meal Plan</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-meal">Cancel</button>
+                </div>
+            </form>
         </div>
     </div>
 
