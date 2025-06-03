@@ -149,6 +149,7 @@ footer {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 1000;
+    overflow-y: auto;
 }
 
 .modal.active {
@@ -158,12 +159,14 @@ footer {
 .modal-content {
     position: relative;
     background-color: var(--card-background);
-    margin: 5% auto;
+    margin: 2rem auto;
     padding: 2rem;
     width: 90%;
     max-width: 600px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
 }
 
 .close {

@@ -68,14 +68,33 @@ async function searchIngredients(query) {
     const params = new URLSearchParams({
         api_key: config.USDA_API_KEY,
         query: query,
-        dataType: ['Survey (FNDDS)'], // Using survey foods for simplicity
-        pageSize: 10
+        dataType: ['Survey (FNDDS)'],
+        pageSize: 25 // Increased to get more results for better sorting
     });
 
     try {
         const response = await fetch(`${config.USDA_API_BASE_URL}/foods/search?${params}`);
         const data = await response.json();
-        return data.foods || [];
+        
+        // Sort results by relevance
+        const foods = data.foods || [];
+        return foods.sort((a, b) => {
+            // Prioritize exact matches
+            const aExact = a.description.toLowerCase() === query.toLowerCase();
+            const bExact = b.description.toLowerCase() === query.toLowerCase();
+            if (aExact && !bExact) return -1;
+            if (!aExact && bExact) return 1;
+
+            // Prioritize shorter descriptions (usually simpler items)
+            const aLength = a.description.length;
+            const bLength = b.description.length;
+            if (aLength !== bLength) return aLength - bLength;
+
+            // If lengths are equal, prioritize items with fewer commas (usually simpler items)
+            const aCommas = (a.description.match(/,/g) || []).length;
+            const bCommas = (b.description.match(/,/g) || []).length;
+            return aCommas - bCommas;
+        });
     } catch (error) {
         console.error('Error searching ingredients:', error);
         return [];
@@ -213,7 +232,8 @@ function addIngredientInput() {
 
     nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
     
-    amountInput.addEventListener('change', () => {
+    // Update nutrition when amount changes
+    amountInput.addEventListener('input', () => {
         const fdcId = nameInput.dataset.fdcId;
         if (fdcId && selectedIngredients.has(fdcId)) {
             const ingredient = selectedIngredients.get(fdcId);
@@ -236,6 +256,9 @@ function addIngredientInput() {
 
     ingredientsList.appendChild(ingredientItem);
 }
+
+// Update nutrition when servings change
+document.getElementById('recipe-servings').addEventListener('input', updateTotalNutrition);
 
 // Event Listeners
 addRecipeBtn.addEventListener('click', openModal);
@@ -324,21 +347,28 @@ function updateRecipeList() {
 }
 
 // Modified Form Handling
-function handleRecipeSubmit(e) {
+async function handleRecipeSubmit(e) {
     e.preventDefault();
+
+    // Validate that we have at least one ingredient
+    if (selectedIngredients.size === 0) {
+        alert('Please add at least one ingredient to your recipe');
+        return;
+    }
 
     const ingredients = Array.from(ingredientsList.children).map(item => {
         const fdcId = item.querySelector('.ingredient-name').dataset.fdcId;
         const ingredientData = selectedIngredients.get(fdcId);
+        if (!ingredientData) return null;
         return {
             fdcId: fdcId,
             name: ingredientData.name,
             amount: ingredientData.amount,
             nutrition: ingredientData.nutrition
         };
-    });
+    }).filter(ing => ing !== null);
 
-    const servings = parseInt(document.getElementById('recipe-servings').value);
+    const servings = parseInt(document.getElementById('recipe-servings').value) || 1;
     const totalNutrition = {
         calories: parseInt(totalCalories.textContent) * servings,
         protein: parseInt(totalProtein.textContent) * servings,
@@ -357,6 +387,7 @@ function handleRecipeSubmit(e) {
 
     addRecipe(newRecipe);
     closeModalHandler();
+    selectedIngredients.clear(); // Clear the selected ingredients
 }
 
 // Local Storage Management
