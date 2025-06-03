@@ -1,4 +1,19 @@
 import config from './config.js';
+import { version } from './version.js';
+
+// Update version in footer
+document.querySelector('footer p').innerHTML = `&copy; ${version.year} Meal-E <span class="version">v${version.toString()}</span>`;
+
+// Add version number styling
+const versionStyle = document.createElement('style');
+versionStyle.textContent = `
+    .version {
+        font-size: 0.9em;
+        color: #666;
+        margin-left: 1rem;
+    }
+`;
+document.head.appendChild(versionStyle);
 
 // DOM Elements
 const navLinks = document.querySelectorAll('nav a');
