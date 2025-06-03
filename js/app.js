@@ -68,6 +68,62 @@ function closeModalHandler() {
 }
 
 // USDA API Functions
+
+// Helper function to normalize and stem words
+function normalizeSearchTerm(term) {
+    // Basic stemming rules
+    return term.toLowerCase()
+        .replace(/(\w+)ing\b/, '$1')    // running -> run
+        .replace(/(\w+)s\b/, '$1')      // eggs -> egg
+        .replace(/(\w+)es\b/, '$1')     // dishes -> dish
+        .replace(/(\w+)ed\b/, '$1')     // cooked -> cook
+        .trim();
+}
+
+// Helper function to calculate relevancy score
+function calculateRelevancyScore(foodDesc, searchTerms) {
+    const description = foodDesc.toLowerCase();
+    const normalizedDesc = description.split(/[,()]/).map(part => part.trim());
+    let score = 0;
+
+    // Normalize search terms
+    const normalizedTerms = searchTerms.map(term => normalizeSearchTerm(term));
+    
+    // Core term matching (first part of description)
+    const mainTerm = normalizedDesc[0];
+    for (const term of normalizedTerms) {
+        // Exact match of main term
+        if (normalizeSearchTerm(mainTerm) === term) {
+            score += 100;
+        }
+        // Main term starts with search term
+        else if (normalizeSearchTerm(mainTerm).startsWith(term)) {
+            score += 50;
+        }
+        // Main term contains search term
+        else if (normalizeSearchTerm(mainTerm).includes(term)) {
+            score += 25;
+        }
+    }
+
+    // Penalize for complexity and processing terms
+    const complexityPenalty = description.split(/[,()]/).length * 5;
+    const processingTerms = [
+        'prepared', 'processed', 'mixed', 'enriched', 'fortified',
+        'preserved', 'canned', 'packaged', 'with added'
+    ];
+    const processingPenalty = processingTerms.some(term => description.includes(term)) ? 20 : 0;
+
+    // Prefer raw/basic ingredients
+    const rawBonus = description.includes('raw') ? 15 : 0;
+    const basicBonus = normalizedDesc.length === 1 ? 10 : 0;
+
+    // Calculate final score
+    const finalScore = score + rawBonus + basicBonus - complexityPenalty - processingPenalty;
+
+    return finalScore;
+}
+
 async function searchIngredients(query) {
     const params = new URLSearchParams({
         api_key: config.USDA_API_KEY,
@@ -80,30 +136,28 @@ async function searchIngredients(query) {
         const response = await fetch(`${config.USDA_API_BASE_URL}/foods/search?${params}`);
         const data = await response.json();
         
-        // Filter and sort results
-        const searchTerms = query.toLowerCase().split(',').map(term => term.trim());
+        // Split search terms and normalize
+        const searchTerms = query.toLowerCase()
+            .split(/[,\s]+/)
+            .map(term => term.trim())
+            .filter(term => term.length > 0);
+
+        // Filter and score results
         const foods = (data.foods || []).filter(food => {
             const description = food.description.toLowerCase();
-            // All search terms must be present in the description
-            return searchTerms.every(term => description.includes(term));
+            // At least one search term must be present
+            return searchTerms.some(term => 
+                description.includes(normalizeSearchTerm(term))
+            );
         });
 
+        // Sort by relevancy score
         return foods.sort((a, b) => {
-            const aDesc = a.description.toLowerCase();
-            const bDesc = b.description.toLowerCase();
-            
-            // Exact match gets highest priority
-            if (aDesc === query.toLowerCase()) return -1;
-            if (bDesc === query.toLowerCase()) return 1;
-
-            // Then prioritize by how many search terms are at the start of the description
-            const aStartMatches = searchTerms.filter(term => aDesc.startsWith(term)).length;
-            const bStartMatches = searchTerms.filter(term => bDesc.startsWith(term)).length;
-            if (aStartMatches !== bStartMatches) return bStartMatches - aStartMatches;
-
-            // Then by description length
-            return aDesc.length - bDesc.length;
+            const scoreA = calculateRelevancyScore(a.description, searchTerms);
+            const scoreB = calculateRelevancyScore(b.description, searchTerms);
+            return scoreB - scoreA;
         });
+
     } catch (error) {
         console.error('Error searching ingredients:', error);
         return [];
@@ -185,11 +239,19 @@ function updateTotalNutrition() {
 function displaySearchResults(results) {
     searchResults.innerHTML = '';
     
+    if (results.length === 0) {
+        searchResults.innerHTML = '<div class="no-results">No matching ingredients found</div>';
+        return;
+    }
+    
     results.forEach(food => {
         const div = document.createElement('div');
         div.className = 'search-result-item';
+        
+        // Highlight the main ingredient name (before the first comma)
+        const [mainName, ...details] = food.description.split(',');
         div.innerHTML = `
-            <h4>${food.description}</h4>
+            <h4>${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
             <p>${food.brandOwner || 'Generic'}</p>
         `;
         
@@ -208,7 +270,7 @@ function displaySearchResults(results) {
                 currentIngredientInput.querySelector('.ingredient-name').value = food.description;
                 currentIngredientInput.querySelector('.ingredient-name').dataset.fdcId = food.fdcId;
                 
-                updateTotalNutrition(); // Update nutrition when ingredient is selected
+                updateTotalNutrition();
                 closeIngredientSearch();
             }
         });
@@ -577,4 +639,19 @@ function editRecipe(id) {
 
 // Make edit and delete functions globally available
 window.editRecipe = editRecipe;
-window.deleteRecipe = deleteRecipe; 
+window.deleteRecipe = deleteRecipe;
+
+// Add some CSS for the new search result styling
+const style = document.createElement('style');
+style.textContent = `
+    .search-result-item .details {
+        color: #666;
+        font-weight: normal;
+    }
+    .no-results {
+        padding: 1rem;
+        text-align: center;
+        color: #666;
+    }
+`;
+document.head.appendChild(style); 
