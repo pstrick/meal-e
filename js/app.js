@@ -143,14 +143,22 @@ async function searchIngredients(query) {
     const params = new URLSearchParams({
         api_key: config.USDA_API_KEY,
         query: query,
-        dataType: ['Survey (FNDDS)'],
+        dataType: ['Survey (FNDDS)', 'Foundation', 'SR Legacy'],
         pageSize: 25
     });
 
     try {
         const response = await fetch(`${config.USDA_API_BASE_URL}/foods/search?${params}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
         
+        if (!data || !data.foods) {
+            console.error('Invalid response format:', data);
+            return [];
+        }
+
         // Split search terms and normalize
         const searchTerms = query.toLowerCase()
             .split(/[,\s]+/)
@@ -158,7 +166,7 @@ async function searchIngredients(query) {
             .filter(term => term.length > 0);
 
         // Filter and score results
-        const foods = (data.foods || []).filter(food => {
+        const foods = data.foods.filter(food => {
             const description = food.description.toLowerCase();
             // At least one search term must be present
             return searchTerms.some(term => 
@@ -175,7 +183,7 @@ async function searchIngredients(query) {
 
     } catch (error) {
         console.error('Error searching ingredients:', error);
-        return [];
+        throw error;
     }
 }
 
@@ -251,6 +259,19 @@ function updateTotalNutrition() {
     totalFat.textContent = Math.round(totals.fat / servings);
 }
 
+// Ingredient Search Functions
+function openIngredientSearch(ingredientInput) {
+    currentIngredientInput = ingredientInput;
+    ingredientSearchModal.classList.add('active');
+    ingredientSearchInput.value = '';
+    ingredientSearchInput.focus();
+}
+
+function closeIngredientSearch() {
+    ingredientSearchModal.classList.remove('active');
+    searchResults.innerHTML = '';
+}
+
 // Modified Ingredient Search Result Handler
 async function displaySearchResults(results) {
     searchResults.innerHTML = '';
@@ -260,7 +281,7 @@ async function displaySearchResults(results) {
         return;
     }
     
-    results.forEach(food => {
+    for (const food of results) {
         const div = document.createElement('div');
         div.className = 'search-result-item';
         
@@ -271,27 +292,32 @@ async function displaySearchResults(results) {
         `;
         
         div.addEventListener('click', async () => {
-            const details = await getFoodDetails(food.fdcId);
-            if (details) {
-                const nutrition = calculateNutritionPerGram(details);
-                const amount = parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0;
-                
-                selectedIngredients.set(food.fdcId, {
-                    name: food.description,
-                    amount: amount,
-                    nutrition: nutrition
-                });
-                
-                currentIngredientInput.querySelector('.ingredient-name').value = food.description;
-                currentIngredientInput.querySelector('.ingredient-name').dataset.fdcId = food.fdcId;
-                
-                updateTotalNutrition();
-                closeIngredientSearch();
+            try {
+                const details = await getFoodDetails(food.fdcId);
+                if (details) {
+                    const nutrition = calculateNutritionPerGram(details);
+                    const amount = parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0;
+                    
+                    selectedIngredients.set(food.fdcId.toString(), {
+                        name: food.description,
+                        amount: amount,
+                        nutrition: nutrition
+                    });
+                    
+                    currentIngredientInput.querySelector('.ingredient-name').value = food.description;
+                    currentIngredientInput.querySelector('.ingredient-name').dataset.fdcId = food.fdcId.toString();
+                    
+                    updateTotalNutrition();
+                    closeIngredientSearch();
+                }
+            } catch (error) {
+                console.error('Error getting food details:', error);
+                alert('Error getting food details. Please try again.');
             }
         });
         
         searchResults.appendChild(div);
-    });
+    }
 }
 
 // Modified Ingredient Input Handler
@@ -344,9 +370,14 @@ categoryFilter.addEventListener('change', updateRecipeList);
 searchBtn.addEventListener('click', async () => {
     const query = ingredientSearchInput.value.trim();
     if (query) {
-        searchResults.innerHTML = '<div class="loading">Searching</div>';
-        const results = await searchIngredients(query);
-        displaySearchResults(results);
+        searchResults.innerHTML = '<div class="loading">Searching...</div>';
+        try {
+            const results = await searchIngredients(query);
+            displaySearchResults(results);
+        } catch (error) {
+            console.error('Error searching ingredients:', error);
+            searchResults.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
+        }
     }
 });
 ingredientSearchInput.addEventListener('keypress', async (e) => {
@@ -654,4 +685,7 @@ style.textContent = `
         color: #666;
     }
 `;
-document.head.appendChild(style); 
+document.head.appendChild(style);
+
+// Update nutrition when servings change
+document.getElementById('recipe-servings').addEventListener('input', updateTotalNutrition); 
