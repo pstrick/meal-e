@@ -22,6 +22,22 @@ A simple and intuitive meal planning, recipe management, and nutrition tracking 
 2. Open `index.html` in your browser
 3. Start planning your meals!
 
+## Live Demo
+
+You can access the live version of this application at: https://[your-username].github.io/meal-e/
+
+### Deploying to GitHub Pages
+
+To deploy your own version:
+
+1. Fork this repository
+2. Go to your fork's Settings
+3. Navigate to Pages in the left sidebar
+4. Under "Source", select "Deploy from a branch"
+5. Select "main" branch and "/ (root)" folder
+6. Click Save
+7. Wait a few minutes for the deployment to complete
+
 ## Development
 
 This is a learning project focused on fundamental web development concepts. The application is built using basic web technologies to maintain simplicity and focus on core functionality.
