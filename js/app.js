@@ -53,8 +53,12 @@ navLinks.forEach(link => {
 // Modal Management
 function openModal() {
     recipeModal.classList.add('active');
-    // Add first ingredient input
-    addIngredientInput();
+    // Add first ingredient input if none exists
+    if (ingredientsList.children.length === 0) {
+        addIngredientInput();
+    }
+    // Initialize nutrition display
+    updateTotalNutrition();
 }
 
 function closeModalHandler() {
@@ -162,11 +166,12 @@ function updateTotalNutrition() {
     };
 
     selectedIngredients.forEach((data, id) => {
-        const amount = data.amount;
-        totals.calories += data.nutrition.calories * amount;
-        totals.protein += data.nutrition.protein * amount;
-        totals.carbs += data.nutrition.carbs * amount;
-        totals.fat += data.nutrition.fat * amount;
+        if (data.nutrition && data.amount) {
+            totals.calories += data.nutrition.calories * data.amount;
+            totals.protein += data.nutrition.protein * data.amount;
+            totals.carbs += data.nutrition.carbs * data.amount;
+            totals.fat += data.nutrition.fat * data.amount;
+        }
     });
 
     // Update display (per serving)
@@ -192,16 +197,18 @@ function displaySearchResults(results) {
             const details = await getFoodDetails(food.fdcId);
             if (details) {
                 const nutrition = calculateNutritionPerGram(details);
+                const amount = parseInt(currentIngredientInput.querySelector('.ingredient-amount').value) || 0;
+                
                 selectedIngredients.set(food.fdcId, {
                     name: food.description,
-                    amount: parseInt(currentIngredientInput.querySelector('.ingredient-amount').value) || 0,
+                    amount: amount,
                     nutrition: nutrition
                 });
                 
                 currentIngredientInput.querySelector('.ingredient-name').value = food.description;
                 currentIngredientInput.querySelector('.ingredient-name').dataset.fdcId = food.fdcId;
                 
-                updateTotalNutrition();
+                updateTotalNutrition(); // Update nutrition when ingredient is selected
                 closeIngredientSearch();
             }
         });
@@ -228,7 +235,7 @@ function addIngredientInput() {
     ingredientItem.className = 'ingredient-item';
     ingredientItem.innerHTML = `
         <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly>
-        <input type="number" class="ingredient-amount" placeholder="Grams" min="0" required>
+        <input type="number" class="ingredient-amount" placeholder="Grams" min="0" required value="0">
         <button type="button" class="remove-ingredient">&times;</button>
     `;
 
@@ -253,7 +260,7 @@ function addIngredientInput() {
             const fdcId = nameInput.dataset.fdcId;
             if (fdcId) {
                 selectedIngredients.delete(fdcId);
-                updateTotalNutrition();
+                updateTotalNutrition(); // Update nutrition when ingredient is removed
             }
             ingredientItem.remove();
         }
