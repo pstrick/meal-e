@@ -143,8 +143,9 @@ async function searchIngredients(query) {
     const params = new URLSearchParams({
         api_key: config.USDA_API_KEY,
         query: query,
-        dataType: ['Survey (FNDDS)', 'Foundation', 'SR Legacy'],
-        pageSize: 25
+        dataType: ['Survey (FNDDS)', 'Foundation', 'SR Legacy'].join(','),
+        pageSize: 25,
+        nutrients: [208, 203, 204, 205].join(',') // Request specific nutrients
     });
 
     try {
@@ -159,28 +160,8 @@ async function searchIngredients(query) {
             return [];
         }
 
-        // Split search terms and normalize
-        const searchTerms = query.toLowerCase()
-            .split(/[,\s]+/)
-            .map(term => term.trim())
-            .filter(term => term.length > 0);
-
-        // Filter and score results
-        const foods = data.foods.filter(food => {
-            const description = food.description.toLowerCase();
-            // At least one search term must be present
-            return searchTerms.some(term => 
-                description.includes(normalizeSearchTerm(term))
-            );
-        });
-
-        // Sort by relevancy score
-        return foods.sort((a, b) => {
-            const scoreA = calculateRelevancyScore(a.description, searchTerms);
-            const scoreB = calculateRelevancyScore(b.description, searchTerms);
-            return scoreB - scoreA;
-        });
-
+        console.log('Search results with nutrition:', data.foods);
+        return data.foods;
     } catch (error) {
         console.error('Error searching ingredients:', error);
         throw error;
@@ -189,7 +170,8 @@ async function searchIngredients(query) {
 
 async function getFoodDetails(fdcId) {
     const params = new URLSearchParams({
-        api_key: config.USDA_API_KEY
+        api_key: config.USDA_API_KEY,
+        nutrients: [208, 203, 204, 205].join(',') // Request specific nutrients
     });
 
     try {
@@ -198,7 +180,7 @@ async function getFoodDetails(fdcId) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        console.log('API Response:', data); // Debug log
+        console.log('Raw API Response:', JSON.stringify(data, null, 2));
         return data;
     } catch (error) {
         console.error('Error getting food details:', error);
@@ -208,8 +190,27 @@ async function getFoodDetails(fdcId) {
 
 // Modified Nutrition Calculations
 function calculateNutritionPerGram(foodData) {
-    console.log('Calculating nutrition for:', foodData); // Debug log
-    const nutrients = foodData.foodNutrients;
+    console.log('Calculating nutrition for food:', foodData.description);
+    
+    // First try foodNutrients array
+    let nutrients = foodData.foodNutrients;
+    
+    // If no nutrients found, try looking in the nutrientData object
+    if (!nutrients || nutrients.length === 0) {
+        nutrients = [];
+        if (foodData.nutrientData) {
+            for (let nutrientId in foodData.nutrientData) {
+                nutrients.push({
+                    nutrientId: parseInt(nutrientId),
+                    amount: foodData.nutrientData[nutrientId].amount,
+                    unitName: foodData.nutrientData[nutrientId].unit
+                });
+            }
+        }
+    }
+
+    console.log('Found nutrients:', nutrients);
+
     const nutrition = {
         calories: 0,
         protein: 0,
@@ -217,64 +218,46 @@ function calculateNutritionPerGram(foodData) {
         fat: 0
     };
 
-    if (!nutrients || !Array.isArray(nutrients)) {
-        console.error('Invalid nutrients data:', foodData);
+    if (!nutrients || nutrients.length === 0) {
+        console.error('No nutrients found in food data');
         return nutrition;
     }
 
-    // Map nutrient numbers to their names for debugging
-    const nutrientMap = {
-        '208': 'Energy (kcal)',
-        '203': 'Protein',
-        '205': 'Carbohydrates',
-        '204': 'Total Fat',
-        '1008': 'Energy (kcal)',
-        '1003': 'Protein',
-        '1005': 'Carbohydrates',
-        '1004': 'Total Fat'
-    };
-
     nutrients.forEach(nutrient => {
-        // Log each nutrient for debugging
+        // Handle different API response formats
+        const id = nutrient.nutrientId || nutrient.nutrient?.id || nutrient.number;
+        const amount = nutrient.amount || nutrient.value || 0;
+
         console.log('Processing nutrient:', {
-            id: nutrient.nutrientId || nutrient.number,
-            name: nutrientMap[nutrient.nutrientId || nutrient.number],
-            amount: nutrient.amount,
-            unit: nutrient.unitName
+            id: id,
+            amount: amount,
+            unit: nutrient.unitName || nutrient.unit
         });
 
-        const amount = parseFloat(nutrient.amount) || 0;
-        const id = nutrient.nutrientId || nutrient.number;
+        // Convert to number if it's a string
+        const numericId = typeof id === 'string' ? parseInt(id) : id;
 
-        switch (id) {
-            case 1008:
-            case '1008':
-            case 208:
-            case '208':
-                nutrition.calories = amount / 100; // per gram
+        switch (numericId) {
+            case 208:   // Energy (kcal)
+            case 1008:  // Energy (kcal)
+                nutrition.calories = amount / 100; // Convert to per gram
                 break;
-            case 1003:
-            case '1003':
-            case 203:
-            case '203':
+            case 203:   // Protein
+            case 1003:  // Protein
                 nutrition.protein = amount / 100;
                 break;
-            case 1005:
-            case '1005':
-            case 205:
-            case '205':
-                nutrition.carbs = amount / 100;
-                break;
-            case 1004:
-            case '1004':
-            case 204:
-            case '204':
+            case 204:   // Total Fat
+            case 1004:  // Total Fat
                 nutrition.fat = amount / 100;
+                break;
+            case 205:   // Carbohydrates
+            case 1005:  // Carbohydrates
+                nutrition.carbs = amount / 100;
                 break;
         }
     });
 
-    console.log('Calculated nutrition per gram:', nutrition); // Debug log
+    console.log('Final calculated nutrition (per gram):', nutrition);
     return nutrition;
 }
 
