@@ -194,7 +194,11 @@ async function getFoodDetails(fdcId) {
 
     try {
         const response = await fetch(`${config.USDA_API_BASE_URL}/food/${fdcId}?${params}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
+        console.log('API Response:', data); // Debug log
         return data;
     } catch (error) {
         console.error('Error getting food details:', error);
@@ -204,6 +208,7 @@ async function getFoodDetails(fdcId) {
 
 // Modified Nutrition Calculations
 function calculateNutritionPerGram(foodData) {
+    console.log('Calculating nutrition for:', foodData); // Debug log
     const nutrients = foodData.foodNutrients;
     const nutrition = {
         calories: 0,
@@ -217,37 +222,66 @@ function calculateNutritionPerGram(foodData) {
         return nutrition;
     }
 
+    // Map nutrient numbers to their names for debugging
+    const nutrientMap = {
+        '208': 'Energy (kcal)',
+        '203': 'Protein',
+        '205': 'Carbohydrates',
+        '204': 'Total Fat',
+        '1008': 'Energy (kcal)',
+        '1003': 'Protein',
+        '1005': 'Carbohydrates',
+        '1004': 'Total Fat'
+    };
+
     nutrients.forEach(nutrient => {
-        if (!nutrient || !nutrient.nutrientId || !nutrient.amount) return;
-        
+        // Log each nutrient for debugging
+        console.log('Processing nutrient:', {
+            id: nutrient.nutrientId || nutrient.number,
+            name: nutrientMap[nutrient.nutrientId || nutrient.number],
+            amount: nutrient.amount,
+            unit: nutrient.unitName
+        });
+
         const amount = parseFloat(nutrient.amount) || 0;
-        
-        // Map both old and new nutrient IDs for compatibility
-        switch (nutrient.nutrientId) {
-            case 1008: // Energy (kcal)
+        const id = nutrient.nutrientId || nutrient.number;
+
+        switch (id) {
+            case 1008:
+            case '1008':
             case 208:
+            case '208':
                 nutrition.calories = amount / 100; // per gram
                 break;
-            case 1003: // Protein
+            case 1003:
+            case '1003':
             case 203:
+            case '203':
                 nutrition.protein = amount / 100;
                 break;
-            case 1005: // Carbohydrates
+            case 1005:
+            case '1005':
             case 205:
+            case '205':
                 nutrition.carbs = amount / 100;
                 break;
-            case 1004: // Total Fat
+            case 1004:
+            case '1004':
             case 204:
+            case '204':
                 nutrition.fat = amount / 100;
                 break;
         }
     });
 
+    console.log('Calculated nutrition per gram:', nutrition); // Debug log
     return nutrition;
 }
 
 function updateTotalNutrition() {
     const servings = parseInt(document.getElementById('recipe-servings').value) || 1;
+    console.log('Current servings:', servings); // Debug log
+
     let totals = {
         calories: 0,
         protein: 0,
@@ -257,27 +291,59 @@ function updateTotalNutrition() {
 
     // Get all ingredient inputs
     const ingredientItems = ingredientsList.querySelectorAll('.ingredient-item');
+    console.log('Found ingredient items:', ingredientItems.length); // Debug log
     
     ingredientItems.forEach(item => {
         const fdcId = item.querySelector('.ingredient-name').dataset.fdcId;
         const amount = parseFloat(item.querySelector('.ingredient-amount').value) || 0;
         
+        console.log('Processing ingredient:', {
+            fdcId,
+            amount,
+            name: item.querySelector('.ingredient-name').value
+        });
+
         if (fdcId && selectedIngredients.has(fdcId)) {
             const ingredient = selectedIngredients.get(fdcId);
+            console.log('Found ingredient data:', ingredient); // Debug log
+
             if (ingredient && ingredient.nutrition) {
-                totals.calories += ingredient.nutrition.calories * amount;
-                totals.protein += ingredient.nutrition.protein * amount;
-                totals.carbs += ingredient.nutrition.carbs * amount;
-                totals.fat += ingredient.nutrition.fat * amount;
+                // Calculate nutrition for this ingredient
+                const ingredientNutrition = {
+                    calories: ingredient.nutrition.calories * amount,
+                    protein: ingredient.nutrition.protein * amount,
+                    carbs: ingredient.nutrition.carbs * amount,
+                    fat: ingredient.nutrition.fat * amount
+                };
+
+                console.log('Ingredient contribution:', ingredientNutrition); // Debug log
+
+                // Add to totals
+                totals.calories += ingredientNutrition.calories;
+                totals.protein += ingredientNutrition.protein;
+                totals.carbs += ingredientNutrition.carbs;
+                totals.fat += ingredientNutrition.fat;
             }
         }
     });
 
-    // Update display (per serving)
-    document.getElementById('total-calories').textContent = Math.round(totals.calories / servings);
-    document.getElementById('total-protein').textContent = Math.round(totals.protein / servings);
-    document.getElementById('total-carbs').textContent = Math.round(totals.carbs / servings);
-    document.getElementById('total-fat').textContent = Math.round(totals.fat / servings);
+    console.log('Total nutrition before per-serving:', totals); // Debug log
+
+    // Calculate per-serving values
+    const perServing = {
+        calories: Math.round(totals.calories / servings),
+        protein: Math.round(totals.protein / servings),
+        carbs: Math.round(totals.carbs / servings),
+        fat: Math.round(totals.fat / servings)
+    };
+
+    console.log('Per serving nutrition:', perServing); // Debug log
+
+    // Update display
+    document.getElementById('total-calories').textContent = perServing.calories;
+    document.getElementById('total-protein').textContent = perServing.protein;
+    document.getElementById('total-carbs').textContent = perServing.carbs;
+    document.getElementById('total-fat').textContent = perServing.fat;
 }
 
 // Add event listeners for nutrition updates
@@ -317,11 +383,19 @@ async function displaySearchResults(results) {
         
         div.addEventListener('click', async () => {
             try {
+                console.log('Selected food:', food); // Debug log
                 const details = await getFoodDetails(food.fdcId);
                 if (details) {
+                    console.log('Got food details:', details); // Debug log
                     const nutrition = calculateNutritionPerGram(details);
                     const amount = parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0;
                     
+                    console.log('Storing ingredient with nutrition:', {
+                        name: food.description,
+                        amount,
+                        nutrition
+                    }); // Debug log
+
                     // Store nutrition data with the ingredient
                     selectedIngredients.set(food.fdcId.toString(), {
                         name: food.description,
