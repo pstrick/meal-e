@@ -22,6 +22,15 @@
         <!-- Recipes Section -->
         <section id="recipes" class="section active">
             <h2>My Recipes</h2>
+            <div class="recipe-filters">
+                <select id="recipe-category-filter">
+                    <option value="all">All Categories</option>
+                    <option value="breakfast">Breakfast</option>
+                    <option value="lunch">Lunch</option>
+                    <option value="dinner">Dinner</option>
+                    <option value="snack">Snack</option>
+                </select>
+            </div>
             <button id="add-recipe" class="btn">Add New Recipe</button>
             <div id="recipe-list" class="card-grid">
                 <!-- Recipe cards will be added here dynamically -->
@@ -49,6 +58,48 @@
             </div>
         </section>
     </main>
+
+    <!-- Recipe Modal -->
+    <div id="recipe-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Create Recipe</h2>
+            <form id="recipe-form">
+                <div class="form-group">
+                    <label for="recipe-name">Recipe Name:</label>
+                    <input type="text" id="recipe-name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="recipe-category">Category:</label>
+                    <select id="recipe-category" required>
+                        <option value="breakfast">Breakfast</option>
+                        <option value="lunch">Lunch</option>
+                        <option value="dinner">Dinner</option>
+                        <option value="snack">Snack</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="recipe-servings">Number of Servings:</label>
+                    <input type="number" id="recipe-servings" min="1" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Ingredients:</label>
+                    <div id="ingredients-list">
+                        <!-- Ingredient inputs will be added here -->
+                    </div>
+                    <button type="button" id="add-ingredient" class="btn btn-secondary">Add Ingredient</button>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn">Save Recipe</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-recipe">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <footer>
         <p>&copy; 2024 Meal-E</p>
