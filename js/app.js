@@ -242,9 +242,17 @@ function updateTotalNutrition() {
         fat: 0
     };
 
+    // Log for debugging
+    console.log('Selected Ingredients:', selectedIngredients);
+
     selectedIngredients.forEach((data) => {
         if (data.nutrition && data.amount) {
             const amount = parseFloat(data.amount) || 0;
+            console.log(`Calculating for ${data.name}:`, {
+                amount,
+                nutrition: data.nutrition
+            });
+            
             totals.calories += data.nutrition.calories * amount;
             totals.protein += data.nutrition.protein * amount;
             totals.carbs += data.nutrition.carbs * amount;
@@ -252,12 +260,28 @@ function updateTotalNutrition() {
         }
     });
 
+    console.log('Total nutrition before per-serving:', totals);
+    console.log('Servings:', servings);
+
     // Update display (per serving)
     totalCalories.textContent = Math.round(totals.calories / servings);
     totalProtein.textContent = Math.round(totals.protein / servings);
     totalCarbs.textContent = Math.round(totals.carbs / servings);
     totalFat.textContent = Math.round(totals.fat / servings);
+
+    console.log('Updated display values:', {
+        calories: totalCalories.textContent,
+        protein: totalProtein.textContent,
+        carbs: totalCarbs.textContent,
+        fat: totalFat.textContent
+    });
 }
+
+// Add event listeners for nutrition updates
+document.getElementById('recipe-servings').addEventListener('input', () => {
+    console.log('Servings changed, updating nutrition...');
+    updateTotalNutrition();
+});
 
 // Ingredient Search Functions
 function openIngredientSearch(ingredientInput) {
@@ -337,10 +361,12 @@ function addIngredientInput() {
     
     // Update nutrition when amount changes
     amountInput.addEventListener('input', () => {
+        console.log('Amount changed for ingredient');
         const fdcId = nameInput.dataset.fdcId;
         if (fdcId && selectedIngredients.has(fdcId)) {
             const ingredient = selectedIngredients.get(fdcId);
             ingredient.amount = parseFloat(amountInput.value) || 0;
+            console.log('Updated ingredient:', ingredient);
             selectedIngredients.set(fdcId, ingredient);
             updateTotalNutrition();
         }
@@ -685,7 +711,4 @@ style.textContent = `
         color: #666;
     }
 `;
-document.head.appendChild(style);
-
-// Update nutrition when servings change
-document.getElementById('recipe-servings').addEventListener('input', updateTotalNutrition); 
+document.head.appendChild(style); 
