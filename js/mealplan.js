@@ -41,6 +41,7 @@ function updateWeekDisplay() {
 }
 
 function openMealPlanModal(slot) {
+    console.log('Opening meal plan modal for slot:', slot);
     selectedSlot = slot;
     selectedRecipe = null;
     const recipeList = document.querySelector('.recipe-list');
@@ -57,7 +58,10 @@ function openMealPlanModal(slot) {
     // Initial population of recipes
     updateRecipeList();
     
+    // Make sure modal is visible
+    mealPlanModal.style.display = 'block';
     mealPlanModal.classList.add('active');
+    console.log('Modal opened:', mealPlanModal);
 }
 
 function updateRecipeList() {
@@ -206,10 +210,13 @@ function loadMealPlan() {
             const addButton = document.createElement('button');
             addButton.className = 'add-meal-btn';
             addButton.innerHTML = '<i class="fas fa-plus"></i> Add Meal';
+            
+            // Add click event listener directly to the button
             addButton.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent slot click event
+                e.stopPropagation();
                 openMealPlanModal(slot);
             });
+            
             slot.appendChild(addButton);
         } else {
             meals.forEach(mealData => {
@@ -273,20 +280,52 @@ function updateNutritionSummary() {
     });
 }
 
-// Event Listeners
+// Remove the old event listeners for meal slots since we're handling clicks on the buttons directly
 document.querySelectorAll('.meal-slot').forEach(slot => {
-    slot.addEventListener('click', (e) => {
-        // Only open modal if clicking directly on the slot (not on a meal item or button)
-        if (e.target === slot) {
-            openMealPlanModal(slot);
-        }
-    });
+    slot.removeEventListener('click', () => {});
 });
 
-document.getElementById('recipe-search').addEventListener('input', updateRecipeList);
-document.getElementById('meal-category-filter').addEventListener('change', updateRecipeList);
+// Initialize modals and event listeners when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize the meal planner
+    updateWeekDisplay();
+    
+    // Ensure modal is properly initialized
+    if (!mealPlanModal) {
+        console.error('Meal plan modal not found!');
+    }
+    
+    // Add event listeners for modal close buttons
+    document.querySelectorAll('#meal-plan-modal .close').forEach(btn => {
+        btn.addEventListener('click', closeMealPlanModal);
+    });
+    
+    // Add event listener for cancel button
+    const cancelMealBtn = document.getElementById('cancel-meal');
+    if (cancelMealBtn) {
+        cancelMealBtn.addEventListener('click', closeMealPlanModal);
+    }
+    
+    // Add event listeners for search and filter
+    const recipeSearch = document.getElementById('recipe-search');
+    const categoryFilter = document.getElementById('meal-category-filter');
+    
+    if (recipeSearch) {
+        recipeSearch.addEventListener('input', updateRecipeList);
+    }
+    
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', updateRecipeList);
+    }
+    
+    // Initialize form submit handler
+    const mealPlanForm = document.getElementById('meal-plan-form');
+    if (mealPlanForm) {
+        mealPlanForm.addEventListener('submit', handleMealPlanSubmit);
+    }
+});
 
-mealPlanForm.addEventListener('submit', (e) => {
+function handleMealPlanSubmit(e) {
     e.preventDefault();
     
     if (!selectedRecipe || !selectedSlot) return;
@@ -301,12 +340,18 @@ mealPlanForm.addEventListener('submit', (e) => {
     updateNutritionSummary();
     
     closeMealPlanModal();
+}
+
+// Remove old event listeners
+document.querySelectorAll('#meal-plan-modal .close').forEach(btn => {
+    btn.removeEventListener('click', closeMealPlanModal);
 });
 
-cancelMeal.addEventListener('click', closeMealPlanModal);
-document.querySelectorAll('#meal-plan-modal .close').forEach(btn => {
-    btn.addEventListener('click', closeMealPlanModal);
-});
+if (cancelMeal) {
+    cancelMeal.removeEventListener('click', closeMealPlanModal);
+}
+
+mealPlanForm.removeEventListener('submit', handleMealPlanSubmit);
 
 prevWeekBtn.addEventListener('click', () => {
     currentWeek.setDate(currentWeek.getDate() - 7);
@@ -316,7 +361,4 @@ prevWeekBtn.addEventListener('click', () => {
 nextWeekBtn.addEventListener('click', () => {
     currentWeek.setDate(currentWeek.getDate() + 7);
     updateWeekDisplay();
-});
-
-// Initialize the meal planner
-updateWeekDisplay(); 
+}); 
