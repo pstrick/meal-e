@@ -194,7 +194,7 @@ async function getFoodDetails(fdcId) {
     }
 }
 
-// Nutrition Calculations
+// Modified Nutrition Calculations
 function calculateNutritionPerGram(foodData) {
     const nutrients = foodData.foodNutrients;
     const nutrition = {
@@ -205,19 +205,19 @@ function calculateNutritionPerGram(foodData) {
     };
 
     nutrients.forEach(nutrient => {
-        const amount = nutrient.amount || 0;
-        switch (nutrient.nutrientNumber) {
-            case '208': // Energy (kcal)
-                nutrition.calories = amount / 100; // per gram
+        // Using nutrientId instead of nutrientNumber for more reliable matching
+        switch (nutrient.nutrientId) {
+            case 1008: // Energy (kcal)
+                nutrition.calories = nutrient.amount / 100; // per gram
                 break;
-            case '203': // Protein
-                nutrition.protein = amount / 100;
+            case 1003: // Protein
+                nutrition.protein = nutrient.amount / 100;
                 break;
-            case '205': // Carbohydrates
-                nutrition.carbs = amount / 100;
+            case 1005: // Carbohydrates
+                nutrition.carbs = nutrient.amount / 100;
                 break;
-            case '204': // Fat
-                nutrition.fat = amount / 100;
+            case 1004: // Total Fat
+                nutrition.fat = nutrient.amount / 100;
                 break;
         }
     });
@@ -234,12 +234,13 @@ function updateTotalNutrition() {
         fat: 0
     };
 
-    selectedIngredients.forEach((data, id) => {
+    selectedIngredients.forEach((data) => {
         if (data.nutrition && data.amount) {
-            totals.calories += data.nutrition.calories * data.amount;
-            totals.protein += data.nutrition.protein * data.amount;
-            totals.carbs += data.nutrition.carbs * data.amount;
-            totals.fat += data.nutrition.fat * data.amount;
+            const amount = parseFloat(data.amount) || 0;
+            totals.calories += data.nutrition.calories * amount;
+            totals.protein += data.nutrition.protein * amount;
+            totals.carbs += data.nutrition.carbs * amount;
+            totals.fat += data.nutrition.fat * amount;
         }
     });
 
@@ -250,8 +251,8 @@ function updateTotalNutrition() {
     totalFat.textContent = Math.round(totals.fat / servings);
 }
 
-// UI Functions
-function displaySearchResults(results) {
+// Modified Ingredient Search Result Handler
+async function displaySearchResults(results) {
     searchResults.innerHTML = '';
     
     if (results.length === 0) {
@@ -263,7 +264,6 @@ function displaySearchResults(results) {
         const div = document.createElement('div');
         div.className = 'search-result-item';
         
-        // Highlight the main ingredient name (before the first comma)
         const [mainName, ...details] = food.description.split(',');
         div.innerHTML = `
             <h4>${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
@@ -274,7 +274,7 @@ function displaySearchResults(results) {
             const details = await getFoodDetails(food.fdcId);
             if (details) {
                 const nutrition = calculateNutritionPerGram(details);
-                const amount = parseInt(currentIngredientInput.querySelector('.ingredient-amount').value) || 0;
+                const amount = parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0;
                 
                 selectedIngredients.set(food.fdcId, {
                     name: food.description,
@@ -294,25 +294,13 @@ function displaySearchResults(results) {
     });
 }
 
-function openIngredientSearch(ingredientInput) {
-    currentIngredientInput = ingredientInput;
-    ingredientSearchModal.classList.add('active');
-    ingredientSearchInput.value = '';
-    ingredientSearchInput.focus();
-}
-
-function closeIngredientSearch() {
-    ingredientSearchModal.classList.remove('active');
-    searchResults.innerHTML = '';
-}
-
-// Modified Ingredient Management
+// Modified Ingredient Input Handler
 function addIngredientInput() {
     const ingredientItem = document.createElement('div');
     ingredientItem.className = 'ingredient-item';
     ingredientItem.innerHTML = `
         <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly>
-        <input type="number" class="ingredient-amount" placeholder="Grams" min="0" required value="0">
+        <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="0">
         <button type="button" class="remove-ingredient">&times;</button>
     `;
 
@@ -326,7 +314,7 @@ function addIngredientInput() {
         const fdcId = nameInput.dataset.fdcId;
         if (fdcId && selectedIngredients.has(fdcId)) {
             const ingredient = selectedIngredients.get(fdcId);
-            ingredient.amount = parseInt(amountInput.value) || 0;
+            ingredient.amount = parseFloat(amountInput.value) || 0;
             selectedIngredients.set(fdcId, ingredient);
             updateTotalNutrition();
         }
@@ -337,7 +325,7 @@ function addIngredientInput() {
             const fdcId = nameInput.dataset.fdcId;
             if (fdcId) {
                 selectedIngredients.delete(fdcId);
-                updateTotalNutrition(); // Update nutrition when ingredient is removed
+                updateTotalNutrition();
             }
             ingredientItem.remove();
         }
@@ -345,9 +333,6 @@ function addIngredientInput() {
 
     ingredientsList.appendChild(ingredientItem);
 }
-
-// Update nutrition when servings change
-document.getElementById('recipe-servings').addEventListener('input', updateTotalNutrition);
 
 // Event Listeners
 addRecipeBtn.addEventListener('click', openModal);

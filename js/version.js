@@ -1,6 +1,6 @@
 export const version = {
-    year: 2024,
-    month: 3,  // March
+    year: 2025,
+    month: 6,  // June
     build: 1,  // Increment this with each push
     toString: function() {
         return `${this.year}.${this.month}.${this.build}`;
