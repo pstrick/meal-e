@@ -127,15 +127,28 @@ function loadMealPlan() {
         const key = getMealKey(dayDate, meal);
         
         const meals = mealPlan[key] || [];
-        meals.forEach(mealData => {
-            const recipe = recipes.find(r => r.id === mealData.recipeId);
-            if (recipe) {
-                const mealItem = createMealItem(recipe, mealData.servings);
-                mealItem.dataset.recipeId = recipe.id;
-                mealItem.dataset.servings = mealData.servings;
-                slot.appendChild(mealItem);
-            }
-        });
+        
+        if (meals.length === 0) {
+            // Add the "Add Meal" button for empty slots
+            const addButton = document.createElement('button');
+            addButton.className = 'add-meal-btn';
+            addButton.innerHTML = '<i class="fas fa-plus"></i> Add Meal';
+            addButton.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent slot click event
+                openMealPlanModal(slot);
+            });
+            slot.appendChild(addButton);
+        } else {
+            meals.forEach(mealData => {
+                const recipe = recipes.find(r => r.id === mealData.recipeId);
+                if (recipe) {
+                    const mealItem = createMealItem(recipe, mealData.servings);
+                    mealItem.dataset.recipeId = recipe.id;
+                    mealItem.dataset.servings = mealData.servings;
+                    slot.appendChild(mealItem);
+                }
+            });
+        }
     });
 
     updateNutritionSummary();
@@ -189,7 +202,12 @@ function updateNutritionSummary() {
 
 // Event Listeners
 document.querySelectorAll('.meal-slot').forEach(slot => {
-    slot.addEventListener('click', () => openMealPlanModal(slot));
+    slot.addEventListener('click', (e) => {
+        // Only open modal if clicking directly on the slot (not on a meal item or button)
+        if (e.target === slot) {
+            openMealPlanModal(slot);
+        }
+    });
 });
 
 mealPlanForm.addEventListener('submit', (e) => {
