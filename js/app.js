@@ -298,6 +298,14 @@ function createRecipeCard(recipe) {
         .map(ing => `${ing.name} (${ing.amount}g)`)
         .join(', ');
 
+    // Ensure nutrition values exist or default to 0
+    const nutrition = recipe.nutrition || {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0
+    };
+
     card.innerHTML = `
         <span class="recipe-category">${recipe.category}</span>
         <h3>${recipe.name}</h3>
@@ -308,10 +316,10 @@ function createRecipeCard(recipe) {
         </p>
         <p class="recipe-nutrition">
             <strong>Per Serving:</strong><br>
-            Calories: ${Math.round(recipe.nutrition.calories)} |
-            Protein: ${Math.round(recipe.nutrition.protein)}g |
-            Carbs: ${Math.round(recipe.nutrition.carbs)}g |
-            Fat: ${Math.round(recipe.nutrition.fat)}g
+            Calories: ${Math.round(nutrition.calories)} |
+            Protein: ${Math.round(nutrition.protein)}g |
+            Carbs: ${Math.round(nutrition.carbs)}g |
+            Fat: ${Math.round(nutrition.fat)}g
         </p>
         <div class="card-actions">
             <button class="btn" onclick="editRecipe(${recipe.id})">Edit</button>
@@ -322,7 +330,22 @@ function createRecipeCard(recipe) {
 }
 
 function addRecipe(recipe) {
-    recipes.push(recipe);
+    // Ensure the recipe has all required properties
+    const validatedRecipe = {
+        id: recipe.id,
+        name: recipe.name,
+        category: recipe.category,
+        servings: recipe.servings,
+        ingredients: recipe.ingredients,
+        nutrition: recipe.nutrition || {
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0
+        }
+    };
+
+    recipes.push(validatedRecipe);
     updateRecipeList();
     saveToLocalStorage();
 }
@@ -356,38 +379,71 @@ async function handleRecipeSubmit(e) {
         return;
     }
 
-    const ingredients = Array.from(ingredientsList.children).map(item => {
-        const fdcId = item.querySelector('.ingredient-name').dataset.fdcId;
-        const ingredientData = selectedIngredients.get(fdcId);
-        if (!ingredientData) return null;
-        return {
-            fdcId: fdcId,
-            name: ingredientData.name,
-            amount: ingredientData.amount,
-            nutrition: ingredientData.nutrition
-        };
-    }).filter(ing => ing !== null);
+    // Validate required fields
+    const name = document.getElementById('recipe-name').value.trim();
+    const servings = parseInt(document.getElementById('recipe-servings').value);
+    
+    if (!name || !servings || servings < 1) {
+        alert('Please fill in all required fields');
+        return;
+    }
 
-    const servings = parseInt(document.getElementById('recipe-servings').value) || 1;
+    const ingredients = Array.from(ingredientsList.children)
+        .map(item => {
+            const fdcId = item.querySelector('.ingredient-name').dataset.fdcId;
+            const ingredientData = selectedIngredients.get(fdcId);
+            if (!ingredientData) return null;
+            return {
+                fdcId: fdcId,
+                name: ingredientData.name,
+                amount: ingredientData.amount,
+                nutrition: ingredientData.nutrition
+            };
+        })
+        .filter(ing => ing !== null);
+
+    // Calculate total nutrition values
     const totalNutrition = {
-        calories: parseInt(totalCalories.textContent) * servings,
-        protein: parseInt(totalProtein.textContent) * servings,
-        carbs: parseInt(totalCarbs.textContent) * servings,
-        fat: parseInt(totalFat.textContent) * servings
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0
+    };
+
+    ingredients.forEach(ing => {
+        if (ing.nutrition && ing.amount) {
+            totalNutrition.calories += (ing.nutrition.calories * ing.amount);
+            totalNutrition.protein += (ing.nutrition.protein * ing.amount);
+            totalNutrition.carbs += (ing.nutrition.carbs * ing.amount);
+            totalNutrition.fat += (ing.nutrition.fat * ing.amount);
+        }
+    });
+
+    // Convert total nutrition to per-serving values
+    const perServingNutrition = {
+        calories: totalNutrition.calories / servings,
+        protein: totalNutrition.protein / servings,
+        carbs: totalNutrition.carbs / servings,
+        fat: totalNutrition.fat / servings
     };
 
     const newRecipe = {
         id: Date.now(),
-        name: document.getElementById('recipe-name').value,
+        name: name,
         category: document.getElementById('recipe-category').value,
         servings: servings,
         ingredients: ingredients,
-        nutrition: totalNutrition
+        nutrition: perServingNutrition
     };
 
-    addRecipe(newRecipe);
-    closeModalHandler();
-    selectedIngredients.clear(); // Clear the selected ingredients
+    try {
+        addRecipe(newRecipe);
+        closeModalHandler();
+        selectedIngredients.clear(); // Clear the selected ingredients
+    } catch (error) {
+        console.error('Error saving recipe:', error);
+        alert('There was an error saving your recipe. Please try again.');
+    }
 }
 
 // Local Storage Management
