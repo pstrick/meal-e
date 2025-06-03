@@ -262,8 +262,9 @@ function calculateNutritionPerGram(foodData) {
 }
 
 function updateTotalNutrition() {
-    const servings = parseInt(document.getElementById('recipe-servings').value) || 1;
-    console.log('Current servings:', servings); // Debug log
+    const totalWeight = calculateTotalWeight();
+    const servingSize = parseFloat(document.getElementById('recipe-serving-size').value) || totalWeight;
+    const numberOfServings = Math.round((totalWeight / servingSize) * 10) / 10; // Round to 1 decimal
 
     let totals = {
         calories: 0,
@@ -274,63 +275,306 @@ function updateTotalNutrition() {
 
     // Get all ingredient inputs
     const ingredientItems = ingredientsList.querySelectorAll('.ingredient-item');
-    console.log('Found ingredient items:', ingredientItems.length); // Debug log
     
     ingredientItems.forEach(item => {
         const fdcId = item.querySelector('.ingredient-name').dataset.fdcId;
         const amount = parseFloat(item.querySelector('.ingredient-amount').value) || 0;
         
-        console.log('Processing ingredient:', {
-            fdcId,
-            amount,
-            name: item.querySelector('.ingredient-name').value
-        });
-
         if (fdcId && selectedIngredients.has(fdcId)) {
             const ingredient = selectedIngredients.get(fdcId);
-            console.log('Found ingredient data:', ingredient); // Debug log
-
             if (ingredient && ingredient.nutrition) {
-                // Calculate nutrition for this ingredient
-                const ingredientNutrition = {
-                    calories: ingredient.nutrition.calories * amount,
-                    protein: ingredient.nutrition.protein * amount,
-                    carbs: ingredient.nutrition.carbs * amount,
-                    fat: ingredient.nutrition.fat * amount
-                };
-
-                console.log('Ingredient contribution:', ingredientNutrition); // Debug log
-
-                // Add to totals
-                totals.calories += ingredientNutrition.calories;
-                totals.protein += ingredientNutrition.protein;
-                totals.carbs += ingredientNutrition.carbs;
-                totals.fat += ingredientNutrition.fat;
+                totals.calories += ingredient.nutrition.calories * amount;
+                totals.protein += ingredient.nutrition.protein * amount;
+                totals.carbs += ingredient.nutrition.carbs * amount;
+                totals.fat += ingredient.nutrition.fat * amount;
             }
         }
     });
 
-    console.log('Total nutrition before per-serving:', totals); // Debug log
-
-    // Calculate per-serving values
+    // Calculate per-serving values based on serving size
     const perServing = {
-        calories: Math.round(totals.calories / servings),
-        protein: Math.round(totals.protein / servings),
-        carbs: Math.round(totals.carbs / servings),
-        fat: Math.round(totals.fat / servings)
+        calories: Math.round(totals.calories * (servingSize / totalWeight)),
+        protein: Math.round(totals.protein * (servingSize / totalWeight)),
+        carbs: Math.round(totals.carbs * (servingSize / totalWeight)),
+        fat: Math.round(totals.fat * (servingSize / totalWeight))
     };
-
-    console.log('Per serving nutrition:', perServing); // Debug log
 
     // Update display
     document.getElementById('total-calories').textContent = perServing.calories;
     document.getElementById('total-protein').textContent = perServing.protein;
     document.getElementById('total-carbs').textContent = perServing.carbs;
     document.getElementById('total-fat').textContent = perServing.fat;
+    document.getElementById('recipe-servings').textContent = numberOfServings;
 }
 
-// Add event listeners for nutrition updates
-document.getElementById('recipe-servings').addEventListener('input', updateTotalNutrition);
+function calculateTotalWeight() {
+    let totalWeight = 0;
+    const ingredientItems = ingredientsList.querySelectorAll('.ingredient-item');
+    
+    ingredientItems.forEach(item => {
+        const amount = parseFloat(item.querySelector('.ingredient-amount').value) || 0;
+        totalWeight += amount;
+    });
+
+    return totalWeight;
+}
+
+// Update serving size when ingredients change
+function updateServingSizeDefault() {
+    const totalWeight = calculateTotalWeight();
+    const servingSizeInput = document.getElementById('recipe-serving-size');
+    if (!servingSizeInput.value) {
+        servingSizeInput.value = totalWeight;
+    }
+    updateTotalNutrition();
+}
+
+// Modified Recipe Card Creation
+function createRecipeCard(recipe) {
+    const card = document.createElement('div');
+    card.className = 'macro-card recipe-card';
+    
+    const ingredients = recipe.ingredients
+        .map(ing => `${ing.name} (${ing.amount}g)`)
+        .join(', ');
+
+    const totalWeight = recipe.ingredients.reduce((sum, ing) => sum + ing.amount, 0);
+    const numberOfServings = Math.round((totalWeight / recipe.servingSize) * 10) / 10;
+
+    card.innerHTML = `
+        <span class="recipe-category">${recipe.category}</span>
+        <h3>${recipe.name}</h3>
+        <p class="recipe-servings">Serving Size: ${recipe.servingSize}g (Makes ${numberOfServings} servings)</p>
+        <p class="recipe-ingredients">
+            <strong>Ingredients:</strong><br>
+            ${ingredients}
+        </p>
+        <p class="recipe-nutrition">
+            <strong>Per Serving (${recipe.servingSize}g):</strong><br>
+            Calories: ${recipe.nutrition.calories} |
+            Protein: ${recipe.nutrition.protein}g |
+            Carbs: ${recipe.nutrition.carbs}g |
+            Fat: ${recipe.nutrition.fat}g
+        </p>
+        <div class="card-actions">
+            <button class="btn" onclick="editRecipe(${recipe.id})">Edit</button>
+            <button class="btn btn-secondary" onclick="deleteRecipe(${recipe.id})">Delete</button>
+        </div>
+    `;
+    return card;
+}
+
+async function handleRecipeSubmit(e, editId = null) {
+    e.preventDefault();
+
+    // Validate that we have at least one ingredient
+    if (selectedIngredients.size === 0) {
+        alert('Please add at least one ingredient to your recipe');
+        return;
+    }
+
+    // Validate required fields
+    const name = document.getElementById('recipe-name').value.trim();
+    const servingSize = parseFloat(document.getElementById('recipe-serving-size').value);
+    const category = document.getElementById('recipe-category').value;
+    
+    if (!name || !servingSize || servingSize <= 0) {
+        alert('Please fill in all required fields');
+        return;
+    }
+
+    // Gather ingredients with their nutrition data
+    const ingredients = Array.from(ingredientsList.children)
+        .map(item => {
+            const fdcId = item.querySelector('.ingredient-name').dataset.fdcId;
+            const ingredientData = selectedIngredients.get(fdcId);
+            if (!ingredientData) return null;
+            
+            return {
+                fdcId: fdcId,
+                name: ingredientData.name,
+                amount: parseFloat(item.querySelector('.ingredient-amount').value) || 0,
+                nutrition: ingredientData.nutrition
+            };
+        })
+        .filter(ing => ing !== null && ing.amount > 0);
+
+    const totalWeight = ingredients.reduce((sum, ing) => sum + ing.amount, 0);
+
+    // Calculate nutrition per serving size
+    const totalNutrition = {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0
+    };
+
+    ingredients.forEach(ing => {
+        if (ing.nutrition && ing.amount) {
+            totalNutrition.calories += ing.nutrition.calories * ing.amount;
+            totalNutrition.protein += ing.nutrition.protein * ing.amount;
+            totalNutrition.carbs += ing.nutrition.carbs * ing.amount;
+            totalNutrition.fat += ing.nutrition.fat * ing.amount;
+        }
+    });
+
+    const newRecipe = {
+        id: editId || Date.now(),
+        name: name,
+        category: category,
+        servingSize: servingSize,
+        ingredients: ingredients,
+        nutrition: {
+            calories: Math.round(totalNutrition.calories * (servingSize / totalWeight)),
+            protein: Math.round(totalNutrition.protein * (servingSize / totalWeight)),
+            carbs: Math.round(totalNutrition.carbs * (servingSize / totalWeight)),
+            fat: Math.round(totalNutrition.fat * (servingSize / totalWeight))
+        }
+    };
+
+    try {
+        if (editId) {
+            // Update existing recipe
+            const index = recipes.findIndex(r => r.id === editId);
+            if (index !== -1) {
+                recipes[index] = newRecipe;
+            }
+        } else {
+            // Add new recipe
+            recipes.push(newRecipe);
+        }
+        
+        updateRecipeList();
+        saveToLocalStorage();
+        closeModalHandler();
+        selectedIngredients.clear();
+        
+        // Reset form handler
+        recipeForm.onsubmit = (e) => handleRecipeSubmit(e);
+    } catch (error) {
+        console.error('Error saving recipe:', error);
+        alert('There was an error saving your recipe. Please try again.');
+    }
+}
+
+// Local Storage Management
+function saveToLocalStorage() {
+    localStorage.setItem('meale-recipes', JSON.stringify(recipes));
+    localStorage.setItem('meale-mealPlan', JSON.stringify(mealPlan));
+    localStorage.setItem('meale-nutrition', JSON.stringify(nutritionData));
+}
+
+function loadFromLocalStorage() {
+    const savedRecipes = localStorage.getItem('meale-recipes');
+    const savedMealPlan = localStorage.getItem('meale-mealPlan');
+    const savedNutrition = localStorage.getItem('meale-nutrition');
+
+    if (savedRecipes) recipes = JSON.parse(savedRecipes);
+    if (savedMealPlan) mealPlan = JSON.parse(savedMealPlan);
+    if (savedNutrition) nutritionData = JSON.parse(savedNutrition);
+
+    updateRecipeList();
+}
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', () => {
+    loadFromLocalStorage();
+});
+
+// Recipe Management
+function editRecipe(id) {
+    const recipe = recipes.find(r => r.id === id);
+    if (!recipe) return;
+
+    // Clear existing form
+    recipeForm.reset();
+    ingredientsList.innerHTML = '';
+    selectedIngredients.clear();
+
+    // Fill in basic recipe info
+    document.getElementById('recipe-name').value = recipe.name;
+    document.getElementById('recipe-category').value = recipe.category;
+    document.getElementById('recipe-serving-size').value = recipe.servingSize;
+
+    // Add ingredients
+    recipe.ingredients.forEach(ing => {
+        const ingredientItem = document.createElement('div');
+        ingredientItem.className = 'ingredient-item';
+        ingredientItem.innerHTML = `
+            <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${ing.name}">
+            <input type="number" class="ingredient-amount" placeholder="Grams" min="0" required value="${ing.amount}">
+            <button type="button" class="remove-ingredient">&times;</button>
+        `;
+
+        const nameInput = ingredientItem.querySelector('.ingredient-name');
+        const amountInput = ingredientItem.querySelector('.ingredient-amount');
+        
+        // Store the ingredient data
+        nameInput.dataset.fdcId = ing.fdcId;
+        selectedIngredients.set(ing.fdcId, {
+            name: ing.name,
+            amount: ing.amount,
+            nutrition: ing.nutrition
+        });
+
+        // Add event listeners
+        nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
+        amountInput.addEventListener('input', () => {
+            const fdcId = nameInput.dataset.fdcId;
+            if (fdcId && selectedIngredients.has(fdcId)) {
+                const ingredient = selectedIngredients.get(fdcId);
+                ingredient.amount = parseInt(amountInput.value) || 0;
+                selectedIngredients.set(fdcId, ingredient);
+                updateServingSizeDefault();
+            }
+        });
+
+        ingredientItem.querySelector('.remove-ingredient').addEventListener('click', () => {
+            if (ingredientsList.children.length > 1) {
+                const fdcId = nameInput.dataset.fdcId;
+                if (fdcId) {
+                    selectedIngredients.delete(fdcId);
+                    updateServingSizeDefault();
+                }
+                ingredientItem.remove();
+            }
+        });
+
+        ingredientsList.appendChild(ingredientItem);
+    });
+
+    // Update nutrition display
+    updateTotalNutrition();
+
+    // Show modal
+    openModal();
+
+    // Update form submission to handle edit
+    const originalSubmit = recipeForm.onsubmit;
+    recipeForm.onsubmit = (e) => {
+        e.preventDefault();
+        handleRecipeSubmit(e, id);
+    };
+}
+
+// Make edit and delete functions globally available
+window.editRecipe = editRecipe;
+window.deleteRecipe = deleteRecipe;
+
+// Add some CSS for the new search result styling
+const style = document.createElement('style');
+style.textContent = `
+    .search-result-item .details {
+        color: #666;
+        font-weight: normal;
+    }
+    .no-results {
+        padding: 1rem;
+        text-align: center;
+        color: #666;
+    }
+`;
+document.head.appendChild(style);
 
 // Ingredient Search Functions
 function openIngredientSearch(ingredientInput) {
@@ -419,14 +663,14 @@ function addIngredientInput() {
 
     nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
     
-    // Update nutrition when amount changes
+    // Update nutrition and serving size when amount changes
     amountInput.addEventListener('input', () => {
         const fdcId = nameInput.dataset.fdcId;
         if (fdcId && selectedIngredients.has(fdcId)) {
             const ingredient = selectedIngredients.get(fdcId);
             ingredient.amount = parseFloat(amountInput.value) || 0;
             selectedIngredients.set(fdcId, ingredient);
-            updateTotalNutrition();
+            updateServingSizeDefault();
         }
     });
 
@@ -435,7 +679,7 @@ function addIngredientInput() {
             const fdcId = nameInput.dataset.fdcId;
             if (fdcId) {
                 selectedIngredients.delete(fdcId);
-                updateTotalNutrition();
+                updateServingSizeDefault();
             }
             ingredientItem.remove();
         }
@@ -479,52 +723,13 @@ document.querySelectorAll('.modal .close').forEach(closeBtn => {
 });
 
 // Modified Recipe Management
-function createRecipeCard(recipe) {
-    const card = document.createElement('div');
-    card.className = 'macro-card recipe-card';
-    
-    const ingredients = recipe.ingredients
-        .map(ing => `${ing.name} (${ing.amount}g)`)
-        .join(', ');
-
-    // Ensure nutrition values exist or default to 0
-    const nutrition = recipe.nutrition || {
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0
-    };
-
-    card.innerHTML = `
-        <span class="recipe-category">${recipe.category}</span>
-        <h3>${recipe.name}</h3>
-        <p class="recipe-servings">Servings: ${recipe.servings}</p>
-        <p class="recipe-ingredients">
-            <strong>Ingredients:</strong><br>
-            ${ingredients}
-        </p>
-        <p class="recipe-nutrition">
-            <strong>Per Serving:</strong><br>
-            Calories: ${Math.round(nutrition.calories)} |
-            Protein: ${Math.round(nutrition.protein)}g |
-            Carbs: ${Math.round(nutrition.carbs)}g |
-            Fat: ${Math.round(nutrition.fat)}g
-        </p>
-        <div class="card-actions">
-            <button class="btn" onclick="editRecipe(${recipe.id})">Edit</button>
-            <button class="btn btn-secondary" onclick="deleteRecipe(${recipe.id})">Delete</button>
-        </div>
-    `;
-    return card;
-}
-
 function addRecipe(recipe) {
     // Ensure the recipe has all required properties
     const validatedRecipe = {
         id: recipe.id,
         name: recipe.name,
         category: recipe.category,
-        servings: recipe.servings,
+        servingSize: recipe.servingSize,
         ingredients: recipe.ingredients,
         nutrition: recipe.nutrition || {
             calories: 0,
@@ -558,215 +763,4 @@ function updateRecipeList() {
     filteredRecipes.forEach(recipe => {
         recipeList.appendChild(createRecipeCard(recipe));
     });
-}
-
-// Modified Form Handling
-async function handleRecipeSubmit(e, editId = null) {
-    e.preventDefault();
-
-    // Validate that we have at least one ingredient
-    if (selectedIngredients.size === 0) {
-        alert('Please add at least one ingredient to your recipe');
-        return;
-    }
-
-    // Validate required fields
-    const name = document.getElementById('recipe-name').value.trim();
-    const servings = parseInt(document.getElementById('recipe-servings').value);
-    
-    if (!name || !servings || servings < 1) {
-        alert('Please fill in all required fields');
-        return;
-    }
-
-    const ingredients = Array.from(ingredientsList.children)
-        .map(item => {
-            const fdcId = item.querySelector('.ingredient-name').dataset.fdcId;
-            const ingredientData = selectedIngredients.get(fdcId);
-            if (!ingredientData) return null;
-            return {
-                fdcId: fdcId,
-                name: ingredientData.name,
-                amount: ingredientData.amount,
-                nutrition: ingredientData.nutrition
-            };
-        })
-        .filter(ing => ing !== null);
-
-    // Calculate total nutrition values
-    const totalNutrition = {
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0
-    };
-
-    ingredients.forEach(ing => {
-        if (ing.nutrition && ing.amount) {
-            totalNutrition.calories += (ing.nutrition.calories * ing.amount);
-            totalNutrition.protein += (ing.nutrition.protein * ing.amount);
-            totalNutrition.carbs += (ing.nutrition.carbs * ing.amount);
-            totalNutrition.fat += (ing.nutrition.fat * ing.amount);
-        }
-    });
-
-    // Convert total nutrition to per-serving values
-    const perServingNutrition = {
-        calories: totalNutrition.calories / servings,
-        protein: totalNutrition.protein / servings,
-        carbs: totalNutrition.carbs / servings,
-        fat: totalNutrition.fat / servings
-    };
-
-    const newRecipe = {
-        id: editId || Date.now(),
-        name: name,
-        category: document.getElementById('recipe-category').value,
-        servings: servings,
-        ingredients: ingredients,
-        nutrition: perServingNutrition
-    };
-
-    try {
-        if (editId) {
-            // Update existing recipe
-            const index = recipes.findIndex(r => r.id === editId);
-            if (index !== -1) {
-                recipes[index] = newRecipe;
-            }
-        } else {
-            // Add new recipe
-            recipes.push(newRecipe);
-        }
-        
-        updateRecipeList();
-        saveToLocalStorage();
-        closeModalHandler();
-        selectedIngredients.clear();
-        
-        // Reset form handler
-        recipeForm.onsubmit = (e) => handleRecipeSubmit(e);
-    } catch (error) {
-        console.error('Error saving recipe:', error);
-        alert('There was an error saving your recipe. Please try again.');
-    }
-}
-
-// Local Storage Management
-function saveToLocalStorage() {
-    localStorage.setItem('meale-recipes', JSON.stringify(recipes));
-    localStorage.setItem('meale-mealPlan', JSON.stringify(mealPlan));
-    localStorage.setItem('meale-nutrition', JSON.stringify(nutritionData));
-}
-
-function loadFromLocalStorage() {
-    const savedRecipes = localStorage.getItem('meale-recipes');
-    const savedMealPlan = localStorage.getItem('meale-mealPlan');
-    const savedNutrition = localStorage.getItem('meale-nutrition');
-
-    if (savedRecipes) recipes = JSON.parse(savedRecipes);
-    if (savedMealPlan) mealPlan = JSON.parse(savedMealPlan);
-    if (savedNutrition) nutritionData = JSON.parse(savedNutrition);
-
-    updateRecipeList();
-}
-
-// Initialize the application
-document.addEventListener('DOMContentLoaded', () => {
-    loadFromLocalStorage();
-});
-
-// Recipe Management
-function editRecipe(id) {
-    const recipe = recipes.find(r => r.id === id);
-    if (!recipe) return;
-
-    // Clear existing form
-    recipeForm.reset();
-    ingredientsList.innerHTML = '';
-    selectedIngredients.clear();
-
-    // Fill in basic recipe info
-    document.getElementById('recipe-name').value = recipe.name;
-    document.getElementById('recipe-category').value = recipe.category;
-    document.getElementById('recipe-servings').value = recipe.servings;
-
-    // Add ingredients
-    recipe.ingredients.forEach(ing => {
-        const ingredientItem = document.createElement('div');
-        ingredientItem.className = 'ingredient-item';
-        ingredientItem.innerHTML = `
-            <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${ing.name}">
-            <input type="number" class="ingredient-amount" placeholder="Grams" min="0" required value="${ing.amount}">
-            <button type="button" class="remove-ingredient">&times;</button>
-        `;
-
-        const nameInput = ingredientItem.querySelector('.ingredient-name');
-        const amountInput = ingredientItem.querySelector('.ingredient-amount');
-        
-        // Store the ingredient data
-        nameInput.dataset.fdcId = ing.fdcId;
-        selectedIngredients.set(ing.fdcId, {
-            name: ing.name,
-            amount: ing.amount,
-            nutrition: ing.nutrition
-        });
-
-        // Add event listeners
-        nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
-        amountInput.addEventListener('input', () => {
-            const fdcId = nameInput.dataset.fdcId;
-            if (fdcId && selectedIngredients.has(fdcId)) {
-                const ingredient = selectedIngredients.get(fdcId);
-                ingredient.amount = parseInt(amountInput.value) || 0;
-                selectedIngredients.set(fdcId, ingredient);
-                updateTotalNutrition();
-            }
-        });
-
-        ingredientItem.querySelector('.remove-ingredient').addEventListener('click', () => {
-            if (ingredientsList.children.length > 1) {
-                const fdcId = nameInput.dataset.fdcId;
-                if (fdcId) {
-                    selectedIngredients.delete(fdcId);
-                    updateTotalNutrition();
-                }
-                ingredientItem.remove();
-            }
-        });
-
-        ingredientsList.appendChild(ingredientItem);
-    });
-
-    // Update nutrition display
-    updateTotalNutrition();
-
-    // Show modal
-    openModal();
-
-    // Update form submission to handle edit
-    const originalSubmit = recipeForm.onsubmit;
-    recipeForm.onsubmit = (e) => {
-        e.preventDefault();
-        handleRecipeSubmit(e, id);
-    };
-}
-
-// Make edit and delete functions globally available
-window.editRecipe = editRecipe;
-window.deleteRecipe = deleteRecipe;
-
-// Add some CSS for the new search result styling
-const style = document.createElement('style');
-style.textContent = `
-    .search-result-item .details {
-        color: #666;
-        font-weight: normal;
-    }
-    .no-results {
-        padding: 1rem;
-        text-align: center;
-        color: #666;
-    }
-`;
-document.head.appendChild(style); 
+} 
