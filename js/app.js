@@ -69,31 +69,36 @@ async function searchIngredients(query) {
         api_key: config.USDA_API_KEY,
         query: query,
         dataType: ['Survey (FNDDS)'],
-        pageSize: 25 // Increased to get more results for better sorting
+        pageSize: 25
     });
 
     try {
         const response = await fetch(`${config.USDA_API_BASE_URL}/foods/search?${params}`);
         const data = await response.json();
         
-        // Sort results by relevance
-        const foods = data.foods || [];
+        // Filter and sort results
+        const searchTerms = query.toLowerCase().split(',').map(term => term.trim());
+        const foods = (data.foods || []).filter(food => {
+            const description = food.description.toLowerCase();
+            // All search terms must be present in the description
+            return searchTerms.every(term => description.includes(term));
+        });
+
         return foods.sort((a, b) => {
-            // Prioritize exact matches
-            const aExact = a.description.toLowerCase() === query.toLowerCase();
-            const bExact = b.description.toLowerCase() === query.toLowerCase();
-            if (aExact && !bExact) return -1;
-            if (!aExact && bExact) return 1;
+            const aDesc = a.description.toLowerCase();
+            const bDesc = b.description.toLowerCase();
+            
+            // Exact match gets highest priority
+            if (aDesc === query.toLowerCase()) return -1;
+            if (bDesc === query.toLowerCase()) return 1;
 
-            // Prioritize shorter descriptions (usually simpler items)
-            const aLength = a.description.length;
-            const bLength = b.description.length;
-            if (aLength !== bLength) return aLength - bLength;
+            // Then prioritize by how many search terms are at the start of the description
+            const aStartMatches = searchTerms.filter(term => aDesc.startsWith(term)).length;
+            const bStartMatches = searchTerms.filter(term => bDesc.startsWith(term)).length;
+            if (aStartMatches !== bStartMatches) return bStartMatches - aStartMatches;
 
-            // If lengths are equal, prioritize items with fewer commas (usually simpler items)
-            const aCommas = (a.description.match(/,/g) || []).length;
-            const bCommas = (b.description.match(/,/g) || []).length;
-            return aCommas - bCommas;
+            // Then by description length
+            return aDesc.length - bDesc.length;
         });
     } catch (error) {
         console.error('Error searching ingredients:', error);
@@ -351,9 +356,11 @@ function addRecipe(recipe) {
 }
 
 function deleteRecipe(id) {
-    recipes = recipes.filter(recipe => recipe.id !== id);
-    updateRecipeList();
-    saveToLocalStorage();
+    if (confirm('Are you sure you want to delete this recipe?')) {
+        recipes = recipes.filter(recipe => recipe.id !== id);
+        updateRecipeList();
+        saveToLocalStorage();
+    }
 }
 
 function updateRecipeList() {
@@ -370,7 +377,7 @@ function updateRecipeList() {
 }
 
 // Modified Form Handling
-async function handleRecipeSubmit(e) {
+async function handleRecipeSubmit(e, editId = null) {
     e.preventDefault();
 
     // Validate that we have at least one ingredient
@@ -428,7 +435,7 @@ async function handleRecipeSubmit(e) {
     };
 
     const newRecipe = {
-        id: Date.now(),
+        id: editId || Date.now(),
         name: name,
         category: document.getElementById('recipe-category').value,
         servings: servings,
@@ -437,9 +444,24 @@ async function handleRecipeSubmit(e) {
     };
 
     try {
-        addRecipe(newRecipe);
+        if (editId) {
+            // Update existing recipe
+            const index = recipes.findIndex(r => r.id === editId);
+            if (index !== -1) {
+                recipes[index] = newRecipe;
+            }
+        } else {
+            // Add new recipe
+            recipes.push(newRecipe);
+        }
+        
+        updateRecipeList();
+        saveToLocalStorage();
         closeModalHandler();
-        selectedIngredients.clear(); // Clear the selected ingredients
+        selectedIngredients.clear();
+        
+        // Reset form handler
+        recipeForm.onsubmit = (e) => handleRecipeSubmit(e);
     } catch (error) {
         console.error('Error saving recipe:', error);
         alert('There was an error saving your recipe. Please try again.');
@@ -468,4 +490,84 @@ function loadFromLocalStorage() {
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
     loadFromLocalStorage();
-}); 
+});
+
+// Recipe Management
+function editRecipe(id) {
+    const recipe = recipes.find(r => r.id === id);
+    if (!recipe) return;
+
+    // Clear existing form
+    recipeForm.reset();
+    ingredientsList.innerHTML = '';
+    selectedIngredients.clear();
+
+    // Fill in basic recipe info
+    document.getElementById('recipe-name').value = recipe.name;
+    document.getElementById('recipe-category').value = recipe.category;
+    document.getElementById('recipe-servings').value = recipe.servings;
+
+    // Add ingredients
+    recipe.ingredients.forEach(ing => {
+        const ingredientItem = document.createElement('div');
+        ingredientItem.className = 'ingredient-item';
+        ingredientItem.innerHTML = `
+            <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${ing.name}">
+            <input type="number" class="ingredient-amount" placeholder="Grams" min="0" required value="${ing.amount}">
+            <button type="button" class="remove-ingredient">&times;</button>
+        `;
+
+        const nameInput = ingredientItem.querySelector('.ingredient-name');
+        const amountInput = ingredientItem.querySelector('.ingredient-amount');
+        
+        // Store the ingredient data
+        nameInput.dataset.fdcId = ing.fdcId;
+        selectedIngredients.set(ing.fdcId, {
+            name: ing.name,
+            amount: ing.amount,
+            nutrition: ing.nutrition
+        });
+
+        // Add event listeners
+        nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
+        amountInput.addEventListener('input', () => {
+            const fdcId = nameInput.dataset.fdcId;
+            if (fdcId && selectedIngredients.has(fdcId)) {
+                const ingredient = selectedIngredients.get(fdcId);
+                ingredient.amount = parseInt(amountInput.value) || 0;
+                selectedIngredients.set(fdcId, ingredient);
+                updateTotalNutrition();
+            }
+        });
+
+        ingredientItem.querySelector('.remove-ingredient').addEventListener('click', () => {
+            if (ingredientsList.children.length > 1) {
+                const fdcId = nameInput.dataset.fdcId;
+                if (fdcId) {
+                    selectedIngredients.delete(fdcId);
+                    updateTotalNutrition();
+                }
+                ingredientItem.remove();
+            }
+        });
+
+        ingredientsList.appendChild(ingredientItem);
+    });
+
+    // Update nutrition display
+    updateTotalNutrition();
+
+    // Show modal
+    openModal();
+
+    // Update form submission to handle edit
+    const originalSubmit = recipeForm.onsubmit;
+    recipeForm.onsubmit = (e) => {
+        e.preventDefault();
+        handleRecipeSubmit(e, id);
+    };
+}
+
+// Make edit and delete functions globally available
+window.editRecipe = editRecipe;
+window.deleteRecipe = deleteRecipe; 
