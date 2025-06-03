@@ -610,29 +610,25 @@ async function displaySearchResults(results) {
         
         div.addEventListener('click', async () => {
             try {
-                console.log('Selected food:', food); // Debug log
                 const details = await getFoodDetails(food.fdcId);
                 if (details) {
-                    console.log('Got food details:', details); // Debug log
                     const nutrition = calculateNutritionPerGram(details);
                     const amount = parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0;
                     
-                    console.log('Storing ingredient with nutrition:', {
-                        name: food.description,
-                        amount,
-                        nutrition
-                    }); // Debug log
-
                     // Store nutrition data with the ingredient
-                    selectedIngredients.set(food.fdcId.toString(), {
+                    const ingredientData = {
                         name: food.description,
                         amount: amount,
                         nutrition: nutrition
-                    });
+                    };
+                    selectedIngredients.set(food.fdcId.toString(), ingredientData);
                     
                     // Update the input field
                     currentIngredientInput.querySelector('.ingredient-name').value = food.description;
                     currentIngredientInput.querySelector('.ingredient-name').dataset.fdcId = food.fdcId.toString();
+                    
+                    // Update ingredient macros
+                    updateIngredientMacros(currentIngredientInput, ingredientData);
                     
                     // Update nutrition display
                     updateTotalNutrition();
@@ -653,9 +649,17 @@ function addIngredientInput() {
     const ingredientItem = document.createElement('div');
     ingredientItem.className = 'ingredient-item';
     ingredientItem.innerHTML = `
-        <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly>
-        <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="0">
-        <button type="button" class="remove-ingredient">&times;</button>
+        <div class="ingredient-main">
+            <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly>
+            <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="0">
+            <button type="button" class="remove-ingredient">&times;</button>
+        </div>
+        <div class="ingredient-macros">
+            <span class="macro-item">Cal: <span class="calories">0</span></span>
+            <span class="macro-item">P: <span class="protein">0</span>g</span>
+            <span class="macro-item">C: <span class="carbs">0</span>g</span>
+            <span class="macro-item">F: <span class="fat">0</span>g</span>
+        </div>
     `;
 
     const nameInput = ingredientItem.querySelector('.ingredient-name');
@@ -670,6 +674,7 @@ function addIngredientInput() {
             const ingredient = selectedIngredients.get(fdcId);
             ingredient.amount = parseFloat(amountInput.value) || 0;
             selectedIngredients.set(fdcId, ingredient);
+            updateIngredientMacros(ingredientItem, ingredient);
             updateServingSizeDefault();
         }
     });
@@ -687,6 +692,47 @@ function addIngredientInput() {
 
     ingredientsList.appendChild(ingredientItem);
 }
+
+function updateIngredientMacros(ingredientItem, ingredient) {
+    const amount = parseFloat(ingredient.amount) || 0;
+    const macros = {
+        calories: Math.round(ingredient.nutrition.calories * amount),
+        protein: Math.round(ingredient.nutrition.protein * amount),
+        carbs: Math.round(ingredient.nutrition.carbs * amount),
+        fat: Math.round(ingredient.nutrition.fat * amount)
+    };
+
+    ingredientItem.querySelector('.calories').textContent = macros.calories;
+    ingredientItem.querySelector('.protein').textContent = macros.protein;
+    ingredientItem.querySelector('.carbs').textContent = macros.carbs;
+    ingredientItem.querySelector('.fat').textContent = macros.fat;
+}
+
+// Add styles for the macro display
+const macroStyles = document.createElement('style');
+macroStyles.textContent = `
+    .ingredient-item {
+        margin-bottom: 1rem;
+    }
+    .ingredient-main {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+    .ingredient-macros {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.9em;
+        color: #666;
+        padding-left: 0.5rem;
+    }
+    .macro-item {
+        background: #f5f5f5;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+    }
+`;
+document.head.appendChild(macroStyles);
 
 // Event Listeners
 addRecipeBtn.addEventListener('click', openModal);
