@@ -52,8 +52,15 @@ function openMealPlanModal(slot) {
     document.getElementById('recipe-search').value = '';
     document.getElementById('meal-category-filter').value = 'all';
     document.getElementById('meal-servings').value = '1';
+    
+    // Reset recipe selection UI
     selectedRecipeDiv.style.display = 'none';
     submitButton.disabled = true;
+    
+    // Clear any selected recipes in the list
+    document.querySelectorAll('.recipe-option.selected').forEach(option => {
+        option.classList.remove('selected');
+    });
     
     // Make sure modal is visible
     mealPlanModal.style.display = 'block';
@@ -177,6 +184,15 @@ function createMealItem(recipe, servings) {
         e.stopPropagation();
         if (confirm('Remove this meal from the plan?')) {
             div.remove();
+            // Add the "Add Meal" button back
+            const addButton = document.createElement('button');
+            addButton.className = 'add-meal-btn';
+            addButton.innerHTML = '<i class="fas fa-plus"></i> Add Meal';
+            addButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openMealPlanModal(div.closest('.meal-slot'));
+            });
+            div.closest('.meal-slot').appendChild(addButton);
             saveMealPlan();
             updateNutritionSummary();
         }
