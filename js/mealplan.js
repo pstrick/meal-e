@@ -180,19 +180,25 @@ function createMealItem(recipe, servings) {
         <div class="servings">${servings} serving${servings === 1 ? '' : 's'}</div>
     `;
 
-    div.querySelector('.remove-meal').addEventListener('click', (e) => {
+    div.querySelector('.remove-meal').addEventListener('click', async (e) => {
         e.stopPropagation();
         if (confirm('Remove this meal from the plan?')) {
+            const mealSlot = div.closest('.meal-slot');
+            // First remove the meal item
             div.remove();
-            // Add the "Add Meal" button back
+            
+            // Clear the slot and add the "Add Meal" button
+            mealSlot.innerHTML = '';
             const addButton = document.createElement('button');
             addButton.className = 'add-meal-btn';
             addButton.innerHTML = '<i class="fas fa-plus"></i> Add Meal';
             addButton.addEventListener('click', (e) => {
                 e.stopPropagation();
-                openMealPlanModal(div.closest('.meal-slot'));
+                openMealPlanModal(mealSlot);
             });
-            div.closest('.meal-slot').appendChild(addButton);
+            mealSlot.appendChild(addButton);
+            
+            // Save changes and update nutrition
             saveMealPlan();
             updateNutritionSummary();
         }
@@ -241,7 +247,9 @@ function loadMealPlan() {
     const mealSlots = document.querySelectorAll('.meal-slot');
     
     mealSlots.forEach(slot => {
+        // Clear the slot first
         slot.innerHTML = '';
+        
         const day = slot.dataset.day;
         const meal = slot.dataset.meal;
         const dayDate = week.dates[['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(day)];
@@ -505,7 +513,9 @@ function handleMealPlanSubmit(e) {
     const mealItem = createMealItem(selectedRecipe, servings);
     mealItem.dataset.recipeId = selectedRecipe.id;
     mealItem.dataset.servings = servings;
-    selectedSlot.innerHTML = ''; // Clear the "Add Meal" button
+    
+    // Clear the slot and add the new meal item
+    selectedSlot.innerHTML = '';
     selectedSlot.appendChild(mealItem);
     
     // Save and update nutrition
