@@ -297,7 +297,8 @@ function loadMealPlan() {
             week.dates.forEach(date => {
                 const mealSlot = document.createElement('div');
                 mealSlot.className = 'meal-slot';
-                mealSlot.dataset.day = date.toLocaleDateString('en-US', { weekday: 'lowercase' });
+                const dayName = date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+                mealSlot.dataset.day = dayName;
                 mealSlot.dataset.meal = mealType;
                 bodyContainer.appendChild(mealSlot);
             });
@@ -331,7 +332,8 @@ function loadMealPlan() {
                 
                 const mealSlot = document.createElement('div');
                 mealSlot.className = 'meal-slot';
-                mealSlot.dataset.day = date.toLocaleDateString('en-US', { weekday: 'lowercase' });
+                const slotDayName = date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+                mealSlot.dataset.day = slotDayName;
                 mealSlot.dataset.meal = mealType;
                 dayColumn.appendChild(mealSlot);
             });
