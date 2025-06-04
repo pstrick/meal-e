@@ -549,6 +549,7 @@ footer {
     nav {
         flex-direction: column;
         gap: 1rem;
+        padding: 1rem;
     }
 
     nav ul {
@@ -560,10 +561,194 @@ footer {
     nav a {
         display: block;
         text-align: center;
+        padding: 0.75rem;
     }
 
     .card-grid {
         grid-template-columns: 1fr;
+        gap: 1rem;
+        padding: 0.5rem;
+    }
+
+    /* Meal Plan Mobile Styles */
+    .meal-plan-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+
+    .meal-plan-controls button {
+        width: 100%;
+        padding: 0.75rem;
+    }
+
+    /* Transform meal plan grid for mobile */
+    .meal-plan-grid {
+        display: block;
+        margin: 0.5rem;
+        border-radius: 4px;
+    }
+
+    .meal-plan-header {
+        display: none; /* Hide the desktop header */
+    }
+
+    /* Style each day as a card */
+    .meal-plan-body {
+        display: block;
+    }
+
+    .time-slot {
+        background-color: #f5f5f5;
+        padding: 0.75rem;
+        font-weight: bold;
+        border-top: 1px solid #ddd;
+        text-align: left;
+    }
+
+    /* Group meals by day */
+    .day-column {
+        margin-bottom: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        overflow: hidden;
+        background-color: white;
+    }
+
+    .day-header {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 0.75rem;
+        text-align: center;
+        border: none;
+    }
+
+    .meal-slot {
+        border-top: 1px solid #ddd;
+        border-right: none;
+        min-height: 60px;
+    }
+
+    /* Adjust meal items for mobile */
+    .meal-item {
+        margin: 0.5rem;
+    }
+
+    .add-meal-btn {
+        margin: 0.5rem;
+        min-height: 50px;
+    }
+
+    /* Mobile nutrition totals */
+    .totals-row,
+    .average-row {
+        display: block;
+        border-top: 2px solid #ddd;
+    }
+
+    .totals-row .time-slot,
+    .average-row .time-slot {
+        border-right: none;
+        padding: 0.75rem;
+        text-align: left;
+    }
+
+    .daily-total {
+        border-right: none;
+        border-top: 1px solid #ddd;
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 0.75rem;
+    }
+
+    .total-macros {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .weekly-average-cell {
+        grid-column: auto;
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 0.75rem;
+    }
+
+    /* Modal adjustments for mobile */
+    .modal-content {
+        width: 95%;
+        margin: 1rem auto;
+        padding: 1rem;
+        max-height: 90vh;
+    }
+
+    .recipe-option {
+        padding: 0.75rem;
+    }
+
+    .recipe-option .recipe-meta {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+
+    .form-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-actions button {
+        width: 100%;
+    }
+
+    /* Search and filter adjustments */
+    .recipe-filters {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .search-box {
+        width: 100%;
+    }
+
+    /* Adjust form inputs for better touch targets */
+    .form-group input,
+    .form-group select {
+        padding: 0.75rem;
+        font-size: 16px; /* Prevent iOS zoom on focus */
+    }
+
+    /* Make buttons more touch-friendly */
+    .btn {
+        padding: 0.75rem 1rem;
+        min-height: 44px; /* Minimum touch target size */
+    }
+}
+
+/* Additional mobile optimizations for very small screens */
+@media (max-width: 480px) {
+    main {
+        padding: 0.5rem;
+    }
+
+    .meal-plan-grid {
+        margin: 0;
+    }
+
+    .macro-total {
+        padding: 0.1rem 0.25rem;
+        font-size: 0.8em;
+    }
+
+    .total-calories {
+        font-size: 0.9em;
+    }
+
+    .recipe-option h4 {
+        font-size: 1rem;
+    }
+
+    .recipe-option .ingredients {
+        font-size: 0.8em;
     }
 }
 

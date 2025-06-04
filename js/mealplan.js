@@ -244,12 +244,96 @@ function saveMealPlan() {
 
 function loadMealPlan() {
     const week = getWeekDates(currentWeek);
-    const mealSlots = document.querySelectorAll('.meal-slot');
-    
-    mealSlots.forEach(slot => {
-        // Clear the slot first
-        slot.innerHTML = '';
+    const mealPlanGrid = document.querySelector('.meal-plan-grid');
+    const isMobile = window.innerWidth <= 768;
+
+    // Clear existing content
+    mealPlanGrid.innerHTML = '';
+
+    if (!isMobile) {
+        // Desktop layout
+        // Add header row
+        const headerRow = document.createElement('div');
+        headerRow.className = 'meal-plan-header';
         
+        // Add empty cell for time slots
+        headerRow.appendChild(document.createElement('div'));
+        
+        // Add day headers
+        week.dates.forEach(date => {
+            const dayHeader = document.createElement('div');
+            dayHeader.className = 'day-header';
+            const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+            const dayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            dayHeader.innerHTML = `${dayName}<br>${dayDate}`;
+            headerRow.appendChild(dayHeader);
+        });
+        
+        mealPlanGrid.appendChild(headerRow);
+
+        // Create body container
+        const bodyContainer = document.createElement('div');
+        bodyContainer.className = 'meal-plan-body';
+        
+        // Add time slots
+        ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
+            const timeSlot = document.createElement('div');
+            timeSlot.className = 'time-slot';
+            timeSlot.textContent = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+            bodyContainer.appendChild(timeSlot);
+            
+            // Add meal slots for each day
+            week.dates.forEach(date => {
+                const mealSlot = document.createElement('div');
+                mealSlot.className = 'meal-slot';
+                mealSlot.dataset.day = date.toLocaleDateString('en-US', { weekday: 'lowercase' });
+                mealSlot.dataset.meal = mealType;
+                bodyContainer.appendChild(mealSlot);
+            });
+        });
+        
+        mealPlanGrid.appendChild(bodyContainer);
+    } else {
+        // Mobile layout
+        const bodyContainer = document.createElement('div');
+        bodyContainer.className = 'meal-plan-body';
+        
+        // Create a column for each day
+        week.dates.forEach(date => {
+            const dayColumn = document.createElement('div');
+            dayColumn.className = 'day-column';
+            
+            // Add day header
+            const dayHeader = document.createElement('div');
+            dayHeader.className = 'day-header';
+            const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+            const dayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            dayHeader.textContent = `${dayName}, ${dayDate}`;
+            dayColumn.appendChild(dayHeader);
+            
+            // Add meal slots
+            ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
+                const timeSlot = document.createElement('div');
+                timeSlot.className = 'time-slot';
+                timeSlot.textContent = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+                dayColumn.appendChild(timeSlot);
+                
+                const mealSlot = document.createElement('div');
+                mealSlot.className = 'meal-slot';
+                mealSlot.dataset.day = date.toLocaleDateString('en-US', { weekday: 'lowercase' });
+                mealSlot.dataset.meal = mealType;
+                dayColumn.appendChild(mealSlot);
+            });
+            
+            bodyContainer.appendChild(dayColumn);
+        });
+        
+        mealPlanGrid.appendChild(bodyContainer);
+    }
+
+    // Load meals into slots
+    const mealSlots = document.querySelectorAll('.meal-slot');
+    mealSlots.forEach(slot => {
         const day = slot.dataset.day;
         const meal = slot.dataset.meal;
         const dayDate = week.dates[['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(day)];
@@ -571,4 +655,14 @@ function initializeSearchHandlers() {
 // Initialize search handlers when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     initializeSearchHandlers();
+});
+
+// Add window resize handler to reload meal plan when switching between mobile and desktop
+let lastIsMobile = window.innerWidth <= 768;
+window.addEventListener('resize', () => {
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile !== lastIsMobile) {
+        lastIsMobile = isMobile;
+        loadMealPlan();
+    }
 }); 
