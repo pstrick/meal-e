@@ -770,8 +770,8 @@ document.querySelectorAll('.modal .close').forEach(closeBtn => {
             closeModalHandler();
         } else if (modal.id === 'ingredient-search-modal') {
             closeIngredientSearch();
-        } else if (modal.id === 'meal-plan-modal') {
-            closeMealPlanModal();
+        } else if (modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
+            window.closeMealPlanModal();
         }
     });
 });
@@ -784,8 +784,8 @@ document.querySelectorAll('.modal').forEach(modal => {
                 closeModalHandler();
             } else if (modal.id === 'ingredient-search-modal') {
                 closeIngredientSearch();
-            } else if (modal.id === 'meal-plan-modal') {
-                closeMealPlanModal();
+            } else if (modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
+                window.closeMealPlanModal();
             }
         }
     });

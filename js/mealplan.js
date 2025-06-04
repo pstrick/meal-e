@@ -153,10 +153,14 @@ function selectRecipe(recipe) {
 
 function closeMealPlanModal() {
     mealPlanModal.classList.remove('active');
+    mealPlanModal.style.display = 'none';
     selectedSlot = null;
     selectedRecipe = null;
     mealPlanForm.reset();
 }
+
+// Make closeMealPlanModal available globally
+window.closeMealPlanModal = closeMealPlanModal;
 
 function createMealItem(recipe, servings) {
     const div = document.createElement('div');
