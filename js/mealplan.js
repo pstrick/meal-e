@@ -243,9 +243,18 @@ function saveMealPlan() {
 }
 
 function loadMealPlan() {
+    console.log('Loading meal plan...');
     const week = getWeekDates(currentWeek);
     const mealPlanGrid = document.querySelector('.meal-plan-grid');
     const isMobile = window.innerWidth <= 768;
+
+    if (!mealPlanGrid) {
+        console.error('Meal plan grid not found!');
+        return;
+    }
+
+    console.log('Current week:', week);
+    console.log('Is mobile:', isMobile);
 
     // Clear existing content
     mealPlanGrid.innerHTML = '';
@@ -257,7 +266,9 @@ function loadMealPlan() {
         headerRow.className = 'meal-plan-header';
         
         // Add empty cell for time slots
-        headerRow.appendChild(document.createElement('div'));
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'day-header';
+        headerRow.appendChild(emptyCell);
         
         // Add day headers
         week.dates.forEach(date => {
@@ -333,11 +344,17 @@ function loadMealPlan() {
 
     // Load meals into slots
     const mealSlots = document.querySelectorAll('.meal-slot');
+    console.log('Found meal slots:', mealSlots.length);
+
     mealSlots.forEach(slot => {
         const day = slot.dataset.day;
         const meal = slot.dataset.meal;
-        const dayDate = week.dates[['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(day)];
+        const dayIndex = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+            .indexOf(day);
+        const dayDate = week.dates[dayIndex];
         const key = getMealKey(dayDate, meal);
+        
+        console.log('Processing slot:', { day, meal, key });
         
         const meals = mealPlan[key] || [];
         
@@ -365,6 +382,7 @@ function loadMealPlan() {
     });
 
     updateNutritionSummary();
+    console.log('Meal plan loaded');
 }
 
 function calculateDayNutrition(date) {
@@ -504,11 +522,10 @@ function initializeMealPlanner() {
     }
     
     console.log('Available recipes:', window.recipes.length);
-    console.log('Sample recipe:', window.recipes[0]);
     
     // Initialize the meal planner
     updateWeekDisplay();
-    updateNutritionSummary();
+    loadMealPlan();
     
     // Ensure modal is properly initialized
     if (!mealPlanModal) {
