@@ -408,24 +408,80 @@ footer {
 
 .nutrition-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    grid-template-columns: repeat(8, 1fr);
     gap: 1rem;
     margin-top: 1rem;
+    background-color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.nutrition-item {
+.day-nutrition {
     text-align: center;
-    padding: 0.5rem;
-    background-color: var(--card-background);
+    padding: 1rem;
+    background-color: #f5f5f5;
     border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
-.nutrition-item .label {
-    display: block;
-    font-size: 0.875rem;
+.day-nutrition h4 {
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    line-height: 1.2;
+}
+
+.nutrition-values {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.nutrition-value {
+    font-size: 0.9em;
     color: #666;
+}
+
+.nutrition-value.calories {
+    font-weight: 500;
+    color: var(--primary-color);
     margin-bottom: 0.25rem;
+}
+
+.nutrition-value.macros {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.macro {
+    background-color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+
+.macro .label {
+    color: #666;
+    margin-right: 0.25rem;
+}
+
+.macro .value {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.weekly-average {
+    background-color: #e3f2fd;
+    border: 1px solid #90caf9;
+}
+
+.weekly-average h4 {
+    color: var(--secondary-color);
+    font-weight: 600;
 }
 
 /* Ingredient Search */
