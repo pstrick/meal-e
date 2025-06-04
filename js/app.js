@@ -762,10 +762,32 @@ ingredientSearchInput.addEventListener('keypress', async (e) => {
     }
 });
 
+// Close buttons for all modals
 document.querySelectorAll('.modal .close').forEach(closeBtn => {
-    closeBtn.addEventListener('click', () => {
-        closeModalHandler();
-        closeIngredientSearch();
+    closeBtn.addEventListener('click', (event) => {
+        const modal = event.target.closest('.modal');
+        if (modal.id === 'recipe-modal') {
+            closeModalHandler();
+        } else if (modal.id === 'ingredient-search-modal') {
+            closeIngredientSearch();
+        } else if (modal.id === 'meal-plan-modal') {
+            closeMealPlanModal();
+        }
+    });
+});
+
+// Close modal when clicking outside
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            if (modal.id === 'recipe-modal') {
+                closeModalHandler();
+            } else if (modal.id === 'ingredient-search-modal') {
+                closeIngredientSearch();
+            } else if (modal.id === 'meal-plan-modal') {
+                closeMealPlanModal();
+            }
+        }
     });
 });
 

@@ -66,7 +66,7 @@ function openMealPlanModal(slot) {
 
 function updateRecipeList() {
     const recipeList = document.querySelector('.recipe-list');
-    const searchTerm = document.getElementById('recipe-search').value.toLowerCase();
+    const searchTerm = document.getElementById('recipe-search').value.toLowerCase().trim();
     const category = document.getElementById('meal-category-filter').value;
     
     // Ensure recipes are available
@@ -78,7 +78,9 @@ function updateRecipeList() {
     
     // Filter recipes based on search term and category
     const filteredRecipes = window.recipes.filter(recipe => {
-        const matchesSearch = recipe.name.toLowerCase().includes(searchTerm);
+        const matchesSearch = searchTerm === '' || 
+            recipe.name.toLowerCase().includes(searchTerm) ||
+            recipe.ingredients.some(ing => ing.name.toLowerCase().includes(searchTerm));
         const matchesCategory = category === 'all' || recipe.category === category;
         return matchesSearch && matchesCategory;
     });
@@ -87,7 +89,11 @@ function updateRecipeList() {
     recipeList.innerHTML = '';
     
     if (filteredRecipes.length === 0) {
-        recipeList.innerHTML = '<div class="recipe-option">No recipes found</div>';
+        recipeList.innerHTML = `
+            <div class="recipe-option no-results">
+                ${searchTerm ? 'No recipes found matching "' + searchTerm + '"' : 'No recipes found'}
+                ${category !== 'all' ? ' in category "' + category + '"' : ''}
+            </div>`;
         return;
     }
     
@@ -99,12 +105,20 @@ function updateRecipeList() {
             div.classList.add('selected');
         }
         
+        const ingredients = recipe.ingredients
+            .map(ing => ing.name)
+            .slice(0, 3)
+            .join(', ') + (recipe.ingredients.length > 3 ? '...' : '');
+        
         div.innerHTML = `
             <h4>${recipe.name}</h4>
             <div class="recipe-meta">
-                <span>${recipe.category}</span> • 
-                <span>${recipe.nutrition.calories} cal</span> • 
-                <span>${recipe.nutrition.protein}g protein</span>
+                <span class="category">${recipe.category}</span> • 
+                <span class="calories">${recipe.nutrition.calories} cal</span> • 
+                <span class="protein">${recipe.nutrition.protein}g protein</span>
+            </div>
+            <div class="ingredients">
+                <small>${ingredients}</small>
             </div>
         `;
         
@@ -390,4 +404,29 @@ prevWeekBtn.addEventListener('click', () => {
 nextWeekBtn.addEventListener('click', () => {
     currentWeek.setDate(currentWeek.getDate() + 7);
     updateWeekDisplay();
+});
+
+// Add debounced search
+let searchTimeout;
+function initializeSearchHandlers() {
+    const searchInput = document.getElementById('recipe-search');
+    const categoryFilter = document.getElementById('meal-category-filter');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                updateRecipeList();
+            }, 300); // Debounce for 300ms
+        });
+    }
+    
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', updateRecipeList);
+    }
+}
+
+// Initialize search handlers when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    initializeSearchHandlers();
 }); 
