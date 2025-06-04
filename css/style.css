@@ -581,6 +581,7 @@ footer {
     border-radius: 8px;
     overflow: hidden;
     margin-bottom: 2rem;
+    background-color: white;
 }
 
 .meal-plan-header {
@@ -708,4 +709,80 @@ footer {
     font-size: 0.9em;
     color: #666;
     margin: 0.25rem 0;
+}
+
+/* Nutrition Totals in Meal Plan */
+.totals-row,
+.average-row {
+    display: grid;
+    grid-template-columns: 100px repeat(7, 1fr);
+    border-top: 2px solid #ddd;
+    background-color: #f8f9fa;
+}
+
+.totals-row .time-slot,
+.average-row .time-slot {
+    font-weight: 600;
+    color: var(--primary-color);
+    background-color: #f8f9fa;
+    border-right: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem;
+    text-align: center;
+}
+
+.daily-total {
+    padding: 0.75rem;
+    border-right: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.total-calories {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.total-macros {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.macro-total {
+    background-color: white;
+    padding: 0.15rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+
+.weekly-average-cell {
+    grid-column: 2 / -1;
+    background-color: #e3f2fd;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    border-top: 1px solid #90caf9;
+}
+
+.average-row {
+    background-color: #e3f2fd;
+    border-top: 1px solid #90caf9;
+}
+
+.average-row .time-slot {
+    background-color: #e3f2fd;
+    color: var(--secondary-color);
+}
+
+/* Remove the old nutrition grid styles since we're not using them anymore */
+.nutrition-grid {
+    display: none;
 } 

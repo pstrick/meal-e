@@ -315,16 +315,9 @@ function calculateDayNutrition(date) {
 function updateNutritionSummary() {
     console.log('Updating nutrition summary...');
     const week = getWeekDates(currentWeek);
-    const nutritionGrid = document.querySelector('.nutrition-grid');
     
-    if (!nutritionGrid) {
-        console.error('Nutrition grid not found!');
-        return;
-    }
-    
-    nutritionGrid.innerHTML = '';
-
-    // Calculate weekly totals
+    // Calculate daily totals and weekly average
+    const dailyTotals = [];
     const weeklyTotals = {
         calories: 0,
         protein: 0,
@@ -332,76 +325,83 @@ function updateNutritionSummary() {
         fat: 0
     };
 
-    // Create daily summaries and accumulate weekly totals
+    // Calculate daily totals
     week.dates.forEach(date => {
         const nutrition = calculateDayNutrition(date);
-        const dayDiv = document.createElement('div');
-        dayDiv.className = 'day-nutrition';
+        dailyTotals.push(nutrition);
         
-        // Format date to show day name and date
-        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-        const dayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        
-        dayDiv.innerHTML = `
-            <h4>${dayName}<br>${dayDate}</h4>
-            <div class="nutrition-values">
-                <div class="nutrition-value calories">
-                    <span class="label">Calories:</span>
-                    <span class="value">${Math.round(nutrition.calories)}</span>
-                </div>
-                <div class="nutrition-value macros">
-                    <div class="macro">
-                        <span class="label">P:</span>
-                        <span class="value">${Math.round(nutrition.protein)}g</span>
-                    </div>
-                    <div class="macro">
-                        <span class="label">C:</span>
-                        <span class="value">${Math.round(nutrition.carbs)}g</span>
-                    </div>
-                    <div class="macro">
-                        <span class="label">F:</span>
-                        <span class="value">${Math.round(nutrition.fat)}g</span>
-                    </div>
-                </div>
-            </div>
-        `;
-        nutritionGrid.appendChild(dayDiv);
-
-        // Accumulate weekly totals
         weeklyTotals.calories += nutrition.calories;
         weeklyTotals.protein += nutrition.protein;
         weeklyTotals.carbs += nutrition.carbs;
         weeklyTotals.fat += nutrition.fat;
     });
 
-    // Add weekly average
-    const avgDiv = document.createElement('div');
-    avgDiv.className = 'day-nutrition weekly-average';
-    avgDiv.innerHTML = `
-        <h4>Daily<br>Average</h4>
-        <div class="nutrition-values">
-            <div class="nutrition-value calories">
-                <span class="label">Calories:</span>
-                <span class="value">${Math.round(weeklyTotals.calories / 7)}</span>
+    // Calculate daily averages
+    const dailyAverage = {
+        calories: weeklyTotals.calories / 7,
+        protein: weeklyTotals.protein / 7,
+        carbs: weeklyTotals.carbs / 7,
+        fat: weeklyTotals.fat / 7
+    };
+
+    // Update the totals row in the meal plan table
+    const mealPlanTable = document.querySelector('.meal-plan-grid');
+    
+    // Remove existing totals rows if they exist
+    const existingTotals = mealPlanTable.querySelectorAll('.totals-row, .average-row');
+    existingTotals.forEach(row => row.remove());
+
+    // Create daily totals row
+    const totalsRow = document.createElement('div');
+    totalsRow.className = 'totals-row';
+    
+    // Add label cell
+    const labelCell = document.createElement('div');
+    labelCell.className = 'time-slot';
+    labelCell.textContent = 'Daily Totals';
+    totalsRow.appendChild(labelCell);
+
+    // Add daily total cells
+    dailyTotals.forEach(nutrition => {
+        const totalCell = document.createElement('div');
+        totalCell.className = 'daily-total';
+        totalCell.innerHTML = `
+            <div class="total-calories">${Math.round(nutrition.calories)} cal</div>
+            <div class="total-macros">
+                <span class="macro-total">P: ${Math.round(nutrition.protein)}g</span>
+                <span class="macro-total">C: ${Math.round(nutrition.carbs)}g</span>
+                <span class="macro-total">F: ${Math.round(nutrition.fat)}g</span>
             </div>
-            <div class="nutrition-value macros">
-                <div class="macro">
-                    <span class="label">P:</span>
-                    <span class="value">${Math.round(weeklyTotals.protein / 7)}g</span>
-                </div>
-                <div class="macro">
-                    <span class="label">C:</span>
-                    <span class="value">${Math.round(weeklyTotals.carbs / 7)}g</span>
-                </div>
-                <div class="macro">
-                    <span class="label">F:</span>
-                    <span class="value">${Math.round(weeklyTotals.fat / 7)}g</span>
-                </div>
-            </div>
+        `;
+        totalsRow.appendChild(totalCell);
+    });
+
+    // Create average row
+    const averageRow = document.createElement('div');
+    averageRow.className = 'average-row';
+    
+    // Add label cell
+    const avgLabelCell = document.createElement('div');
+    avgLabelCell.className = 'time-slot';
+    avgLabelCell.textContent = 'Daily Average';
+    averageRow.appendChild(avgLabelCell);
+
+    // Add average cell that spans all days
+    const avgCell = document.createElement('div');
+    avgCell.className = 'weekly-average-cell';
+    avgCell.innerHTML = `
+        <div class="total-calories">${Math.round(dailyAverage.calories)} cal</div>
+        <div class="total-macros">
+            <span class="macro-total">P: ${Math.round(dailyAverage.protein)}g</span>
+            <span class="macro-total">C: ${Math.round(dailyAverage.carbs)}g</span>
+            <span class="macro-total">F: ${Math.round(dailyAverage.fat)}g</span>
         </div>
     `;
-    nutritionGrid.appendChild(avgDiv);
-    console.log('Nutrition summary updated with weekly totals:', weeklyTotals);
+    averageRow.appendChild(avgCell);
+
+    // Add the rows to the meal plan table
+    mealPlanTable.appendChild(totalsRow);
+    mealPlanTable.appendChild(averageRow);
 }
 
 // Remove the old event listeners for meal slots since we're handling clicks on the buttons directly
