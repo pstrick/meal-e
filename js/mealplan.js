@@ -190,6 +190,7 @@ function getMealKey(date, mealType) {
 }
 
 function saveMealPlan() {
+    console.log('Saving meal plan...');
     const week = getWeekDates(currentWeek);
     const mealSlots = document.querySelectorAll('.meal-slot');
     
@@ -201,7 +202,7 @@ function saveMealPlan() {
         
         const meals = [];
         slot.querySelectorAll('.meal-item').forEach(item => {
-            const recipeId = item.dataset.recipeId;
+            const recipeId = parseInt(item.dataset.recipeId);
             const servings = parseFloat(item.dataset.servings);
             if (recipeId && servings) {
                 meals.push({ recipeId, servings });
@@ -216,6 +217,7 @@ function saveMealPlan() {
     });
 
     localStorage.setItem('meale-mealPlan', JSON.stringify(mealPlan));
+    console.log('Meal plan saved:', mealPlan);
 }
 
 function loadMealPlan() {
@@ -258,6 +260,7 @@ function loadMealPlan() {
 }
 
 function calculateDayNutrition(date) {
+    console.log('Calculating nutrition for date:', date);
     const nutrition = {
         calories: 0,
         protein: 0,
@@ -268,6 +271,7 @@ function calculateDayNutrition(date) {
     ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
         const key = getMealKey(date, mealType);
         const meals = mealPlan[key] || [];
+        console.log(`Meals for ${mealType}:`, meals);
         
         meals.forEach(mealData => {
             const recipe = window.recipes.find(r => r.id === mealData.recipeId);
@@ -280,12 +284,20 @@ function calculateDayNutrition(date) {
         });
     });
 
+    console.log('Calculated nutrition:', nutrition);
     return nutrition;
 }
 
 function updateNutritionSummary() {
+    console.log('Updating nutrition summary...');
     const week = getWeekDates(currentWeek);
     const nutritionGrid = document.querySelector('.nutrition-grid');
+    
+    if (!nutritionGrid) {
+        console.error('Nutrition grid not found!');
+        return;
+    }
+    
     nutritionGrid.innerHTML = '';
 
     // Calculate weekly totals
@@ -365,6 +377,7 @@ function updateNutritionSummary() {
         </div>
     `;
     nutritionGrid.appendChild(avgDiv);
+    console.log('Nutrition summary updated with weekly totals:', weeklyTotals);
 }
 
 // Remove the old event listeners for meal slots since we're handling clicks on the buttons directly
@@ -374,10 +387,20 @@ document.querySelectorAll('.meal-slot').forEach(slot => {
 
 // Initialize modals and event listeners when the page loads AND recipes are available
 function initializeMealPlanner() {
-    console.log('Initializing meal planner with recipes:', window.recipes);
+    console.log('Initializing meal planner...');
+    
+    // Verify recipes are loaded correctly
+    if (!window.recipes || !Array.isArray(window.recipes)) {
+        console.error('Recipes not properly loaded:', window.recipes);
+        return;
+    }
+    
+    console.log('Available recipes:', window.recipes.length);
+    console.log('Sample recipe:', window.recipes[0]);
     
     // Initialize the meal planner
     updateWeekDisplay();
+    updateNutritionSummary();
     
     // Ensure modal is properly initialized
     if (!mealPlanModal) {
@@ -431,6 +454,8 @@ function initializeMealPlanner() {
             closeMealPlanModal();
         }
     });
+    
+    console.log('Meal planner initialization complete');
 }
 
 // Wait for both DOM content and recipes to be loaded
@@ -466,6 +491,8 @@ function handleMealPlanSubmit(e) {
     mealItem.dataset.servings = servings;
     selectedSlot.innerHTML = ''; // Clear the "Add Meal" button
     selectedSlot.appendChild(mealItem);
+    
+    // Save and update nutrition
     saveMealPlan();
     updateNutritionSummary();
     
@@ -486,11 +513,13 @@ mealPlanForm.removeEventListener('submit', handleMealPlanSubmit);
 prevWeekBtn.addEventListener('click', () => {
     currentWeek.setDate(currentWeek.getDate() - 7);
     updateWeekDisplay();
+    updateNutritionSummary();
 });
 
 nextWeekBtn.addEventListener('click', () => {
     currentWeek.setDate(currentWeek.getDate() + 7);
     updateWeekDisplay();
+    updateNutritionSummary();
 });
 
 // Add debounced search
