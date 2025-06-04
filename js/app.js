@@ -463,6 +463,8 @@ function saveToLocalStorage() {
     localStorage.setItem('meale-recipes', JSON.stringify(recipes));
     localStorage.setItem('meale-mealPlan', JSON.stringify(mealPlan));
     localStorage.setItem('meale-nutrition', JSON.stringify(nutritionData));
+    // Update global recipes
+    window.recipes = recipes;
 }
 
 function loadFromLocalStorage() {
@@ -470,7 +472,11 @@ function loadFromLocalStorage() {
     const savedMealPlan = localStorage.getItem('meale-mealPlan');
     const savedNutrition = localStorage.getItem('meale-nutrition');
 
-    if (savedRecipes) recipes = JSON.parse(savedRecipes);
+    if (savedRecipes) {
+        recipes = JSON.parse(savedRecipes);
+        // Make recipes available globally
+        window.recipes = recipes;
+    }
     if (savedMealPlan) mealPlan = JSON.parse(savedMealPlan);
     if (savedNutrition) nutritionData = JSON.parse(savedNutrition);
 

@@ -55,12 +55,12 @@ function openMealPlanModal(slot) {
     selectedRecipeDiv.style.display = 'none';
     submitButton.disabled = true;
     
-    // Initial population of recipes
-    updateRecipeList();
-    
     // Make sure modal is visible
     mealPlanModal.style.display = 'block';
     mealPlanModal.classList.add('active');
+
+    // Load all recipes immediately
+    updateRecipeList();
 }
 
 function updateRecipeList() {
@@ -74,6 +74,8 @@ function updateRecipeList() {
         recipeList.innerHTML = '<div class="recipe-option">No recipes available</div>';
         return;
     }
+
+    console.log('Available recipes:', window.recipes);
     
     // Filter recipes based on search term and category
     const filteredRecipes = window.recipes.filter(recipe => {
