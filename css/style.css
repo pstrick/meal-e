@@ -131,7 +131,7 @@ footer {
 .recipe-filters {
     display: flex;
     gap: 1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .search-box {
@@ -141,32 +141,33 @@ footer {
 
 .search-box input {
     width: 100%;
-    padding: 0.75rem;
-    padding-right: 2.5rem;
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
     border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 1rem;
 }
 
-.search-box .fa-search {
+.search-box i {
     position: absolute;
-    right: 0.75rem;
+    right: 1rem;
     top: 50%;
     transform: translateY(-50%);
     color: #666;
+    pointer-events: none;
 }
 
 .recipe-list {
-    max-height: 300px;
+    max-height: 400px;
     overflow-y: auto;
     border: 1px solid var(--border-color);
     border-radius: 4px;
-    margin-bottom: 1.5rem;
+    margin: 1rem 0;
+    background-color: white;
 }
 
 .recipe-option {
     padding: 1rem;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border-color);
     cursor: pointer;
     transition: background-color 0.2s;
 }
@@ -185,7 +186,7 @@ footer {
 
 .recipe-option h4 {
     margin: 0 0 0.5rem 0;
-    color: #333;
+    color: var(--text-color);
 }
 
 .recipe-option .recipe-meta {
@@ -208,34 +209,6 @@ footer {
 
 .recipe-option.no-results:hover {
     background-color: transparent;
-}
-
-.recipe-list {
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    margin: 1rem 0;
-}
-
-.search-box {
-    position: relative;
-    margin-bottom: 1rem;
-}
-
-.search-box input {
-    width: 100%;
-    padding: 0.5rem 2rem 0.5rem 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.search-box i {
-    position: absolute;
-    right: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #666;
 }
 
 .selected-recipe {
@@ -320,10 +293,17 @@ footer {
     font-size: 1.5rem;
     cursor: pointer;
     color: #666;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    text-align: center;
+    border-radius: 50%;
+    transition: all 0.2s;
 }
 
 .close:hover {
     color: var(--text-color);
+    background-color: rgba(0, 0, 0, 0.1);
 }
 
 /* Form Styles */

@@ -61,7 +61,6 @@ function openMealPlanModal(slot) {
     // Make sure modal is visible
     mealPlanModal.style.display = 'block';
     mealPlanModal.classList.add('active');
-    console.log('Modal opened:', mealPlanModal);
 }
 
 function updateRecipeList() {
@@ -318,13 +317,17 @@ function initializeMealPlanner() {
     
     // Add event listeners for modal close buttons
     document.querySelectorAll('#meal-plan-modal .close').forEach(btn => {
-        btn.addEventListener('click', closeMealPlanModal);
+        btn.addEventListener('click', () => {
+            closeMealPlanModal();
+        });
     });
     
     // Add event listener for cancel button
     const cancelMealBtn = document.getElementById('cancel-meal');
     if (cancelMealBtn) {
-        cancelMealBtn.addEventListener('click', closeMealPlanModal);
+        cancelMealBtn.addEventListener('click', () => {
+            closeMealPlanModal();
+        });
     }
     
     // Add event listeners for search and filter
@@ -332,11 +335,18 @@ function initializeMealPlanner() {
     const categoryFilter = document.getElementById('meal-category-filter');
     
     if (recipeSearch) {
-        recipeSearch.addEventListener('input', updateRecipeList);
+        recipeSearch.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                updateRecipeList();
+            }, 300); // Debounce for 300ms
+        });
     }
     
     if (categoryFilter) {
-        categoryFilter.addEventListener('change', updateRecipeList);
+        categoryFilter.addEventListener('change', () => {
+            updateRecipeList();
+        });
     }
     
     // Initialize form submit handler
@@ -344,6 +354,13 @@ function initializeMealPlanner() {
     if (mealPlanForm) {
         mealPlanForm.addEventListener('submit', handleMealPlanSubmit);
     }
+
+    // Add click outside modal to close
+    mealPlanModal.addEventListener('click', (event) => {
+        if (event.target === mealPlanModal) {
+            closeMealPlanModal();
+        }
+    });
 }
 
 // Wait for both DOM content and recipes to be loaded
