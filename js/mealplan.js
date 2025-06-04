@@ -245,7 +245,26 @@ function saveMealPlan() {
 function loadMealPlan() {
     console.log('Loading meal plan...');
     const week = getWeekDates(currentWeek);
-    const mealPlanGrid = document.querySelector('.meal-plan-grid');
+    
+    // Find or create the container
+    let mealPlanContainer = document.querySelector('.meal-plan-container');
+    if (!mealPlanContainer) {
+        mealPlanContainer = document.createElement('div');
+        mealPlanContainer.className = 'meal-plan-container';
+        const oldGrid = document.querySelector('.meal-plan-grid');
+        if (oldGrid) {
+            oldGrid.parentNode.replaceChild(mealPlanContainer, oldGrid);
+        }
+    }
+    
+    // Create or get the grid
+    let mealPlanGrid = mealPlanContainer.querySelector('.meal-plan-grid');
+    if (!mealPlanGrid) {
+        mealPlanGrid = document.createElement('div');
+        mealPlanGrid.className = 'meal-plan-grid';
+        mealPlanContainer.appendChild(mealPlanGrid);
+    }
+    
     const isMobile = window.innerWidth <= 768;
 
     if (!mealPlanGrid) {

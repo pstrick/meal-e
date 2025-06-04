@@ -970,4 +970,189 @@ footer {
 /* Remove the old nutrition grid styles since we're not using them anymore */
 .nutrition-grid {
     display: none;
+}
+
+/* Ingredient Selection */
+.ingredient-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.ingredient-search {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.ingredient-search input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.ingredient-nutrition {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-top: 0.5rem;
+}
+
+.ingredient-nutrition h4 {
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+}
+
+.nutrition-values {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 0.5rem;
+}
+
+/* Meal Plan Table Scroll */
+.meal-plan-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.meal-plan-grid {
+    min-width: 800px; /* Ensure minimum width for content */
+    margin-bottom: 0;
+}
+
+/* Responsive Design Updates */
+@media (max-width: 768px) {
+    /* Update meal plan layout for horizontal scroll */
+    .meal-plan-container {
+        margin: 0 -1rem; /* Extend beyond parent padding */
+        padding: 0 1rem; /* Add padding back to the container */
+        width: calc(100% + 2rem);
+    }
+
+    .meal-plan-grid {
+        display: grid;
+        grid-template-columns: 100px repeat(7, 1fr);
+        border-radius: 0;
+    }
+
+    .meal-plan-header {
+        display: grid;
+        grid-template-columns: 100px repeat(7, 1fr);
+        position: sticky;
+        top: 0;
+        background-color: white;
+        z-index: 1;
+    }
+
+    .meal-plan-body {
+        display: grid;
+        grid-template-columns: 100px repeat(7, 1fr);
+    }
+
+    .time-slot {
+        position: sticky;
+        left: 0;
+        background-color: #f5f5f5;
+        z-index: 2;
+    }
+
+    /* Ingredient selection mobile styles */
+    .ingredient-selection {
+        padding: 1rem;
+        background-color: white;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .ingredient-search input {
+        font-size: 16px; /* Prevent zoom on iOS */
+        padding: 0.75rem;
+        height: 44px; /* Better touch target */
+    }
+
+    .ingredient-nutrition {
+        margin-top: 1rem;
+        padding: 1rem;
+        border: 1px solid var(--border-color);
+    }
+
+    .nutrition-values {
+        grid-template-columns: repeat(2, 1fr);
+        text-align: center;
+    }
+
+    .nutrition-value {
+        background-color: white;
+        padding: 0.5rem;
+        border-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    /* Improve touch targets */
+    .ingredient-item {
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        gap: 0.75rem;
+    }
+
+    .ingredient-item input,
+    .ingredient-item select {
+        height: 44px;
+        font-size: 16px;
+    }
+
+    .remove-ingredient {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* Additional mobile optimizations */
+@media (max-width: 480px) {
+    .meal-plan-container {
+        margin: 0 -0.5rem;
+        padding: 0 0.5rem;
+        width: calc(100% + 1rem);
+    }
+
+    .ingredient-nutrition {
+        padding: 0.75rem;
+    }
+
+    .nutrition-values {
+        font-size: 0.9em;
+    }
+}
+
+/* Add scroll indicators for meal plan */
+.meal-plan-container::before,
+.meal-plan-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.meal-plan-container::before {
+    left: 0;
+    background: linear-gradient(to right, rgba(255,255,255,0.9), transparent);
+}
+
+.meal-plan-container::after {
+    right: 0;
+    background: linear-gradient(to left, rgba(255,255,255,0.9), transparent);
 } 
