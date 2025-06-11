@@ -628,8 +628,8 @@ document.querySelectorAll('.meal-slot').forEach(slot => {
     slot.removeEventListener('click', () => {});
 });
 
-// Initialize modals and event listeners when the page loads AND recipes are available
-function initializeMealPlanner() {
+// Export the initialization function
+export function initializeMealPlanner() {
     console.log('Initializing meal planner...');
     
     // Wait for recipes to be available

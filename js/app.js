@@ -1,6 +1,7 @@
 import config from './config.js';
 import { version } from './version.js';
 import './mealplan.js';
+import { initializeMealPlanner } from './mealplan.js';
 
 // Update version in footer
 document.querySelector('footer p').innerHTML = `&copy; ${version.year} Meal-E <span class="version">v${version.toString()}</span>`;
@@ -545,22 +546,9 @@ function initializeApp() {
     initializeSettings();
     updateRecipeList();
     
-    // Wait for meal planner to be available
-    const checkMealPlanner = setInterval(() => {
-        if (typeof initializeMealPlanner === 'function') {
-            console.log('Initializing meal planner...');
-            clearInterval(checkMealPlanner);
-            initializeMealPlanner();
-        }
-    }, 100);
-
-    // Timeout after 5 seconds
-    setTimeout(() => {
-        clearInterval(checkMealPlanner);
-        if (typeof initializeMealPlanner !== 'function') {
-            console.error('Meal planner initialization function not found after timeout');
-        }
-    }, 5000);
+    // Initialize meal planner after settings are loaded
+    console.log('Initializing meal planner...');
+    initializeMealPlanner();
 }
 
 // Initialize when the DOM is loaded
