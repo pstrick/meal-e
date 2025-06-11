@@ -658,6 +658,16 @@ function initializeMealPlanner() {
     
     console.log('Available recipes:', window.recipes.length);
     
+    // Load settings from localStorage if not available globally
+    if (!window.settings) {
+        const savedSettings = localStorage.getItem('meale-settings');
+        window.settings = savedSettings ? JSON.parse(savedSettings) : { mealPlanStartDay: 0 };
+        console.log('Loaded settings:', window.settings);
+    }
+    
+    // Reset week offset to ensure we start from current week
+    currentWeekOffset = 0;
+    
     // Initialize the meal planner
     updateWeekDisplay();
     loadMealPlan();
@@ -669,7 +679,7 @@ function initializeMealPlanner() {
     }
 
     // Initialize form and its elements
-    const oldForm = document.getElementById('meal-plan-form');
+    const oldForm = mealPlanForm;
     if (oldForm) {
         // Remove old event listeners by cloning
         const newForm = oldForm.cloneNode(true);
@@ -699,17 +709,6 @@ function initializeMealPlanner() {
 
         if (categoryFilter) {
             categoryFilter.addEventListener('change', updateRecipeList);
-        }
-
-        if (cancelButton) {
-            cancelButton.addEventListener('click', closeMealPlanModal);
-        }
-
-        // Ensure the submit button is properly set up
-        const submitButton = mealPlanForm.querySelector('button[type="submit"]');
-        if (submitButton) {
-            submitButton.disabled = true;
-            console.log('Submit button initialized:', submitButton);
         }
     }
 
