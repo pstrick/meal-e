@@ -658,12 +658,13 @@ function initializeMealPlanner() {
     
     console.log('Available recipes:', window.recipes.length);
     
-    // Load settings from localStorage if not available globally
+    // Verify settings are loaded
     if (!window.settings) {
-        const savedSettings = localStorage.getItem('meale-settings');
-        window.settings = savedSettings ? JSON.parse(savedSettings) : { mealPlanStartDay: 0 };
-        console.log('Loaded settings:', window.settings);
+        console.error('Settings not properly loaded');
+        return;
     }
+    
+    console.log('Using settings:', window.settings);
     
     // Reset week offset to ensure we start from current week
     currentWeekOffset = 0;

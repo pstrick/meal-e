@@ -499,11 +499,52 @@ function loadFromLocalStorage() {
     updateRecipeList();
 }
 
+// Initialize settings
+function initializeSettings() {
+    const startDaySelect = document.getElementById('meal-plan-start-day');
+    
+    // Load settings from localStorage
+    const savedSettings = localStorage.getItem('meale-settings');
+    if (savedSettings) {
+        settings = JSON.parse(savedSettings);
+    }
+    
+    // Make settings available globally
+    window.settings = settings;
+    
+    // Set the select value
+    startDaySelect.value = settings.mealPlanStartDay;
+    
+    startDaySelect.addEventListener('change', () => {
+        settings.mealPlanStartDay = parseInt(startDaySelect.value);
+        saveToLocalStorage();
+        // Make settings available globally
+        window.settings = settings;
+        // Reset week offset to current week
+        if (typeof currentWeekOffset !== 'undefined') {
+            currentWeekOffset = 0;
+        }
+        // Refresh the meal plan view to reflect the new start day
+        if (typeof updateWeekDisplay === 'function') {
+            updateWeekDisplay();
+        }
+    });
+}
+
 // Initialize the application
-document.addEventListener('DOMContentLoaded', () => {
+function initializeApp() {
     loadFromLocalStorage();
     initializeSettings();
-});
+    updateRecipeList();
+    
+    // Initialize meal planner after settings are loaded
+    if (typeof initializeMealPlanner === 'function') {
+        initializeMealPlanner();
+    }
+}
+
+// Initialize when the DOM is loaded
+document.addEventListener('DOMContentLoaded', initializeApp);
 
 // Recipe Management
 function editRecipe(id) {
@@ -867,25 +908,4 @@ function updateRecipeList() {
 window.recipes = recipes;
 window.addRecipe = addRecipe;
 window.editRecipe = editRecipe;
-window.deleteRecipe = deleteRecipe;
-
-// Initialize settings
-function initializeSettings() {
-    const startDaySelect = document.getElementById('meal-plan-start-day');
-    startDaySelect.value = settings.mealPlanStartDay;
-    
-    startDaySelect.addEventListener('change', () => {
-        settings.mealPlanStartDay = parseInt(startDaySelect.value);
-        saveToLocalStorage();
-        // Make settings available globally
-        window.settings = settings;
-        // Reset week offset to current week
-        if (typeof currentWeekOffset !== 'undefined') {
-            currentWeekOffset = 0;
-        }
-        // Refresh the meal plan view to reflect the new start day
-        if (typeof updateWeekDisplay === 'function') {
-            updateWeekDisplay();
-        }
-    });
-} 
+window.deleteRecipe = deleteRecipe; 
