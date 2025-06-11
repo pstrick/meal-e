@@ -137,6 +137,7 @@ function updateRecipeList() {
 }
 
 function selectRecipe(recipe) {
+    console.log('Selecting recipe:', recipe);
     selectedRecipe = recipe;
     
     // Get elements from the form
@@ -156,8 +157,10 @@ function selectRecipe(recipe) {
     selectedRecipeDiv.querySelector('.carbs').textContent = recipe.nutrition.carbs;
     selectedRecipeDiv.querySelector('.fat').textContent = recipe.nutrition.fat;
     
-    // Enable submit button
+    // Enable submit button and ensure it's visible
     submitButton.disabled = false;
+    submitButton.style.display = 'block';
+    console.log('Submit button enabled:', submitButton);
     
     // Update recipe list selection
     const recipeList = mealPlanForm.querySelector('.recipe-list');
@@ -583,7 +586,10 @@ function initializeMealPlanner() {
         mealPlanForm = newForm;
 
         // Reattach event listener to the form
-        mealPlanForm.addEventListener('submit', handleMealPlanSubmit);
+        mealPlanForm.addEventListener('submit', (e) => {
+            console.log('Form submit event triggered');
+            handleMealPlanSubmit(e);
+        });
 
         // Reattach event listeners to form elements
         const recipeSearch = mealPlanForm.querySelector('#recipe-search');
@@ -605,6 +611,13 @@ function initializeMealPlanner() {
 
         if (cancelButton) {
             cancelButton.addEventListener('click', closeMealPlanModal);
+        }
+
+        // Ensure the submit button is properly set up
+        const submitButton = mealPlanForm.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.disabled = true;
+            console.log('Submit button initialized:', submitButton);
         }
     }
 
@@ -649,11 +662,23 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function handleMealPlanSubmit(e) {
+    console.log('Form submission triggered');
     e.preventDefault();
     
-    if (!selectedRecipe || !selectedSlot) return;
+    if (!selectedRecipe || !selectedSlot) {
+        console.error('Missing required data:', { selectedRecipe, selectedSlot });
+        return;
+    }
     
-    const servings = parseFloat(document.getElementById('meal-servings').value);
+    const servingsInput = mealPlanForm.querySelector('#meal-servings');
+    if (!servingsInput) {
+        console.error('Servings input not found');
+        return;
+    }
+    
+    const servings = parseFloat(servingsInput.value);
+    console.log('Creating meal item with:', { recipe: selectedRecipe, servings });
+    
     const mealItem = createMealItem(selectedRecipe, servings);
     mealItem.dataset.recipeId = selectedRecipe.id;
     mealItem.dataset.servings = servings;
