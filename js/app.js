@@ -877,9 +877,15 @@ function initializeSettings() {
     startDaySelect.addEventListener('change', () => {
         settings.mealPlanStartDay = parseInt(startDaySelect.value);
         saveToLocalStorage();
+        // Make settings available globally
+        window.settings = settings;
+        // Reset week offset to current week
+        if (typeof currentWeekOffset !== 'undefined') {
+            currentWeekOffset = 0;
+        }
         // Refresh the meal plan view to reflect the new start day
-        if (typeof updateMealPlanDisplay === 'function') {
-            updateMealPlanDisplay();
+        if (typeof updateWeekDisplay === 'function') {
+            updateWeekDisplay();
         }
     });
 } 
