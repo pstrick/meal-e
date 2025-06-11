@@ -14,7 +14,10 @@ const mealPlan = JSON.parse(localStorage.getItem('meale-mealPlan')) || {};
 
 // Get week dates based on current week and start day setting
 function getWeekDates(weekOffset = 0) {
+    // Create a new date object for today and set it to midnight to avoid timezone issues
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     const startDay = window.settings ? window.settings.mealPlanStartDay : 0;
     
     // Get current day of week (0-6)
@@ -24,20 +27,25 @@ function getWeekDates(weekOffset = 0) {
     let daysToStartOfWeek = currentDayOfWeek - startDay;
     if (daysToStartOfWeek < 0) daysToStartOfWeek += 7;
     
-    // Get the start date of the current week
+    // Create a new date for the start of the week
     const startDate = new Date(today);
-    // First adjust to start of week
+    // Move to start of week
     startDate.setDate(today.getDate() - daysToStartOfWeek);
-    // Then apply week offset
+    // Apply week offset
     startDate.setDate(startDate.getDate() + (weekOffset * 7));
     
     // Generate array of dates for the week
     const dates = [];
     const dayNames = [];
+    
     for (let i = 0; i < 7; i++) {
         const date = new Date(startDate);
         date.setDate(startDate.getDate() + i);
-        dates.push(date.toISOString().split('T')[0]);
+        // Format date as YYYY-MM-DD
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        dates.push(`${year}-${month}-${day}`);
         dayNames.push(date.toLocaleDateString('en-US', { weekday: 'long' }));
     }
     
