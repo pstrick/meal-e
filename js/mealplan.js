@@ -237,21 +237,8 @@ function createMealItem(recipe, servings) {
             // First remove the meal item
             div.remove();
             
-            // Check if this was the last meal item
-            const remainingMeals = mealSlot.querySelectorAll('.meal-item');
-            const hasAddButton = mealSlot.querySelector('.add-meal-btn');
-            
-            // Only add the "Add Meal" button if it doesn't already exist
-            if (!hasAddButton) {
-                const addButton = document.createElement('button');
-                addButton.className = 'add-meal-btn';
-                addButton.innerHTML = '<i class="fas fa-plus"></i> Add Meal';
-                addButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    openMealPlanModal(mealSlot);
-                });
-                mealSlot.appendChild(addButton);
-            }
+            // Add the "Add Meal" button if it doesn't exist
+            addAddMealButton(mealSlot);
             
             // Save changes and update nutrition
             saveMealPlan();
@@ -448,17 +435,8 @@ function loadMealPlan() {
             }
         });
         
-        // Add the "Add Meal" button if it doesn't exist
-        if (!slot.querySelector('.add-meal-btn')) {
-            const addButton = document.createElement('button');
-            addButton.className = 'add-meal-btn';
-            addButton.innerHTML = '<i class="fas fa-plus"></i> Add Meal';
-            addButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                openMealPlanModal(slot);
-            });
-            slot.appendChild(addButton);
-        }
+        // Add the "Add Meal" button
+        addAddMealButton(slot);
     });
 
     updateNutritionSummary();
@@ -747,20 +725,39 @@ function handleMealPlanSubmit(e) {
     selectedSlot.appendChild(mealItem);
     
     // Add the "Add Meal" button back
-    const newAddButton = document.createElement('button');
-    newAddButton.className = 'add-meal-btn';
-    newAddButton.innerHTML = '<i class="fas fa-plus"></i> Add Meal';
-    newAddButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openMealPlanModal(selectedSlot);
-    });
-    selectedSlot.appendChild(newAddButton);
+    addAddMealButton(selectedSlot);
     
     // Save and update nutrition
     saveMealPlan();
     updateNutritionSummary();
     
     closeMealPlanModal();
+}
+
+// Helper function to create and add the "Add Meal" button
+function addAddMealButton(slot) {
+    if (!slot) {
+        console.error('Cannot add button to null slot');
+        return;
+    }
+    
+    // Only add if there isn't already an add button
+    if (!slot.querySelector('.add-meal-btn')) {
+        const addButton = document.createElement('button');
+        addButton.className = 'add-meal-btn';
+        addButton.innerHTML = '<i class="fas fa-plus"></i> Add Meal';
+        addButton.addEventListener('click', function(e) {
+            e.stopPropagation();
+            // Use the parent slot element as the reference
+            const mealSlot = this.closest('.meal-slot');
+            if (mealSlot) {
+                openMealPlanModal(mealSlot);
+            } else {
+                console.error('Could not find parent meal slot');
+            }
+        });
+        slot.appendChild(addButton);
+    }
 }
 
 prevWeekBtn.addEventListener('click', () => {
