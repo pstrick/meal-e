@@ -57,13 +57,14 @@ function getWeekDates(weekOffset = 0) {
     };
 }
 
-function formatDate(date) {
+function formatDate(dateStr) {
+    const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function updateWeekDisplay() {
     const week = getWeekDates(currentWeekOffset);
-    weekDisplay.textContent = `Week of ${formatDate(new Date(week.startDate))} - ${formatDate(new Date(week.endDate))}`;
+    weekDisplay.textContent = `Week of ${formatDate(week.startDate)} - ${formatDate(week.endDate)}`;
     loadMealPlan();
 }
 
