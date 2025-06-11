@@ -225,25 +225,23 @@ function createMealItem(recipe, servings) {
         <div class="servings">${servings} serving${servings === 1 ? '' : 's'}</div>
     `;
 
-    div.querySelector('.remove-meal').addEventListener('click', async (e) => {
+    div.querySelector('.remove-meal').addEventListener('click', (e) => {
         e.stopPropagation();
-        if (confirm('Remove this meal from the plan?')) {
-            const mealSlot = div.closest('.meal-slot');
-            if (!mealSlot) {
-                console.error('Could not find parent meal slot');
-                return;
-            }
-            
-            // First remove the meal item
-            div.remove();
-            
-            // Add the "Add Meal" button if it doesn't exist
-            addAddMealButton(mealSlot);
-            
-            // Save changes and update nutrition
-            saveMealPlan();
-            updateNutritionSummary();
+        const mealSlot = div.closest('.meal-slot');
+        if (!mealSlot) {
+            console.error('Could not find parent meal slot');
+            return;
         }
+        
+        // Remove the meal item
+        div.remove();
+        
+        // Add the "Add Meal" button if it doesn't exist
+        addAddMealButton(mealSlot);
+        
+        // Save changes and update nutrition
+        saveMealPlan();
+        updateNutritionSummary();
     });
 
     return div;
