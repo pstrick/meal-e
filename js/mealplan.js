@@ -264,19 +264,17 @@ function createMealItem(recipe, servings) {
 }
 
 function getMealKey(date, mealType) {
-    return `${date.toISOString().split('T')[0]}-${mealType}`;
+    return `${date}-${mealType}`;
 }
 
 function saveMealPlan() {
     console.log('Saving meal plan...');
-    const week = getWeekDates(currentWeek);
     const mealSlots = document.querySelectorAll('.meal-slot');
     
     mealSlots.forEach(slot => {
-        const day = slot.dataset.day;
+        const date = slot.dataset.date;
         const meal = slot.dataset.meal;
-        const dayDate = week.dates[['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(day)];
-        const key = getMealKey(dayDate, meal);
+        const key = `${date}-${meal}`;
         
         const meals = [];
         slot.querySelectorAll('.meal-item').forEach(item => {
@@ -294,7 +292,7 @@ function saveMealPlan() {
         }
     });
 
-    localStorage.setItem('meale-mealPlan', JSON.stringify(mealPlan));
+    localStorage.setItem('mealPlan', JSON.stringify(mealPlan));
     console.log('Meal plan saved:', mealPlan);
 }
 
@@ -817,4 +815,150 @@ window.addEventListener('resize', () => {
         lastIsMobile = isMobile;
         loadMealPlan();
     }
-}); 
+});
+
+// Update meal plan display
+function updateMealPlanDisplay() {
+    const week = getWeekDates(currentWeek);
+    
+    // Update week display
+    const startDateStr = new Date(week.startDate).toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric'
+    });
+    const endDateStr = new Date(week.endDate).toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric', 
+        year: 'numeric'
+    });
+    document.getElementById('week-display').textContent = `Week of ${startDateStr} - ${endDateStr}`;
+    
+    // Clear existing meal plan grid
+    const mealPlanGrid = document.querySelector('.meal-plan-grid');
+    mealPlanGrid.innerHTML = '';
+    
+    // Get device type
+    const isMobile = window.innerWidth <= 768;
+    
+    if (!isMobile) {
+        // Desktop layout
+        // Add header row
+        const headerRow = document.createElement('div');
+        headerRow.className = 'meal-plan-header';
+        
+        // Add empty cell for time slots
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'day-header';
+        headerRow.appendChild(emptyCell);
+        
+        // Add day headers
+        week.dayNames.forEach(dayName => {
+            const dayHeader = document.createElement('div');
+            dayHeader.className = 'day-header';
+            dayHeader.textContent = dayName;
+            headerRow.appendChild(dayHeader);
+        });
+        
+        mealPlanGrid.appendChild(headerRow);
+        
+        // Create body container
+        const bodyContainer = document.createElement('div');
+        bodyContainer.className = 'meal-plan-body';
+        
+        // Add time slots
+        ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
+            const timeSlot = document.createElement('div');
+            timeSlot.className = 'time-slot';
+            timeSlot.textContent = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+            bodyContainer.appendChild(timeSlot);
+            
+            // Add meal slots for each day
+            week.dates.forEach((date, index) => {
+                const mealSlot = document.createElement('div');
+                mealSlot.className = 'meal-slot';
+                const dayName = week.dayNames[index].toLowerCase();
+                mealSlot.dataset.day = dayName;
+                mealSlot.dataset.meal = mealType;
+                mealSlot.dataset.date = date;
+                
+                // Add meals for this slot
+                const key = `${date}-${mealType}`;
+                const meals = mealPlan[key] || [];
+                
+                meals.forEach(mealData => {
+                    const recipe = window.recipes.find(r => r.id === mealData.recipeId);
+                    if (recipe) {
+                        const mealItem = createMealItem(recipe, mealData.servings);
+                        mealItem.dataset.recipeId = recipe.id;
+                        mealItem.dataset.servings = mealData.servings;
+                        mealSlot.appendChild(mealItem);
+                    }
+                });
+                
+                // Add the "Add Meal" button
+                addAddMealButton(mealSlot);
+                
+                bodyContainer.appendChild(mealSlot);
+            });
+        });
+        
+        mealPlanGrid.appendChild(bodyContainer);
+    } else {
+        // Mobile layout
+        const bodyContainer = document.createElement('div');
+        bodyContainer.className = 'meal-plan-body';
+        
+        // Create a column for each day
+        week.dates.forEach((date, index) => {
+            const dayColumn = document.createElement('div');
+            dayColumn.className = 'day-column';
+            
+            // Add day header
+            const dayHeader = document.createElement('div');
+            dayHeader.className = 'day-header';
+            dayHeader.textContent = week.dayNames[index];
+            dayColumn.appendChild(dayHeader);
+            
+            // Add meal slots
+            ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
+                const timeSlot = document.createElement('div');
+                timeSlot.className = 'time-slot';
+                timeSlot.textContent = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+                dayColumn.appendChild(timeSlot);
+                
+                const mealSlot = document.createElement('div');
+                mealSlot.className = 'meal-slot';
+                const dayName = week.dayNames[index].toLowerCase();
+                mealSlot.dataset.day = dayName;
+                mealSlot.dataset.meal = mealType;
+                mealSlot.dataset.date = date;
+                
+                // Add meals for this slot
+                const key = `${date}-${mealType}`;
+                const meals = mealPlan[key] || [];
+                
+                meals.forEach(mealData => {
+                    const recipe = window.recipes.find(r => r.id === mealData.recipeId);
+                    if (recipe) {
+                        const mealItem = createMealItem(recipe, mealData.servings);
+                        mealItem.dataset.recipeId = recipe.id;
+                        mealItem.dataset.servings = mealData.servings;
+                        mealSlot.appendChild(mealItem);
+                    }
+                });
+                
+                // Add the "Add Meal" button
+                addAddMealButton(mealSlot);
+                
+                dayColumn.appendChild(mealSlot);
+            });
+            
+            bodyContainer.appendChild(dayColumn);
+        });
+        
+        mealPlanGrid.appendChild(bodyContainer);
+    }
+    
+    // Update nutrition summary
+    updateNutritionSummary();
+} 
