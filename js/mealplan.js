@@ -1,5 +1,5 @@
 // Meal Planning functionality
-let currentWeek = new Date();
+let currentWeekOffset = 0;  // Track week offset instead of modifying date directly
 let selectedSlot = null;
 let selectedRecipe = null;
 let mealPlanForm = document.getElementById('meal-plan-form');
@@ -26,7 +26,10 @@ function getWeekDates(weekOffset = 0) {
     
     // Get the start date of the current week
     const startDate = new Date(today);
-    startDate.setDate(today.getDate() - daysToStartOfWeek + (weekOffset * 7));
+    // First adjust to start of week
+    startDate.setDate(today.getDate() - daysToStartOfWeek);
+    // Then apply week offset
+    startDate.setDate(startDate.getDate() + (weekOffset * 7));
     
     // Generate array of dates for the week
     const dates = [];
@@ -51,7 +54,7 @@ function formatDate(date) {
 }
 
 function updateWeekDisplay() {
-    const week = getWeekDates(currentWeek);
+    const week = getWeekDates(currentWeekOffset);
     weekDisplay.textContent = `Week of ${formatDate(new Date(week.startDate))} - ${formatDate(new Date(week.endDate))}`;
     loadMealPlan();
 }
@@ -298,7 +301,7 @@ function saveMealPlan() {
 
 function loadMealPlan() {
     console.log('Loading meal plan...');
-    const week = getWeekDates(currentWeek);
+    const week = getWeekDates(currentWeekOffset);
     
     // Find or create the container
     let mealPlanContainer = document.querySelector('.meal-plan-container');
@@ -484,7 +487,7 @@ function calculateDayNutrition(date) {
 
 function updateNutritionSummary() {
     console.log('Updating nutrition summary...');
-    const week = getWeekDates(currentWeek);
+    const week = getWeekDates(currentWeekOffset);
     
     // Calculate daily totals and weekly average
     const dailyTotals = [];
@@ -771,13 +774,13 @@ function addAddMealButton(slot) {
 }
 
 prevWeekBtn.addEventListener('click', () => {
-    currentWeek.setDate(currentWeek.getDate() - 7);
+    currentWeekOffset--;
     updateWeekDisplay();
     updateNutritionSummary();
 });
 
 nextWeekBtn.addEventListener('click', () => {
-    currentWeek.setDate(currentWeek.getDate() + 7);
+    currentWeekOffset++;
     updateWeekDisplay();
     updateNutritionSummary();
 });
@@ -819,7 +822,7 @@ window.addEventListener('resize', () => {
 
 // Update meal plan display
 function updateMealPlanDisplay() {
-    const week = getWeekDates(currentWeek);
+    const week = getWeekDates(currentWeekOffset);
     
     // Update week display
     const startDateStr = new Date(week.startDate).toLocaleDateString('en-US', { 
