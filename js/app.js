@@ -545,13 +545,22 @@ function initializeApp() {
     initializeSettings();
     updateRecipeList();
     
-    // Initialize meal planner after settings are loaded
-    if (typeof initializeMealPlanner === 'function') {
-        console.log('Initializing meal planner...');
-        initializeMealPlanner();
-    } else {
-        console.error('Meal planner initialization function not found');
-    }
+    // Wait for meal planner to be available
+    const checkMealPlanner = setInterval(() => {
+        if (typeof initializeMealPlanner === 'function') {
+            console.log('Initializing meal planner...');
+            clearInterval(checkMealPlanner);
+            initializeMealPlanner();
+        }
+    }, 100);
+
+    // Timeout after 5 seconds
+    setTimeout(() => {
+        clearInterval(checkMealPlanner);
+        if (typeof initializeMealPlanner !== 'function') {
+            console.error('Meal planner initialization function not found after timeout');
+        }
+    }, 5000);
 }
 
 // Initialize when the DOM is loaded
