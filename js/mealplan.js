@@ -379,27 +379,26 @@ function loadMealPlan() {
         
         const meals = mealPlan[key] || [];
         
-        if (meals.length === 0) {
-            // Add the "Add Meal" button for empty slots
-            const addButton = document.createElement('button');
-            addButton.className = 'add-meal-btn';
-            addButton.innerHTML = '<i class="fas fa-plus"></i> Add Meal';
-            addButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                openMealPlanModal(slot);
-            });
-            slot.appendChild(addButton);
-        } else {
-            meals.forEach(mealData => {
-                const recipe = window.recipes.find(r => r.id === mealData.recipeId);
-                if (recipe) {
-                    const mealItem = createMealItem(recipe, mealData.servings);
-                    mealItem.dataset.recipeId = recipe.id;
-                    mealItem.dataset.servings = mealData.servings;
-                    slot.appendChild(mealItem);
-                }
-            });
-        }
+        // Add meals to the slot
+        meals.forEach(mealData => {
+            const recipe = window.recipes.find(r => r.id === mealData.recipeId);
+            if (recipe) {
+                const mealItem = createMealItem(recipe, mealData.servings);
+                mealItem.dataset.recipeId = recipe.id;
+                mealItem.dataset.servings = mealData.servings;
+                slot.appendChild(mealItem);
+            }
+        });
+        
+        // Add the "Add Meal" button
+        const addButton = document.createElement('button');
+        addButton.className = 'add-meal-btn';
+        addButton.innerHTML = '<i class="fas fa-plus"></i> Add Meal';
+        addButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openMealPlanModal(slot);
+        });
+        slot.appendChild(addButton);
     });
 
     updateNutritionSummary();
@@ -636,9 +635,24 @@ function handleMealPlanSubmit(e) {
     mealItem.dataset.recipeId = selectedRecipe.id;
     mealItem.dataset.servings = servings;
     
-    // Clear the slot and add the new meal item
-    selectedSlot.innerHTML = '';
+    // Remove the "Add Meal" button if it exists
+    const addButton = selectedSlot.querySelector('.add-meal-btn');
+    if (addButton) {
+        addButton.remove();
+    }
+    
+    // Append the new meal item
     selectedSlot.appendChild(mealItem);
+    
+    // Add the "Add Meal" button back
+    const newAddButton = document.createElement('button');
+    newAddButton.className = 'add-meal-btn';
+    newAddButton.innerHTML = '<i class="fas fa-plus"></i> Add Meal';
+    newAddButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openMealPlanModal(selectedSlot);
+    });
+    selectedSlot.appendChild(newAddButton);
     
     // Save and update nutrition
     saveMealPlan();

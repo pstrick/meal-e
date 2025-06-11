@@ -803,18 +803,33 @@ footer {
     position: relative;
     display: flex;
     flex-direction: column;
+    gap: 0.5rem;
+    max-height: 300px;
+    overflow-y: auto;
 }
 
-.meal-slot:hover {
-    background-color: #f5f5f5;
+.meal-slot::-webkit-scrollbar {
+    width: 6px;
+}
+
+.meal-slot::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.meal-slot::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.meal-slot::-webkit-scrollbar-thumb:hover {
+    background: #999;
 }
 
 .add-meal-btn {
     border: 2px dashed #ccc;
     background: none;
-    width: 100%;
-    height: 100%;
-    min-height: 80px;
+    width: calc(100% - 0.5rem);
+    min-height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -824,30 +839,24 @@ footer {
     transition: all 0.2s;
     margin: 0.25rem;
     border-radius: 4px;
-}
-
-.add-meal-btn:hover {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
-    background-color: rgba(76, 175, 80, 0.05);
-}
-
-.add-meal-btn i {
-    font-size: 1.5em;
-    margin-right: 0.5rem;
+    flex-shrink: 0;
 }
 
 .meal-item {
     background-color: #e3f2fd;
     border-radius: 4px;
     padding: 0.5rem;
-    margin-bottom: 0.5rem;
+    margin: 0 0.25rem;
     font-size: 0.9em;
+    position: relative;
+    flex-shrink: 0;
+    border: 1px solid #c5e1f9;
 }
 
 .meal-item .recipe-name {
     font-weight: bold;
     margin-bottom: 0.25rem;
+    padding-right: 20px;
 }
 
 .meal-item .servings {
@@ -856,13 +865,23 @@ footer {
 }
 
 .meal-item .remove-meal {
-    float: right;
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
     cursor: pointer;
     color: #999;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
 }
 
 .meal-item .remove-meal:hover {
-    color: #f44336;
+    background-color: #ff5252;
+    color: white;
 }
 
 .daily-nutrition {
