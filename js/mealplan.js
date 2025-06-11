@@ -632,12 +632,26 @@ document.querySelectorAll('.meal-slot').forEach(slot => {
 function initializeMealPlanner() {
     console.log('Initializing meal planner...');
     
-    // Verify recipes are loaded correctly
-    if (!window.recipes || !Array.isArray(window.recipes)) {
-        console.error('Recipes not properly loaded:', window.recipes);
-        return;
-    }
-    
+    // Wait for recipes to be available
+    const checkRecipes = setInterval(() => {
+        if (window.recipes && Array.isArray(window.recipes)) {
+            console.log('Recipes loaded, proceeding with initialization');
+            clearInterval(checkRecipes);
+            continueInitialization();
+        }
+    }, 100);
+
+    // Timeout after 5 seconds
+    setTimeout(() => {
+        clearInterval(checkRecipes);
+        if (!window.recipes || !Array.isArray(window.recipes)) {
+            console.error('Recipes not properly loaded after timeout');
+        }
+    }, 5000);
+}
+
+// Continue initialization after recipes are loaded
+function continueInitialization() {
     console.log('Available recipes:', window.recipes.length);
     
     // Verify settings are loaded
@@ -701,28 +715,6 @@ function initializeMealPlanner() {
         }
     }
 }
-
-// Wait for both DOM content and recipes to be loaded
-document.addEventListener('DOMContentLoaded', () => {
-    // Check if recipes are already available
-    if (window.recipes) {
-        initializeMealPlanner();
-    } else {
-        // If recipes aren't available yet, wait for them
-        const checkRecipes = setInterval(() => {
-            if (window.recipes) {
-                clearInterval(checkRecipes);
-                initializeMealPlanner();
-            }
-        }, 100);
-        
-        // Stop checking after 5 seconds to prevent infinite loop
-        setTimeout(() => {
-            clearInterval(checkRecipes);
-            console.error('Timeout waiting for recipes to load');
-        }, 5000);
-    }
-});
 
 function handleMealPlanSubmit(e) {
     console.log('Form submission triggered');
