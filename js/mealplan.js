@@ -46,10 +46,10 @@ function openMealPlanModal(slot) {
     selectedRecipe = null;
     
     // Reset the form and filters
-    const recipeSearch = document.getElementById('recipe-search');
-    const categoryFilter = document.getElementById('meal-category-filter');
-    const servingsInput = document.getElementById('meal-servings');
-    const selectedRecipeDiv = document.querySelector('.selected-recipe');
+    const recipeSearch = mealPlanForm.querySelector('#recipe-search');
+    const categoryFilter = mealPlanForm.querySelector('#meal-category-filter');
+    const servingsInput = mealPlanForm.querySelector('#meal-servings');
+    const selectedRecipeDiv = mealPlanForm.querySelector('.selected-recipe');
     const submitButton = mealPlanForm.querySelector('button[type="submit"]');
     
     if (recipeSearch) recipeSearch.value = '';
@@ -58,8 +58,11 @@ function openMealPlanModal(slot) {
     if (selectedRecipeDiv) selectedRecipeDiv.style.display = 'none';
     if (submitButton) submitButton.disabled = true;
     
+    // Store the slot reference in a data attribute
+    mealPlanForm.dataset.currentSlot = slot.dataset.day + '-' + slot.dataset.meal;
+    
     // Clear any selected recipes in the list
-    document.querySelectorAll('.recipe-option.selected').forEach(option => {
+    mealPlanForm.querySelectorAll('.recipe-option.selected').forEach(option => {
         option.classList.remove('selected');
     });
     
@@ -179,6 +182,12 @@ function closeMealPlanModal() {
     
     mealPlanModal.classList.remove('active');
     mealPlanModal.style.display = 'none';
+    
+    // Clear the stored slot reference
+    if (mealPlanForm) {
+        delete mealPlanForm.dataset.currentSlot;
+    }
+    
     selectedSlot = null;
     selectedRecipe = null;
     
@@ -578,16 +587,17 @@ function initializeMealPlanner() {
     }
 
     // Initialize form and its elements
-    mealPlanForm = document.getElementById('meal-plan-form');
-    if (mealPlanForm) {
+    const oldForm = document.getElementById('meal-plan-form');
+    if (oldForm) {
         // Remove old event listeners by cloning
-        const newForm = mealPlanForm.cloneNode(true);
-        mealPlanForm.parentNode.replaceChild(newForm, mealPlanForm);
+        const newForm = oldForm.cloneNode(true);
+        oldForm.parentNode.replaceChild(newForm, oldForm);
         mealPlanForm = newForm;
 
-        // Reattach event listener to the form
+        // Store the current slot in a data attribute
         mealPlanForm.addEventListener('submit', (e) => {
             console.log('Form submit event triggered');
+            console.log('Current slot when submitting:', selectedSlot);
             handleMealPlanSubmit(e);
         });
 
@@ -665,8 +675,25 @@ function handleMealPlanSubmit(e) {
     console.log('Form submission triggered');
     e.preventDefault();
     
-    if (!selectedRecipe || !selectedSlot) {
-        console.error('Missing required data:', { selectedRecipe, selectedSlot });
+    // Find the current slot using the stored reference
+    if (!selectedRecipe) {
+        console.error('No recipe selected');
+        return;
+    }
+    
+    if (!selectedSlot) {
+        console.error('No slot selected');
+        // Try to recover the slot reference
+        const slotRef = mealPlanForm.dataset.currentSlot;
+        if (slotRef) {
+            const [day, meal] = slotRef.split('-');
+            selectedSlot = document.querySelector(`.meal-slot[data-day="${day}"][data-meal="${meal}"]`);
+            console.log('Recovered slot reference:', selectedSlot);
+        }
+    }
+    
+    if (!selectedSlot) {
+        console.error('Could not recover slot reference');
         return;
     }
     
@@ -677,7 +704,7 @@ function handleMealPlanSubmit(e) {
     }
     
     const servings = parseFloat(servingsInput.value);
-    console.log('Creating meal item with:', { recipe: selectedRecipe, servings });
+    console.log('Creating meal item with:', { recipe: selectedRecipe, servings, slot: selectedSlot });
     
     const mealItem = createMealItem(selectedRecipe, servings);
     mealItem.dataset.recipeId = selectedRecipe.id;
