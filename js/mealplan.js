@@ -18,8 +18,15 @@ function getWeekDates(weekOffset = 0) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const startDay = window.settings ? window.settings.mealPlanStartDay : 0;
-    console.log('Settings:', window.settings);
+    // Get settings from localStorage if window.settings is not available
+    let settings = window.settings;
+    if (!settings) {
+        const savedSettings = localStorage.getItem('meale-settings');
+        settings = savedSettings ? JSON.parse(savedSettings) : { mealPlanStartDay: 0 };
+    }
+    
+    const startDay = settings.mealPlanStartDay || 0;
+    console.log('Settings:', settings);
     console.log('Start day:', startDay);
     
     // Get current day of week (0-6)
@@ -72,24 +79,47 @@ function formatDate(dateStr) {
         console.log('Empty date string');
         return '';
     }
-    const [year, month, day] = dateStr.split('-').map(Number);
-    console.log('Parsed date components:', { year, month, day });
-    const date = new Date(year, month - 1, day);
-    console.log('Created date object:', date);
-    const formatted = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    console.log('Formatted date:', formatted);
-    return formatted;
+    try {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        console.log('Parsed date components:', { year, month, day });
+        if (isNaN(year) || isNaN(month) || isNaN(day)) {
+            console.error('Invalid date components:', { year, month, day });
+            return '';
+        }
+        const date = new Date(year, month - 1, day);
+        console.log('Created date object:', date);
+        if (isNaN(date.getTime())) {
+            console.error('Invalid date object created');
+            return '';
+        }
+        const formatted = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        console.log('Formatted date:', formatted);
+        return formatted;
+    } catch (error) {
+        console.error('Error formatting date:', error);
+        return '';
+    }
 }
 
 function updateWeekDisplay() {
     console.log('Updating week display with offset:', currentWeekOffset);
-    const week = getWeekDates(currentWeekOffset);
-    console.log('Week data:', week);
-    const startDate = formatDate(week.startDate);
-    const endDate = formatDate(week.endDate);
-    console.log('Formatted dates:', { startDate, endDate });
-    weekDisplay.textContent = `Week of ${startDate} - ${endDate}`;
-    loadMealPlan();
+    try {
+        const week = getWeekDates(currentWeekOffset);
+        console.log('Week data:', week);
+        const startDate = formatDate(week.startDate);
+        const endDate = formatDate(week.endDate);
+        console.log('Formatted dates:', { startDate, endDate });
+        if (startDate && endDate) {
+            weekDisplay.textContent = `Week of ${startDate} - ${endDate}`;
+        } else {
+            console.error('Invalid dates generated');
+            weekDisplay.textContent = 'Week of Loading...';
+        }
+        loadMealPlan();
+    } catch (error) {
+        console.error('Error updating week display:', error);
+        weekDisplay.textContent = 'Week of Loading...';
+    }
 }
 
 function openMealPlanModal(slot) {
