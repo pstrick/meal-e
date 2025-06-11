@@ -44,18 +44,19 @@ function openMealPlanModal(slot) {
     console.log('Opening meal plan modal for slot:', slot);
     selectedSlot = slot;
     selectedRecipe = null;
-    const recipeList = document.querySelector('.recipe-list');
-    const selectedRecipeDiv = document.querySelector('.selected-recipe');
-    const submitButton = document.querySelector('#meal-plan-form button[type="submit"]');
     
     // Reset the form and filters
-    document.getElementById('recipe-search').value = '';
-    document.getElementById('meal-category-filter').value = 'all';
-    document.getElementById('meal-servings').value = '1';
+    const recipeSearch = document.getElementById('recipe-search');
+    const categoryFilter = document.getElementById('meal-category-filter');
+    const servingsInput = document.getElementById('meal-servings');
+    const selectedRecipeDiv = document.querySelector('.selected-recipe');
+    const submitButton = mealPlanForm.querySelector('button[type="submit"]');
     
-    // Reset recipe selection UI
-    selectedRecipeDiv.style.display = 'none';
-    submitButton.disabled = true;
+    if (recipeSearch) recipeSearch.value = '';
+    if (categoryFilter) categoryFilter.value = 'all';
+    if (servingsInput) servingsInput.value = '1';
+    if (selectedRecipeDiv) selectedRecipeDiv.style.display = 'none';
+    if (submitButton) submitButton.disabled = true;
     
     // Clear any selected recipes in the list
     document.querySelectorAll('.recipe-option.selected').forEach(option => {
@@ -137,8 +138,15 @@ function updateRecipeList() {
 
 function selectRecipe(recipe) {
     selectedRecipe = recipe;
-    const selectedRecipeDiv = document.querySelector('.selected-recipe');
-    const submitButton = document.querySelector('#meal-plan-form button[type="submit"]');
+    
+    // Get elements from the form
+    const selectedRecipeDiv = mealPlanForm.querySelector('.selected-recipe');
+    const submitButton = mealPlanForm.querySelector('button[type="submit"]');
+    
+    if (!selectedRecipeDiv || !submitButton) {
+        console.error('Required elements not found in the form');
+        return;
+    }
     
     // Update selected recipe display
     selectedRecipeDiv.style.display = 'block';
@@ -152,20 +160,33 @@ function selectRecipe(recipe) {
     submitButton.disabled = false;
     
     // Update recipe list selection
-    document.querySelectorAll('.recipe-option').forEach(option => {
-        option.classList.remove('selected');
-        if (option.querySelector('h4').textContent === recipe.name) {
-            option.classList.add('selected');
-        }
-    });
+    const recipeList = mealPlanForm.querySelector('.recipe-list');
+    if (recipeList) {
+        recipeList.querySelectorAll('.recipe-option').forEach(option => {
+            option.classList.remove('selected');
+            if (option.querySelector('h4').textContent === recipe.name) {
+                option.classList.add('selected');
+            }
+        });
+    }
 }
 
 function closeMealPlanModal() {
+    if (!mealPlanModal) return;
+    
     mealPlanModal.classList.remove('active');
     mealPlanModal.style.display = 'none';
     selectedSlot = null;
     selectedRecipe = null;
-    mealPlanForm.reset();
+    
+    // Reset form if it exists
+    if (mealPlanForm) {
+        mealPlanForm.reset();
+        const selectedRecipeDiv = mealPlanForm.querySelector('.selected-recipe');
+        const submitButton = mealPlanForm.querySelector('button[type="submit"]');
+        if (selectedRecipeDiv) selectedRecipeDiv.style.display = 'none';
+        if (submitButton) submitButton.disabled = true;
+    }
 }
 
 // Make closeMealPlanModal available globally
@@ -552,51 +573,48 @@ function initializeMealPlanner() {
         console.error('Meal plan modal not found!');
         return;
     }
-    
-    // Remove any existing event listeners
+
+    // Initialize form and its elements
+    mealPlanForm = document.getElementById('meal-plan-form');
+    if (mealPlanForm) {
+        // Remove old event listeners by cloning
+        const newForm = mealPlanForm.cloneNode(true);
+        mealPlanForm.parentNode.replaceChild(newForm, mealPlanForm);
+        mealPlanForm = newForm;
+
+        // Reattach event listener to the form
+        mealPlanForm.addEventListener('submit', handleMealPlanSubmit);
+
+        // Reattach event listeners to form elements
+        const recipeSearch = mealPlanForm.querySelector('#recipe-search');
+        const categoryFilter = mealPlanForm.querySelector('#meal-category-filter');
+        const cancelButton = mealPlanForm.querySelector('#cancel-meal');
+
+        if (recipeSearch) {
+            recipeSearch.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    updateRecipeList();
+                }, 300); // Debounce for 300ms
+            });
+        }
+
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', updateRecipeList);
+        }
+
+        if (cancelButton) {
+            cancelButton.addEventListener('click', closeMealPlanModal);
+        }
+    }
+
+    // Handle modal close buttons
     const closeButtons = document.querySelectorAll('#meal-plan-modal .close');
     closeButtons.forEach(btn => {
         const newBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(newBtn, btn);
         newBtn.addEventListener('click', closeMealPlanModal);
     });
-    
-    // Add event listener for cancel button
-    const cancelMealBtn = document.getElementById('cancel-meal');
-    if (cancelMealBtn) {
-        const newCancelBtn = cancelMealBtn.cloneNode(true);
-        cancelMealBtn.parentNode.replaceChild(newCancelBtn, cancelMealBtn);
-        newCancelBtn.addEventListener('click', closeMealPlanModal);
-    }
-    
-    // Add event listeners for search and filter
-    const recipeSearch = document.getElementById('recipe-search');
-    const categoryFilter = document.getElementById('meal-category-filter');
-    
-    if (recipeSearch) {
-        recipeSearch.addEventListener('input', () => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                updateRecipeList();
-            }, 300); // Debounce for 300ms
-        });
-    }
-    
-    if (categoryFilter) {
-        categoryFilter.addEventListener('change', () => {
-            updateRecipeList();
-        });
-    }
-    
-    // Initialize form submit handler
-    if (mealPlanForm) {
-        // Clone and replace the form to remove any existing event listeners
-        const newForm = mealPlanForm.cloneNode(true);
-        mealPlanForm.parentNode.replaceChild(newForm, mealPlanForm);
-        newForm.addEventListener('submit', handleMealPlanSubmit);
-        // Update the reference to the new form
-        mealPlanForm = newForm;
-    }
 
     // Add click outside modal to close
     mealPlanModal.addEventListener('click', (event) => {
