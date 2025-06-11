@@ -40,6 +40,9 @@ const totalFat = document.getElementById('total-fat');
 // Sample data structure
 let recipes = [];
 let mealPlan = {};
+let settings = {
+    mealPlanStartDay: 0 // Default to Sunday
+};
 let nutritionData = {
     calories: 0,
     protein: 0,
@@ -460,25 +463,38 @@ async function handleRecipeSubmit(e, editId = null) {
 
 // Local Storage Management
 function saveToLocalStorage() {
-    localStorage.setItem('meale-recipes', JSON.stringify(recipes));
-    localStorage.setItem('meale-mealPlan', JSON.stringify(mealPlan));
+    localStorage.setItem('recipes', JSON.stringify(recipes));
+    localStorage.setItem('mealPlan', JSON.stringify(mealPlan));
+    localStorage.setItem('settings', JSON.stringify(settings));
     localStorage.setItem('meale-nutrition', JSON.stringify(nutritionData));
     // Update global recipes
     window.recipes = recipes;
 }
 
 function loadFromLocalStorage() {
-    const savedRecipes = localStorage.getItem('meale-recipes');
-    const savedMealPlan = localStorage.getItem('meale-mealPlan');
-    const savedNutrition = localStorage.getItem('meale-nutrition');
-
+    const savedRecipes = localStorage.getItem('recipes');
     if (savedRecipes) {
         recipes = JSON.parse(savedRecipes);
         // Make recipes available globally
         window.recipes = recipes;
     }
-    if (savedMealPlan) mealPlan = JSON.parse(savedMealPlan);
-    if (savedNutrition) nutritionData = JSON.parse(savedNutrition);
+
+    const savedMealPlan = localStorage.getItem('mealPlan');
+    if (savedMealPlan) {
+        mealPlan = JSON.parse(savedMealPlan);
+    }
+
+    const savedSettings = localStorage.getItem('settings');
+    if (savedSettings) {
+        settings = JSON.parse(savedSettings);
+        // Apply saved settings
+        document.getElementById('meal-plan-start-day').value = settings.mealPlanStartDay;
+    }
+
+    const savedNutrition = localStorage.getItem('meale-nutrition');
+    if (savedNutrition) {
+        nutritionData = JSON.parse(savedNutrition);
+    }
 
     updateRecipeList();
 }
@@ -486,6 +502,7 @@ function loadFromLocalStorage() {
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
     loadFromLocalStorage();
+    initializeSettings();
 });
 
 // Recipe Management
@@ -850,4 +867,19 @@ function updateRecipeList() {
 window.recipes = recipes;
 window.addRecipe = addRecipe;
 window.editRecipe = editRecipe;
-window.deleteRecipe = deleteRecipe; 
+window.deleteRecipe = deleteRecipe;
+
+// Initialize settings
+function initializeSettings() {
+    const startDaySelect = document.getElementById('meal-plan-start-day');
+    startDaySelect.value = settings.mealPlanStartDay;
+    
+    startDaySelect.addEventListener('change', () => {
+        settings.mealPlanStartDay = parseInt(startDaySelect.value);
+        saveToLocalStorage();
+        // Refresh the meal plan view to reflect the new start day
+        if (typeof updateMealPlanDisplay === 'function') {
+            updateMealPlanDisplay();
+        }
+    });
+} 

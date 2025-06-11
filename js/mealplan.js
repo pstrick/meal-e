@@ -12,22 +12,38 @@ const nextWeekBtn = document.getElementById('next-week');
 // Initialize meal plan data structure
 const mealPlan = JSON.parse(localStorage.getItem('meale-mealPlan')) || {};
 
-function getWeekDates(date) {
-    const monday = new Date(date);
-    monday.setDate(date.getDate() - date.getDay() + 1);
+// Get week dates based on current week and start day setting
+function getWeekDates(weekOffset = 0) {
+    const today = new Date();
+    const startDay = window.settings ? window.settings.mealPlanStartDay : 0;
     
-    const week = {
-        start: monday,
-        dates: []
-    };
-
+    // Get current day of week (0-6)
+    let currentDayOfWeek = today.getDay();
+    
+    // Calculate days to subtract to get to the start of the week
+    let daysToStartOfWeek = currentDayOfWeek - startDay;
+    if (daysToStartOfWeek < 0) daysToStartOfWeek += 7;
+    
+    // Get the start date of the current week
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - daysToStartOfWeek + (weekOffset * 7));
+    
+    // Generate array of dates for the week
+    const dates = [];
+    const dayNames = [];
     for (let i = 0; i < 7; i++) {
-        const day = new Date(monday);
-        day.setDate(monday.getDate() + i);
-        week.dates.push(day);
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        dates.push(date.toISOString().split('T')[0]);
+        dayNames.push(date.toLocaleDateString('en-US', { weekday: 'long' }));
     }
-
-    return week;
+    
+    return {
+        dates,
+        dayNames,
+        startDate: dates[0],
+        endDate: dates[6]
+    };
 }
 
 function formatDate(date) {
@@ -36,7 +52,7 @@ function formatDate(date) {
 
 function updateWeekDisplay() {
     const week = getWeekDates(currentWeek);
-    weekDisplay.textContent = `Week of ${formatDate(week.start)}`;
+    weekDisplay.textContent = `Week of ${formatDate(new Date(week.startDate))} - ${formatDate(new Date(week.endDate))}`;
     loadMealPlan();
 }
 
@@ -330,12 +346,10 @@ function loadMealPlan() {
         headerRow.appendChild(emptyCell);
         
         // Add day headers
-        week.dates.forEach(date => {
+        week.dayNames.forEach((dayName, index) => {
             const dayHeader = document.createElement('div');
             dayHeader.className = 'day-header';
-            const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-            const dayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            dayHeader.innerHTML = `${dayName}<br>${dayDate}`;
+            dayHeader.textContent = dayName;
             headerRow.appendChild(dayHeader);
         });
         
