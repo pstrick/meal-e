@@ -2,8 +2,8 @@
 let currentWeek = new Date();
 let selectedSlot = null;
 let selectedRecipe = null;
+let mealPlanForm = document.getElementById('meal-plan-form');
 const mealPlanModal = document.getElementById('meal-plan-modal');
-const mealPlanForm = document.getElementById('meal-plan-form');
 const cancelMeal = document.getElementById('cancel-meal');
 const weekDisplay = document.getElementById('week-display');
 const prevWeekBtn = document.getElementById('prev-week');
@@ -553,19 +553,20 @@ function initializeMealPlanner() {
         return;
     }
     
-    // Add event listeners for modal close buttons
-    document.querySelectorAll('#meal-plan-modal .close').forEach(btn => {
-        btn.addEventListener('click', () => {
-            closeMealPlanModal();
-        });
+    // Remove any existing event listeners
+    const closeButtons = document.querySelectorAll('#meal-plan-modal .close');
+    closeButtons.forEach(btn => {
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        newBtn.addEventListener('click', closeMealPlanModal);
     });
     
     // Add event listener for cancel button
     const cancelMealBtn = document.getElementById('cancel-meal');
     if (cancelMealBtn) {
-        cancelMealBtn.addEventListener('click', () => {
-            closeMealPlanModal();
-        });
+        const newCancelBtn = cancelMealBtn.cloneNode(true);
+        cancelMealBtn.parentNode.replaceChild(newCancelBtn, cancelMealBtn);
+        newCancelBtn.addEventListener('click', closeMealPlanModal);
     }
     
     // Add event listeners for search and filter
@@ -588,9 +589,13 @@ function initializeMealPlanner() {
     }
     
     // Initialize form submit handler
-    const mealPlanForm = document.getElementById('meal-plan-form');
     if (mealPlanForm) {
-        mealPlanForm.addEventListener('submit', handleMealPlanSubmit);
+        // Clone and replace the form to remove any existing event listeners
+        const newForm = mealPlanForm.cloneNode(true);
+        mealPlanForm.parentNode.replaceChild(newForm, mealPlanForm);
+        newForm.addEventListener('submit', handleMealPlanSubmit);
+        // Update the reference to the new form
+        mealPlanForm = newForm;
     }
 
     // Add click outside modal to close
@@ -660,17 +665,6 @@ function handleMealPlanSubmit(e) {
     
     closeMealPlanModal();
 }
-
-// Remove old event listeners
-document.querySelectorAll('#meal-plan-modal .close').forEach(btn => {
-    btn.removeEventListener('click', closeMealPlanModal);
-});
-
-if (cancelMeal) {
-    cancelMeal.removeEventListener('click', closeMealPlanModal);
-}
-
-mealPlanForm.removeEventListener('submit', handleMealPlanSubmit);
 
 prevWeekBtn.addEventListener('click', () => {
     currentWeek.setDate(currentWeek.getDate() - 7);
