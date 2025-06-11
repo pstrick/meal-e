@@ -19,13 +19,17 @@ function getWeekDates(weekOffset = 0) {
     today.setHours(0, 0, 0, 0);
     
     const startDay = window.settings ? window.settings.mealPlanStartDay : 0;
+    console.log('Settings:', window.settings);
+    console.log('Start day:', startDay);
     
     // Get current day of week (0-6)
     let currentDayOfWeek = today.getDay();
+    console.log('Current day of week:', currentDayOfWeek);
     
     // Calculate days to subtract to get to the start of the week
     let daysToStartOfWeek = currentDayOfWeek - startDay;
     if (daysToStartOfWeek < 0) daysToStartOfWeek += 7;
+    console.log('Days to start of week:', daysToStartOfWeek);
     
     // Create a new date for the start of the week
     const startDate = new Date(today);
@@ -33,6 +37,7 @@ function getWeekDates(weekOffset = 0) {
     startDate.setDate(today.getDate() - daysToStartOfWeek);
     // Apply week offset
     startDate.setDate(startDate.getDate() + (weekOffset * 7));
+    console.log('Start date:', startDate);
     
     // Generate array of dates for the week
     const dates = [];
@@ -50,6 +55,9 @@ function getWeekDates(weekOffset = 0) {
         dayNames.push(date.toLocaleDateString('en-US', { weekday: 'long' }));
     }
     
+    console.log('Generated dates:', dates);
+    console.log('Generated day names:', dayNames);
+    
     return {
         dates,
         dayNames,
@@ -59,16 +67,27 @@ function getWeekDates(weekOffset = 0) {
 }
 
 function formatDate(dateStr) {
-    if (!dateStr) return '';
+    console.log('Formatting date string:', dateStr);
+    if (!dateStr) {
+        console.log('Empty date string');
+        return '';
+    }
     const [year, month, day] = dateStr.split('-').map(Number);
+    console.log('Parsed date components:', { year, month, day });
     const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    console.log('Created date object:', date);
+    const formatted = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    console.log('Formatted date:', formatted);
+    return formatted;
 }
 
 function updateWeekDisplay() {
+    console.log('Updating week display with offset:', currentWeekOffset);
     const week = getWeekDates(currentWeekOffset);
+    console.log('Week data:', week);
     const startDate = formatDate(week.startDate);
     const endDate = formatDate(week.endDate);
+    console.log('Formatted dates:', { startDate, endDate });
     weekDisplay.textContent = `Week of ${startDate} - ${endDate}`;
     loadMealPlan();
 }
