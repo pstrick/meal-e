@@ -14,65 +14,46 @@ const mealPlan = JSON.parse(localStorage.getItem('meale-mealPlan')) || {};
 
 // Get week dates based on current week and start day setting
 function getWeekDates(weekOffset = 0) {
-    // Create a new date object for today and set it to midnight to avoid timezone issues
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Get settings from localStorage if window.settings is not available
-    let settings = window.settings;
-    if (!settings) {
+    // Get settings from localStorage if not available globally
+    if (!window.settings) {
         const savedSettings = localStorage.getItem('meale-settings');
-        settings = savedSettings ? JSON.parse(savedSettings) : { mealPlanStartDay: 0 };
+        window.settings = savedSettings ? JSON.parse(savedSettings) : { mealPlanStartDay: 0 };
     }
     
-    const startDay = parseInt(settings.mealPlanStartDay) || 0;
-    console.log('Settings:', settings);
-    console.log('Start day:', startDay);
+    const startDay = parseInt(window.settings.mealPlanStartDay);
+    console.log('Using start day from settings:', startDay);
     
-    // Get current day of week (0-6)
-    let currentDayOfWeek = today.getDay();
-    console.log('Current day of week:', currentDayOfWeek);
+    const today = new Date();
+    const currentDay = today.getDay();
+    console.log('Current day of week:', currentDay);
     
-    // Calculate days to subtract to get to the start of the week
-    let daysToStartOfWeek = currentDayOfWeek - startDay;
-    if (daysToStartOfWeek < 0) daysToStartOfWeek += 7;
-    console.log('Days to start of week:', daysToStartOfWeek);
+    // Calculate days to start of week
+    const daysToStart = (currentDay - startDay + 7) % 7;
+    console.log('Days to start of week:', daysToStart);
     
-    // Create a new date for the start of the week
+    // Calculate start date of the week
     const startDate = new Date(today);
-    // Move to start of week
-    startDate.setDate(today.getDate() - daysToStartOfWeek);
-    // Apply week offset
-    startDate.setDate(startDate.getDate() + (weekOffset * 7));
+    startDate.setDate(today.getDate() - daysToStart + (weekOffset * 7));
     console.log('Start date:', startDate);
     
-    // Generate array of dates for the week
+    // Generate dates for the week
     const dates = [];
     const dayNames = [];
-    
-    // Generate dates starting from the selected start day
     for (let i = 0; i < 7; i++) {
         const date = new Date(startDate);
         date.setDate(startDate.getDate() + i);
-        // Format date as YYYY-MM-DD
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const dateStr = `${year}-${month}-${day}`;
-        dates.push(dateStr);
-        // Get day name based on the actual day of the week
-        const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-        dayNames.push(dayName);
+        dates.push(date.toISOString().split('T')[0]);
+        dayNames.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
     }
     
     console.log('Generated dates:', dates);
     console.log('Generated day names:', dayNames);
     
     return {
-        dates,
-        dayNames,
         startDate: dates[0],
-        endDate: dates[6]
+        endDate: dates[6],
+        dates: dates,
+        dayNames: dayNames
     };
 }
 
@@ -658,18 +639,26 @@ function initializeMealPlanner() {
     
     console.log('Available recipes:', window.recipes.length);
     
-    // Verify settings are loaded
+    // Load settings from localStorage if not available globally
     if (!window.settings) {
-        console.error('Settings not properly loaded');
-        return;
+        const savedSettings = localStorage.getItem('meale-settings');
+        if (savedSettings) {
+            window.settings = JSON.parse(savedSettings);
+            console.log('Loaded settings from localStorage:', window.settings);
+        } else {
+            window.settings = { mealPlanStartDay: 0 };
+            console.log('Using default settings:', window.settings);
+        }
+    } else {
+        console.log('Using existing settings:', window.settings);
     }
-    
-    console.log('Using settings:', window.settings);
     
     // Reset week offset to ensure we start from current week
     currentWeekOffset = 0;
     
-    // Initialize the meal planner
+    // Initialize the meal planner with current settings
+    const week = getWeekDates();
+    console.log('Initial week dates:', week);
     updateWeekDisplay();
     loadMealPlan();
     
