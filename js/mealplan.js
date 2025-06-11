@@ -25,7 +25,7 @@ function getWeekDates(weekOffset = 0) {
         settings = savedSettings ? JSON.parse(savedSettings) : { mealPlanStartDay: 0 };
     }
     
-    const startDay = settings.mealPlanStartDay || 0;
+    const startDay = parseInt(settings.mealPlanStartDay) || 0;
     console.log('Settings:', settings);
     console.log('Start day:', startDay);
     
@@ -50,6 +50,7 @@ function getWeekDates(weekOffset = 0) {
     const dates = [];
     const dayNames = [];
     
+    // Generate dates starting from the selected start day
     for (let i = 0; i < 7; i++) {
         const date = new Date(startDate);
         date.setDate(startDate.getDate() + i);
@@ -59,7 +60,9 @@ function getWeekDates(weekOffset = 0) {
         const day = String(date.getDate()).padStart(2, '0');
         const dateStr = `${year}-${month}-${day}`;
         dates.push(dateStr);
-        dayNames.push(date.toLocaleDateString('en-US', { weekday: 'long' }));
+        // Get day name based on the actual day of the week
+        const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+        dayNames.push(dayName);
     }
     
     console.log('Generated dates:', dates);
