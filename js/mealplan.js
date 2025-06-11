@@ -376,12 +376,12 @@ function loadMealPlan() {
             bodyContainer.appendChild(timeSlot);
             
             // Add meal slots for each day
-            week.dates.forEach(date => {
+            week.dates.forEach((dateStr, index) => {
                 const mealSlot = document.createElement('div');
                 mealSlot.className = 'meal-slot';
-                const dayName = date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-                mealSlot.dataset.day = dayName;
+                mealSlot.dataset.day = week.dayNames[index].toLowerCase();
                 mealSlot.dataset.meal = mealType;
+                mealSlot.dataset.date = dateStr;
                 bodyContainer.appendChild(mealSlot);
             });
         });
@@ -393,14 +393,15 @@ function loadMealPlan() {
         bodyContainer.className = 'meal-plan-body';
         
         // Create a column for each day
-        week.dates.forEach(date => {
+        week.dates.forEach((dateStr, index) => {
             const dayColumn = document.createElement('div');
             dayColumn.className = 'day-column';
             
             // Add day header
             const dayHeader = document.createElement('div');
             dayHeader.className = 'day-header';
-            const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+            const dayName = week.dayNames[index];
+            const date = new Date(dateStr);
             const dayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             dayHeader.textContent = `${dayName}, ${dayDate}`;
             dayColumn.appendChild(dayHeader);
@@ -414,9 +415,9 @@ function loadMealPlan() {
                 
                 const mealSlot = document.createElement('div');
                 mealSlot.className = 'meal-slot';
-                const slotDayName = date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-                mealSlot.dataset.day = slotDayName;
+                mealSlot.dataset.day = dayName.toLowerCase();
                 mealSlot.dataset.meal = mealType;
+                mealSlot.dataset.date = dateStr;
                 dayColumn.appendChild(mealSlot);
             });
             
@@ -431,14 +432,11 @@ function loadMealPlan() {
     console.log('Found meal slots:', mealSlots.length);
 
     mealSlots.forEach(slot => {
-        const day = slot.dataset.day;
+        const date = slot.dataset.date;
         const meal = slot.dataset.meal;
-        const dayIndex = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-            .indexOf(day);
-        const dayDate = week.dates[dayIndex];
-        const key = getMealKey(dayDate, meal);
+        const key = getMealKey(date, meal);
         
-        console.log('Processing slot:', { day, meal, key });
+        console.log('Processing slot:', { date, meal, key });
         
         // Clear existing content
         slot.innerHTML = '';
