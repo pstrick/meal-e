@@ -508,9 +508,17 @@ function editRecipe(id) {
         const ingredientItem = document.createElement('div');
         ingredientItem.className = 'ingredient-item';
         ingredientItem.innerHTML = `
-            <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${ing.name}">
-            <input type="number" class="ingredient-amount" placeholder="Grams" min="0" required value="${ing.amount}">
-            <button type="button" class="remove-ingredient">&times;</button>
+            <div class="ingredient-main">
+                <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${ing.name}">
+                <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="${ing.amount}">
+                <button type="button" class="remove-ingredient">&times;</button>
+            </div>
+            <div class="ingredient-macros">
+                <span class="macro-item">Cal: <span class="calories">0</span></span>
+                <span class="macro-item">P: <span class="protein">0</span>g</span>
+                <span class="macro-item">C: <span class="carbs">0</span>g</span>
+                <span class="macro-item">F: <span class="fat">0</span>g</span>
+            </div>
         `;
 
         const nameInput = ingredientItem.querySelector('.ingredient-name');
@@ -530,8 +538,9 @@ function editRecipe(id) {
             const fdcId = nameInput.dataset.fdcId;
             if (fdcId && selectedIngredients.has(fdcId)) {
                 const ingredient = selectedIngredients.get(fdcId);
-                ingredient.amount = parseInt(amountInput.value) || 0;
+                ingredient.amount = parseFloat(amountInput.value) || 0;
                 selectedIngredients.set(fdcId, ingredient);
+                updateIngredientMacros(ingredientItem, ingredient);
                 updateServingSizeDefault();
             }
         });
@@ -548,20 +557,15 @@ function editRecipe(id) {
         });
 
         ingredientsList.appendChild(ingredientItem);
+        updateIngredientMacros(ingredientItem, ing);
     });
 
-    // Update nutrition display
-    updateTotalNutrition();
-
+    // Update form handler
+    recipeForm.onsubmit = (e) => handleRecipeSubmit(e, id);
+    
     // Show modal
-    openModal();
-
-    // Update form submission to handle edit
-    const originalSubmit = recipeForm.onsubmit;
-    recipeForm.onsubmit = (e) => {
-        e.preventDefault();
-        handleRecipeSubmit(e, id);
-    };
+    recipeModal.classList.add('active');
+    updateTotalNutrition();
 }
 
 // Make edit and delete functions globally available
@@ -722,7 +726,8 @@ macroStyles.textContent = `
         margin-bottom: 1rem;
     }
     .ingredient-main {
-        display: flex;
+        display: grid;
+        grid-template-columns: 2fr 1fr auto;
         gap: 0.5rem;
         margin-bottom: 0.25rem;
     }
@@ -732,6 +737,7 @@ macroStyles.textContent = `
         font-size: 0.9em;
         color: #666;
         padding-left: 0.5rem;
+        margin-top: 0.25rem;
     }
     .macro-item {
         background: #f5f5f5;

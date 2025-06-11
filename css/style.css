@@ -334,15 +334,12 @@ footer {
 
 /* Ingredient List */
 .ingredient-item {
-    display: grid;
-    grid-template-columns: 2fr 1fr auto;
-    gap: 1rem;
     margin-bottom: 1rem;
-    align-items: center;
 }
 
 .ingredient-item input {
     margin: 0;
+    width: 100%;
 }
 
 .remove-ingredient {
