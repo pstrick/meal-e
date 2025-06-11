@@ -45,7 +45,8 @@ function getWeekDates(weekOffset = 0) {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
-        dates.push(`${year}-${month}-${day}`);
+        const dateStr = `${year}-${month}-${day}`;
+        dates.push(dateStr);
         dayNames.push(date.toLocaleDateString('en-US', { weekday: 'long' }));
     }
     
@@ -58,13 +59,17 @@ function getWeekDates(weekOffset = 0) {
 }
 
 function formatDate(dateStr) {
-    const date = new Date(dateStr);
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function updateWeekDisplay() {
     const week = getWeekDates(currentWeekOffset);
-    weekDisplay.textContent = `Week of ${formatDate(week.startDate)} - ${formatDate(week.endDate)}`;
+    const startDate = formatDate(week.startDate);
+    const endDate = formatDate(week.endDate);
+    weekDisplay.textContent = `Week of ${startDate} - ${endDate}`;
     loadMealPlan();
 }
 
