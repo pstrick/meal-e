@@ -501,12 +501,17 @@ function loadFromLocalStorage() {
 
 // Initialize settings
 function initializeSettings() {
+    console.log('Initializing settings...');
     const startDaySelect = document.getElementById('meal-plan-start-day');
     
     // Load settings from localStorage
     const savedSettings = localStorage.getItem('meale-settings');
     if (savedSettings) {
         settings = JSON.parse(savedSettings);
+        console.log('Loaded settings from localStorage:', settings);
+    } else {
+        settings = { mealPlanStartDay: 0 };
+        console.log('Using default settings:', settings);
     }
     
     // Make settings available globally
@@ -514,12 +519,14 @@ function initializeSettings() {
     
     // Set the select value
     startDaySelect.value = settings.mealPlanStartDay;
+    console.log('Set start day select to:', settings.mealPlanStartDay);
     
     startDaySelect.addEventListener('change', () => {
         settings.mealPlanStartDay = parseInt(startDaySelect.value);
         saveToLocalStorage();
         // Make settings available globally
         window.settings = settings;
+        console.log('Updated settings:', settings);
         // Reset week offset to current week
         if (typeof currentWeekOffset !== 'undefined') {
             currentWeekOffset = 0;
@@ -533,13 +540,17 @@ function initializeSettings() {
 
 // Initialize the application
 function initializeApp() {
+    console.log('Initializing app...');
     loadFromLocalStorage();
     initializeSettings();
     updateRecipeList();
     
     // Initialize meal planner after settings are loaded
     if (typeof initializeMealPlanner === 'function') {
+        console.log('Initializing meal planner...');
         initializeMealPlanner();
+    } else {
+        console.error('Meal planner initialization function not found');
     }
 }
 
