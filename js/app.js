@@ -53,28 +53,6 @@ let nutritionData = {
 let currentIngredientInput = null;
 let selectedIngredients = new Map(); // Maps ingredient IDs to their nutrition data
 
-// Navigation
-document.querySelectorAll('nav a').forEach(link => {
-    link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const targetId = link.getAttribute('href').substring(1);
-        const targetElement = document.getElementById(targetId);
-        const navLinks = document.querySelectorAll('nav a');
-        const sections = document.querySelectorAll('section');
-
-        if (!targetElement) {
-            console.log(`Target element ${targetId} not found`);
-            return;
-        }
-
-        navLinks.forEach(l => l.classList.remove('active'));
-        sections.forEach(s => s.classList.remove('active'));
-        
-        link.classList.add('active');
-        targetElement.classList.add('active');
-    });
-});
-
 // Modal Management
 function openModal() {
     const recipeModal = document.getElementById('recipe-modal');
