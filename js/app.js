@@ -31,7 +31,7 @@ const addIngredientBtn = document.getElementById('add-ingredient');
 const ingredientsList = document.getElementById('ingredients-list');
 const categoryFilter = document.getElementById('recipe-category-filter');
 const ingredientSearchModal = document.getElementById('ingredient-search-modal');
-const ingredientSearchInput = document.getElementById('ingredient-search-input');
+const ingredientSearchInput = document.getElementById('ingredient-search');
 const searchBtn = document.getElementById('search-btn');
 const searchResults = document.getElementById('search-results');
 const totalCalories = document.getElementById('total-calories');
@@ -622,48 +622,31 @@ function handleCustomIngredientSubmit(e) {
 
 // Update custom ingredients list
 function updateCustomIngredientsList(ingredients = null) {
-    const ingredientsList = document.getElementById('custom-ingredients-list');
-    if (!ingredientsList) return;
+    const list = document.getElementById('custom-ingredients-list');
+    if (!list) return;
 
-    // Get ingredients from localStorage if not provided
     if (!ingredients) {
-        const storedIngredients = localStorage.getItem('customIngredients');
-        ingredients = storedIngredients ? JSON.parse(storedIngredients) : [];
+        ingredients = JSON.parse(localStorage.getItem('customIngredients') || '[]');
     }
 
-    // Clear the table body
-    const tbody = ingredientsList.querySelector('tbody');
-    tbody.innerHTML = '';
-
-    if (ingredients.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = '<td colspan="5" class="no-items">No custom ingredients added yet</td>';
-        tbody.appendChild(tr);
-        return;
-    }
-
-    // Add each ingredient as a table row
-    ingredients.forEach(ingredient => {
-        const tr = document.createElement('tr');
-        tr.dataset.id = ingredient.id;
-        
-        tr.innerHTML = `
-            <td>${ingredient.name}</td>
-            <td>$${ingredient.pricePerGram.toFixed(2)}/100g</td>
-            <td>${ingredient.caloriesPerGram.toFixed(1)}/100g</td>
-            <td>${ingredient.fatPerGram.toFixed(1)}g fat, ${ingredient.carbsPerGram.toFixed(1)}g carbs, ${ingredient.proteinPerGram.toFixed(1)}g protein</td>
-            <td>
+    list.innerHTML = ingredients.map(ingredient => `
+        <div class="ingredient-item" data-id="${ingredient.id}">
+            <div class="ingredient-info">
+                <h3>${ingredient.name}</h3>
+                <p>Price: $${(ingredient.pricePerGram * 100).toFixed(2)}/100g</p>
+                <p>Calories: ${(ingredient.caloriesPerGram * 100).toFixed(1)}/100g</p>
+                <p>Macros: ${(ingredient.fatPerGram * 100).toFixed(1)}g fat, ${(ingredient.carbsPerGram * 100).toFixed(1)}g carbs, ${(ingredient.proteinPerGram * 100).toFixed(1)}g protein</p>
+            </div>
+            <div class="ingredient-actions">
                 <button class="btn btn-edit" onclick="editCustomIngredient('${ingredient.id}')">
                     <i class="fas fa-edit"></i>
                 </button>
                 <button class="btn btn-delete" onclick="deleteCustomIngredient('${ingredient.id}')">
                     <i class="fas fa-trash"></i>
                 </button>
-            </td>
-        `;
-        
-        tbody.appendChild(tr);
-    });
+            </div>
+        </div>
+    `).join('');
 }
 
 // Edit custom ingredient
@@ -704,24 +687,20 @@ function initializeApp() {
         const elements = {
             recipeList: document.getElementById('recipe-list'),
             recipeForm: document.getElementById('recipe-form'),
-            addRecipeBtn: document.getElementById('add-recipe'),
-            closeButtons: document.querySelectorAll('.close'),
-            ingredientInputs: document.querySelectorAll('.ingredient-name'),
-            addIngredientBtn: document.getElementById('add-ingredient'),
-            servingSizeInput: document.getElementById('recipe-serving-size'),
+            addRecipeBtn: document.getElementById('add-recipe-btn'),
+            closeButtons: document.querySelectorAll('.close-modal'),
+            ingredientInputs: document.querySelectorAll('.ingredient-input'),
+            addIngredientBtn: document.getElementById('add-ingredient-btn'),
+            servingSizeInput: document.getElementById('serving-size'),
             totalWeightInput: document.getElementById('total-weight'),
             totalPriceInput: document.getElementById('total-price'),
-            ingredientNameInput: document.getElementById('ingredient-name'),
-            caloriesInput: document.getElementById('calories'),
-            fatInput: document.getElementById('fat'),
-            carbsInput: document.getElementById('carbs'),
-            proteinInput: document.getElementById('protein'),
+            totalCaloriesInput: document.getElementById('total-calories'),
+            totalFatInput: document.getElementById('total-fat'),
+            totalCarbsInput: document.getElementById('total-carbs'),
+            totalProteinInput: document.getElementById('total-protein'),
             customIngredientForm: document.getElementById('custom-ingredient-form'),
             customIngredientsList: document.getElementById('custom-ingredients-list'),
-            ingredientSearchModal: document.getElementById('ingredient-search-modal'),
-            ingredientSearchInput: document.getElementById('ingredient-search-input'),
-            searchBtn: document.getElementById('search-btn'),
-            searchResults: document.getElementById('search-results')
+            ingredientSearch: document.getElementById('ingredient-search')
         };
 
         // Initialize recipe list if we're on the recipes page
@@ -748,18 +727,7 @@ function initializeApp() {
         if (elements.closeButtons.length > 0) {
             elements.closeButtons.forEach(button => {
                 if (button) {
-                    button.addEventListener('click', () => {
-                        const modal = button.closest('.modal');
-                        if (modal) {
-                            if (modal.id === 'recipe-modal') {
-                                closeModalHandler();
-                            } else if (modal.id === 'ingredient-search-modal') {
-                                closeIngredientSearch();
-                            } else if (modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
-                                window.closeMealPlanModal();
-                            }
-                        }
-                    });
+                    button.addEventListener('click', closeModalHandler);
                 }
             });
         }
@@ -768,7 +736,7 @@ function initializeApp() {
         if (elements.ingredientInputs.length > 0) {
             elements.ingredientInputs.forEach(input => {
                 if (input) {
-                    input.addEventListener('click', () => openIngredientSearch(input.closest('.ingredient-item')));
+                    input.addEventListener('focus', () => openIngredientSearch(input));
                 }
             });
         }
@@ -776,48 +744,6 @@ function initializeApp() {
         // Initialize add ingredient button if available
         if (elements.addIngredientBtn) {
             elements.addIngredientBtn.addEventListener('click', addIngredientInput);
-        }
-
-        // Initialize ingredient search modal if available
-        if (elements.ingredientSearchModal) {
-            // Close modal when clicking outside
-            elements.ingredientSearchModal.addEventListener('click', (e) => {
-                if (e.target === elements.ingredientSearchModal) {
-                    closeIngredientSearch();
-                }
-            });
-
-            // Initialize search functionality
-            if (elements.ingredientSearchInput && elements.searchBtn) {
-                elements.searchBtn.addEventListener('click', async () => {
-                    const query = elements.ingredientSearchInput.value.trim();
-                    if (query) {
-                        try {
-                            const results = await searchIngredients(query);
-                            displaySearchResults(results);
-                        } catch (error) {
-                            console.error('Error searching ingredients:', error);
-                            elements.searchResults.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
-                        }
-                    }
-                });
-
-                elements.ingredientSearchInput.addEventListener('keypress', async (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const query = elements.ingredientSearchInput.value.trim();
-                        if (query) {
-                            try {
-                                const results = await searchIngredients(query);
-                                displaySearchResults(results);
-                            } catch (error) {
-                                console.error('Error searching ingredients:', error);
-                                elements.searchResults.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
-                            }
-                        }
-                    }
-                });
-            }
         }
 
         // Initialize serving size input if available
@@ -835,29 +761,24 @@ function initializeApp() {
             elements.totalPriceInput.addEventListener('input', updateTotalNutrition);
         }
 
-        // Initialize ingredient name input if available
-        if (elements.ingredientNameInput) {
-            elements.ingredientNameInput.addEventListener('input', updateTotalNutrition);
+        // Initialize total calories input if available
+        if (elements.totalCaloriesInput) {
+            elements.totalCaloriesInput.addEventListener('input', updateTotalNutrition);
         }
 
-        // Initialize calories input if available
-        if (elements.caloriesInput) {
-            elements.caloriesInput.addEventListener('input', updateTotalNutrition);
+        // Initialize total fat input if available
+        if (elements.totalFatInput) {
+            elements.totalFatInput.addEventListener('input', updateTotalNutrition);
         }
 
-        // Initialize fat input if available
-        if (elements.fatInput) {
-            elements.fatInput.addEventListener('input', updateTotalNutrition);
+        // Initialize total carbs input if available
+        if (elements.totalCarbsInput) {
+            elements.totalCarbsInput.addEventListener('input', updateTotalNutrition);
         }
 
-        // Initialize carbs input if available
-        if (elements.carbsInput) {
-            elements.carbsInput.addEventListener('input', updateTotalNutrition);
-        }
-
-        // Initialize protein input if available
-        if (elements.proteinInput) {
-            elements.proteinInput.addEventListener('input', updateTotalNutrition);
+        // Initialize total protein input if available
+        if (elements.totalProteinInput) {
+            elements.totalProteinInput.addEventListener('input', updateTotalNutrition);
         }
 
         // Initialize custom ingredient form if available
@@ -868,6 +789,18 @@ function initializeApp() {
         // Initialize custom ingredients list if available
         if (elements.customIngredientsList) {
             updateCustomIngredientsList();
+        }
+
+        // Initialize ingredient search if available
+        if (elements.ingredientSearch) {
+            elements.ingredientSearch.addEventListener('input', () => {
+                const searchTerm = elements.ingredientSearch.value.toLowerCase();
+                const ingredients = JSON.parse(localStorage.getItem('customIngredients') || '[]');
+                const filteredIngredients = ingredients.filter(ingredient => 
+                    ingredient.name.toLowerCase().includes(searchTerm)
+                );
+                updateCustomIngredientsList(filteredIngredients);
+            });
         }
 
         console.log('App initialized successfully');
@@ -1173,18 +1106,19 @@ if (addIngredientBtn) {
     addIngredientBtn.addEventListener('click', addIngredientInput);
 }
 
-// Ingredient Search Event Listeners
-if (ingredientSearchModal) {
-    const closeButtons = ingredientSearchModal.querySelectorAll('.close');
-    closeButtons.forEach(button => {
-        button.addEventListener('click', closeIngredientSearch);
-    });
+if (recipeForm) {
+    recipeForm.addEventListener('submit', handleRecipeSubmit);
+}
+
+if (categoryFilter) {
+    categoryFilter.addEventListener('change', updateRecipeList);
 }
 
 if (searchBtn) {
     searchBtn.addEventListener('click', async () => {
         const query = ingredientSearchInput.value.trim();
         if (query) {
+            searchResults.innerHTML = '<div class="loading">Searching...</div>';
             try {
                 const results = await searchIngredients(query);
                 displaySearchResults(results);
@@ -1200,16 +1134,7 @@ if (ingredientSearchInput) {
     ingredientSearchInput.addEventListener('keypress', async (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            const query = ingredientSearchInput.value.trim();
-            if (query) {
-                try {
-                    const results = await searchIngredients(query);
-                    displaySearchResults(results);
-                } catch (error) {
-                    console.error('Error searching ingredients:', error);
-                    searchResults.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
-                }
-            }
+            searchBtn.click();
         }
     });
 }
@@ -1221,7 +1146,9 @@ document.querySelectorAll('.modal .close').forEach(closeBtn => {
             const modal = event.target.closest('.modal');
             if (modal.id === 'recipe-modal') {
                 closeModalHandler();
-            } else if (modal.id === 'ingredient-search-modal' && window.closeMealPlanModal) {
+            } else if (modal.id === 'ingredient-search-modal') {
+                closeIngredientSearch();
+            } else if (modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
                 window.closeMealPlanModal();
             }
         });
@@ -1235,7 +1162,9 @@ document.querySelectorAll('.modal').forEach(modal => {
             if (event.target === modal) {
                 if (modal.id === 'recipe-modal') {
                     closeModalHandler();
-                } else if (modal.id === 'ingredient-search-modal' && window.closeMealPlanModal) {
+                } else if (modal.id === 'ingredient-search-modal') {
+                    closeIngredientSearch();
+                } else if (modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
                     window.closeMealPlanModal();
                 }
             }
