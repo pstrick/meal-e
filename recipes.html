@@ -1,7 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipes - Meal-E</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <a href="index.html" class="logo">Meal-E</a>
                 <div class="nav-links">
                     <a href="index.html">Home</a>
                     <a href="recipes.html" class="active">Recipes</a>
                     <a href="mealplan.html">Meal Plan</a>
                     <a href="custom-ingredients.html">Custom Ingredients</a>
                     <a href="settings.html">Settings</a>
-                </div> 
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="container">
+            <h1>Recipes</h1>
+            
+            <div class="recipe-controls">
+                <button id="add-recipe-btn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Recipe
+                </button>
+                <div class="filter-group">
+                    <label for="category-filter">Category:</label>
+                    <select id="category-filter">
+                        <option value="all">All Categories</option>
+                        <option value="breakfast">Breakfast</option>
+                        <option value="lunch">Lunch</option>
+                        <option value="dinner">Dinner</option>
+                        <option value="snacks">Snacks</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="recipe-list" class="recipe-grid">
+                <!-- Recipes will be populated here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Recipe Modal -->
+    <div id="recipe-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Recipe</h2>
+            <form id="recipe-form">
+                <div class="form-group">
+                    <label for="recipe-name">Recipe Name</label>
+                    <input type="text" id="recipe-name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="recipe-category">Category</label>
+                    <select id="recipe-category" required>
+                        <option value="breakfast">Breakfast</option>
+                        <option value="lunch">Lunch</option>
+                        <option value="dinner">Dinner</option>
+                        <option value="snacks">Snacks</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="serving-size">Serving Size (g)</label>
+                    <input type="number" id="serving-size" step="1" min="0" required>
+                </div>
+                
+                <div id="ingredients-list">
+                    <!-- Ingredient inputs will be added here -->
+                </div>
+                
+                <button type="button" id="add-ingredient-btn" class="btn btn-secondary">
+                    <i class="fas fa-plus"></i> Add Ingredient
+                </button>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-recipe">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Recipe</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2024 Meal-E. All rights reserved.</p>
+            <p>Version: <span id="version">1.0.0</span></p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/app.js" type="module"></script>
+</body>
+</html> 
