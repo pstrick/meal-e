@@ -39,9 +39,15 @@ const totalProtein = document.getElementById('total-protein');
 const totalCarbs = document.getElementById('total-carbs');
 const totalFat = document.getElementById('total-fat');
 
-// Sample data structure
+// Initialize data structures
 let recipes = [];
 let mealPlan = {};
+let nutritionData = {
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0
+};
 
 // Current state
 let currentIngredientInput = null;
