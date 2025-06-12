@@ -717,14 +717,18 @@ function initializeApp() {
         // Initialize modal close buttons if available
         if (elements.closeButtons.length > 0) {
             elements.closeButtons.forEach(button => {
-                button.addEventListener('click', closeModalHandler);
+                if (button) {
+                    button.addEventListener('click', closeModalHandler);
+                }
             });
         }
 
         // Initialize ingredient inputs if available
         if (elements.ingredientInputs.length > 0) {
             elements.ingredientInputs.forEach(input => {
-                input.addEventListener('focus', () => openIngredientSearch(input));
+                if (input) {
+                    input.addEventListener('focus', () => openIngredientSearch(input));
+                }
             });
         }
 

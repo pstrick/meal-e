@@ -348,158 +348,25 @@ function saveMealPlan() {
 }
 
 function loadMealPlan() {
-    console.log('Loading meal plan...');
-    const week = getWeekDates(currentWeekOffset);
-    
-    // Find or create the container
-    let mealPlanContainer = document.querySelector('.meal-plan-container');
-    if (!mealPlanContainer) {
-        mealPlanContainer = document.createElement('div');
-        mealPlanContainer.className = 'meal-plan-container';
-        const oldGrid = document.querySelector('.meal-plan-grid');
-        if (oldGrid) {
-            oldGrid.parentNode.replaceChild(mealPlanContainer, oldGrid);
+    try {
+        // Check if we're on the meal plan page
+        const mealPlanGrid = document.querySelector('.meal-plan-grid');
+        if (!mealPlanGrid) {
+            console.log('Not on meal plan page, skipping meal plan load');
+            return;
         }
+
+        // Load meal plan from localStorage
+        const savedMealPlan = localStorage.getItem('mealPlan');
+        if (savedMealPlan) {
+            mealPlan = JSON.parse(savedMealPlan);
+        }
+
+        // Update the display
+        updateMealPlanDisplay();
+    } catch (error) {
+        console.error('Error loading meal plan:', error);
     }
-    
-    // Create or get the grid
-    let mealPlanGrid = mealPlanContainer.querySelector('.meal-plan-grid');
-    if (!mealPlanGrid) {
-        mealPlanGrid = document.createElement('div');
-        mealPlanGrid.className = 'meal-plan-grid';
-        mealPlanContainer.appendChild(mealPlanGrid);
-    }
-    
-    const isMobile = window.innerWidth <= 768;
-
-    if (!mealPlanGrid) {
-        console.error('Meal plan grid not found!');
-        return;
-    }
-
-    console.log('Current week:', week);
-    console.log('Is mobile:', isMobile);
-
-    // Clear existing content
-    mealPlanGrid.innerHTML = '';
-
-    if (!isMobile) {
-        // Desktop layout
-        // Add header row
-        const headerRow = document.createElement('div');
-        headerRow.className = 'meal-plan-header';
-        
-        // Add empty cell for time slots
-        const emptyCell = document.createElement('div');
-        emptyCell.className = 'day-header';
-        headerRow.appendChild(emptyCell);
-        
-        // Add day headers
-        week.dayNames.forEach((dayName, index) => {
-            const dayHeader = document.createElement('div');
-            dayHeader.className = 'day-header';
-            dayHeader.textContent = dayName;
-            headerRow.appendChild(dayHeader);
-        });
-        
-        mealPlanGrid.appendChild(headerRow);
-
-        // Create body container
-        const bodyContainer = document.createElement('div');
-        bodyContainer.className = 'meal-plan-body';
-        
-        // Add time slots
-        ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
-            const timeSlot = document.createElement('div');
-            timeSlot.className = 'time-slot';
-            timeSlot.textContent = mealType.charAt(0).toUpperCase() + mealType.slice(1);
-            bodyContainer.appendChild(timeSlot);
-            
-            // Add meal slots for each day
-            week.dates.forEach((dateStr, index) => {
-                const mealSlot = document.createElement('div');
-                mealSlot.className = 'meal-slot';
-                mealSlot.dataset.day = week.dayNames[index].toLowerCase();
-                mealSlot.dataset.meal = mealType;
-                mealSlot.dataset.date = dateStr;
-                bodyContainer.appendChild(mealSlot);
-            });
-        });
-        
-        mealPlanGrid.appendChild(bodyContainer);
-    } else {
-        // Mobile layout
-        const bodyContainer = document.createElement('div');
-        bodyContainer.className = 'meal-plan-body';
-        
-        // Create a column for each day
-        week.dates.forEach((dateStr, index) => {
-            const dayColumn = document.createElement('div');
-            dayColumn.className = 'day-column';
-            
-            // Add day header
-            const dayHeader = document.createElement('div');
-            dayHeader.className = 'day-header';
-            const dayName = week.dayNames[index];
-            const date = new Date(dateStr);
-            const dayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            dayHeader.textContent = `${dayName}, ${dayDate}`;
-            dayColumn.appendChild(dayHeader);
-            
-            // Add meal slots
-            ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
-                const timeSlot = document.createElement('div');
-                timeSlot.className = 'time-slot';
-                timeSlot.textContent = mealType.charAt(0).toUpperCase() + mealType.slice(1);
-                dayColumn.appendChild(timeSlot);
-                
-                const mealSlot = document.createElement('div');
-                mealSlot.className = 'meal-slot';
-                mealSlot.dataset.day = dayName.toLowerCase();
-                mealSlot.dataset.meal = mealType;
-                mealSlot.dataset.date = dateStr;
-                dayColumn.appendChild(mealSlot);
-            });
-            
-            bodyContainer.appendChild(dayColumn);
-        });
-        
-        mealPlanGrid.appendChild(bodyContainer);
-    }
-
-    // Load meals into slots
-    const mealSlots = document.querySelectorAll('.meal-slot');
-    console.log('Found meal slots:', mealSlots.length);
-
-    mealSlots.forEach(slot => {
-        const date = slot.dataset.date;
-        const meal = slot.dataset.meal;
-        const key = getMealKey(date, meal);
-        
-        console.log('Processing slot:', { date, meal, key });
-        
-        // Clear existing content
-        slot.innerHTML = '';
-        
-        const meals = mealPlan[key] || [];
-        
-        // Add meals to the slot
-        meals.forEach(mealData => {
-            const recipe = window.recipes.find(r => r.id === mealData.recipeId);
-            if (recipe) {
-                const mealItem = createMealItem(recipe, mealData.servings);
-                mealItem.dataset.recipeId = recipe.id;
-                mealItem.dataset.servings = mealData.servings;
-                slot.appendChild(mealItem);
-            }
-        });
-        
-        // Add the "Add Meal" button
-        addAddMealButton(slot);
-    });
-
-    updateNutritionSummary();
-    console.log('Meal plan loaded');
 }
 
 function calculateDayNutrition(date) {
@@ -532,95 +399,66 @@ function calculateDayNutrition(date) {
 }
 
 function updateNutritionSummary() {
-    console.log('Updating nutrition summary...');
-    const week = getWeekDates(currentWeekOffset);
-    
-    // Calculate daily totals and weekly average
-    const dailyTotals = [];
-    const weeklyTotals = {
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0
-    };
+    try {
+        // Check if we're on the meal plan page
+        const mealPlanGrid = document.querySelector('.meal-plan-grid');
+        if (!mealPlanGrid) {
+            console.log('Not on meal plan page, skipping nutrition update');
+            return;
+        }
 
-    // Calculate daily totals
-    week.dates.forEach(date => {
-        const nutrition = calculateDayNutrition(date);
-        dailyTotals.push(nutrition);
-        
-        weeklyTotals.calories += nutrition.calories;
-        weeklyTotals.protein += nutrition.protein;
-        weeklyTotals.carbs += nutrition.carbs;
-        weeklyTotals.fat += nutrition.fat;
-    });
+        const week = getWeekDates(currentWeekOffset);
+        const nutritionSummary = document.querySelector('.nutrition-summary');
+        if (!nutritionSummary) {
+            console.log('Nutrition summary element not found');
+            return;
+        }
 
-    // Calculate daily averages
-    const dailyAverage = {
-        calories: weeklyTotals.calories / 7,
-        protein: weeklyTotals.protein / 7,
-        carbs: weeklyTotals.carbs / 7,
-        fat: weeklyTotals.fat / 7
-    };
+        // Calculate total nutrition for the week
+        let totalCalories = 0;
+        let totalProtein = 0;
+        let totalCarbs = 0;
+        let totalFat = 0;
+        let totalCost = 0;
 
-    // Update the totals row in the meal plan table
-    const mealPlanTable = document.querySelector('.meal-plan-grid');
-    
-    // Remove existing totals rows if they exist
-    const existingTotals = mealPlanTable.querySelectorAll('.totals-row, .average-row');
-    existingTotals.forEach(row => row.remove());
+        week.dates.forEach(date => {
+            const dayNutrition = calculateDayNutrition(date);
+            totalCalories += dayNutrition.calories;
+            totalProtein += dayNutrition.protein;
+            totalCarbs += dayNutrition.carbs;
+            totalFat += dayNutrition.fat;
+            totalCost += dayNutrition.cost;
+        });
 
-    // Create daily totals row
-    const totalsRow = document.createElement('div');
-    totalsRow.className = 'totals-row';
-    
-    // Add label cell
-    const labelCell = document.createElement('div');
-    labelCell.className = 'time-slot';
-    labelCell.textContent = 'Daily Totals';
-    totalsRow.appendChild(labelCell);
-
-    // Add daily total cells
-    dailyTotals.forEach(nutrition => {
-        const totalCell = document.createElement('div');
-        totalCell.className = 'daily-total';
-        totalCell.innerHTML = `
-            <div class="total-calories">${Math.round(nutrition.calories)} cal</div>
-            <div class="total-macros">
-                <span class="macro-total">P: ${Math.round(nutrition.protein)}g</span>
-                <span class="macro-total">C: ${Math.round(nutrition.carbs)}g</span>
-                <span class="macro-total">F: ${Math.round(nutrition.fat)}g</span>
+        // Update the summary display
+        nutritionSummary.innerHTML = `
+            <h3>Weekly Summary</h3>
+            <div class="nutrition-grid">
+                <div class="nutrition-item">
+                    <span class="label">Total Calories:</span>
+                    <span class="value">${Math.round(totalCalories)}</span>
+                </div>
+                <div class="nutrition-item">
+                    <span class="label">Protein:</span>
+                    <span class="value">${Math.round(totalProtein)}g</span>
+                </div>
+                <div class="nutrition-item">
+                    <span class="label">Carbs:</span>
+                    <span class="value">${Math.round(totalCarbs)}g</span>
+                </div>
+                <div class="nutrition-item">
+                    <span class="label">Fat:</span>
+                    <span class="value">${Math.round(totalFat)}g</span>
+                </div>
+                <div class="nutrition-item">
+                    <span class="label">Total Cost:</span>
+                    <span class="value">$${totalCost.toFixed(2)}</span>
+                </div>
             </div>
         `;
-        totalsRow.appendChild(totalCell);
-    });
-
-    // Create average row
-    const averageRow = document.createElement('div');
-    averageRow.className = 'average-row';
-    
-    // Add label cell
-    const avgLabelCell = document.createElement('div');
-    avgLabelCell.className = 'time-slot';
-    avgLabelCell.textContent = 'Daily Average';
-    averageRow.appendChild(avgLabelCell);
-
-    // Add average cell that spans all days
-    const avgCell = document.createElement('div');
-    avgCell.className = 'weekly-average-cell';
-    avgCell.innerHTML = `
-        <div class="total-calories">${Math.round(dailyAverage.calories)} cal</div>
-        <div class="total-macros">
-            <span class="macro-total">P: ${Math.round(dailyAverage.protein)}g</span>
-            <span class="macro-total">C: ${Math.round(dailyAverage.carbs)}g</span>
-            <span class="macro-total">F: ${Math.round(dailyAverage.fat)}g</span>
-        </div>
-    `;
-    averageRow.appendChild(avgCell);
-
-    // Add the rows to the meal plan table
-    mealPlanTable.appendChild(totalsRow);
-    mealPlanTable.appendChild(averageRow);
+    } catch (error) {
+        console.error('Error updating nutrition summary:', error);
+    }
 }
 
 // Remove the old event listeners for meal slots since we're handling clicks on the buttons directly
