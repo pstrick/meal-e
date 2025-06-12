@@ -694,8 +694,8 @@ function initializeApp() {
             ingredientSearch: document.getElementById('ingredient-search')
         };
 
-        // Initialize recipe list if available
-        if (elements.recipeList) {
+        // Initialize recipe list if we're on the recipes page
+        if (elements.recipeList && document.getElementById('category-filter')) {
             updateRecipeList();
         }
 
@@ -1181,8 +1181,13 @@ function deleteRecipe(id) {
 }
 
 function updateRecipeList() {
+    if (!recipeList) {
+        console.log('Recipe list element not found, skipping update');
+        return;
+    }
+
     recipeList.innerHTML = '';
-    const selectedCategory = categoryFilter.value;
+    const selectedCategory = categoryFilter ? categoryFilter.value : 'all';
     
     const filteredRecipes = selectedCategory === 'all' 
         ? recipes 
