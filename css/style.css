@@ -312,12 +312,12 @@ footer {
 .meal-plan-grid {
     display: grid;
     grid-template-columns: 120px repeat(7, 1fr);
-    gap: 1rem;
+    gap: 1px;
     margin-bottom: 2rem;
-    background-color: white;
+    background-color: var(--border-color);
     border-radius: 8px;
+    overflow: hidden;
     box-shadow: 0 2px 4px var(--shadow-color);
-    overflow-x: auto;
 }
 
 .meal-plan-header {
@@ -330,31 +330,109 @@ footer {
     font-weight: 600;
     background-color: var(--primary-color);
     color: white;
-    border-radius: 4px 4px 0 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .time-slot {
     padding: 1rem;
     font-weight: 600;
-    background-color: var(--background-color);
-    border-radius: 4px;
+    background-color: white;
+    border-right: 1px solid var(--border-color);
     display: flex;
     align-items: center;
+    position: sticky;
+    left: 0;
+    z-index: 5;
 }
 
 .meal-slot {
-    min-height: 100px;
+    min-height: 120px;
     padding: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
     background-color: white;
+    border: none;
     cursor: pointer;
     transition: all 0.3s ease;
+    position: relative;
 }
 
 .meal-slot:hover {
     background-color: var(--background-color);
-    border-color: var(--primary-color);
+}
+
+.meal-slot::after {
+    content: '+';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    color: var(--border-color);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.meal-slot:hover::after {
+    opacity: 1;
+}
+
+.meal-slot.has-meal {
+    background-color: #f8f9fa;
+}
+
+.meal-slot.has-meal:hover::after {
+    opacity: 0;
+}
+
+.meal-slot .meal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.meal-slot .meal-name {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.meal-slot .meal-servings {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+.meal-slot .meal-macros {
+    font-size: 0.8em;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 0.5rem;
+}
+
+.meal-slot .meal-actions {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.meal-slot:hover .meal-actions {
+    opacity: 1;
+}
+
+.meal-slot .meal-actions button {
+    padding: 0.25rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+}
+
+.meal-slot .meal-actions button:hover {
+    color: var(--primary-color);
 }
 
 /* Search and Results */
@@ -529,6 +607,100 @@ footer {
 @media (max-width: 768px) {
     .ingredients-table th,
     .ingredients-table td {
+        padding: 0.75rem;
+    }
+}
+
+/* Week Navigation */
+.week-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+.week-navigation h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--text-color);
+}
+
+.week-navigation .btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.week-navigation .btn i {
+    font-size: 0.9em;
+}
+
+/* Nutrition Summary */
+.nutrition-summary {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px var(--shadow-color);
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.nutrition-summary h3 {
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+}
+
+.nutrition-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.nutrition-item {
+    padding: 1rem;
+    background-color: var(--background-color);
+    border-radius: 4px;
+    text-align: center;
+}
+
+.nutrition-item .label {
+    font-weight: 600;
+    color: var(--text-color);
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.nutrition-item .value {
+    font-size: 1.2em;
+    color: var(--primary-color);
+}
+
+/* Responsive Meal Plan */
+@media (max-width: 1200px) {
+    .meal-plan-grid {
+        grid-template-columns: 100px repeat(7, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .meal-plan-grid {
+        grid-template-columns: 80px repeat(7, 1fr);
+        font-size: 0.9em;
+    }
+
+    .day-header {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .time-slot {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .meal-slot {
+        min-height: 100px;
         padding: 0.75rem;
     }
 } 
