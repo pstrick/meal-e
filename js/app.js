@@ -673,116 +673,120 @@ function initializeApp() {
         // Initialize settings first
         initializeSettings();
 
-        // Only initialize recipe list if we're on a page with recipe elements
-        const recipeList = document.getElementById('recipe-list');
-        if (recipeList) {
+        // Get all potential elements we might need to initialize
+        const elements = {
+            recipeList: document.getElementById('recipe-list'),
+            recipeForm: document.getElementById('recipe-form'),
+            addRecipeBtn: document.getElementById('add-recipe-btn'),
+            closeButtons: document.querySelectorAll('.close-modal'),
+            ingredientInputs: document.querySelectorAll('.ingredient-input'),
+            addIngredientBtn: document.getElementById('add-ingredient-btn'),
+            servingSizeInput: document.getElementById('serving-size'),
+            totalWeightInput: document.getElementById('total-weight'),
+            totalPriceInput: document.getElementById('total-price'),
+            ingredientNameInput: document.getElementById('ingredient-name'),
+            caloriesInput: document.getElementById('calories'),
+            fatInput: document.getElementById('fat'),
+            carbsInput: document.getElementById('carbs'),
+            proteinInput: document.getElementById('protein'),
+            customIngredientForm: document.getElementById('custom-ingredient-form'),
+            customIngredientsList: document.getElementById('custom-ingredients-list'),
+            ingredientSearch: document.getElementById('ingredient-search')
+        };
+
+        // Initialize recipe list if available
+        if (elements.recipeList) {
             updateRecipeList();
         }
 
-        // Only initialize meal planner if we're on the meal plan page
+        // Initialize meal planner if available
         if (typeof initializeMealPlanner === 'function') {
             initializeMealPlanner();
         }
 
-        // Only initialize recipe form if we're on a page with the form
-        const recipeForm = document.getElementById('recipe-form');
-        if (recipeForm) {
-            recipeForm.addEventListener('submit', handleRecipeSubmit);
+        // Initialize recipe form if available
+        if (elements.recipeForm) {
+            elements.recipeForm.addEventListener('submit', handleRecipeSubmit);
         }
 
-        // Only initialize add recipe button if we're on a page with the button
-        const addRecipeBtn = document.getElementById('add-recipe-btn');
-        if (addRecipeBtn) {
-            addRecipeBtn.addEventListener('click', openModal);
+        // Initialize add recipe button if available
+        if (elements.addRecipeBtn) {
+            elements.addRecipeBtn.addEventListener('click', openModal);
         }
 
-        // Only initialize modal close buttons if we're on a page with modals
-        const closeButtons = document.querySelectorAll('.close-modal');
-        if (closeButtons.length > 0) {
-            closeButtons.forEach(button => {
+        // Initialize modal close buttons if available
+        if (elements.closeButtons.length > 0) {
+            elements.closeButtons.forEach(button => {
                 button.addEventListener('click', closeModalHandler);
             });
         }
 
-        // Only initialize ingredient search if we're on a page with ingredient inputs
-        const ingredientInputs = document.querySelectorAll('.ingredient-input');
-        if (ingredientInputs.length > 0) {
-            ingredientInputs.forEach(input => {
+        // Initialize ingredient inputs if available
+        if (elements.ingredientInputs.length > 0) {
+            elements.ingredientInputs.forEach(input => {
                 input.addEventListener('focus', () => openIngredientSearch(input));
             });
         }
 
-        // Only initialize add ingredient button if we're on a page with the button
-        const addIngredientBtn = document.getElementById('add-ingredient-btn');
-        if (addIngredientBtn) {
-            addIngredientBtn.addEventListener('click', addIngredientInput);
+        // Initialize add ingredient button if available
+        if (elements.addIngredientBtn) {
+            elements.addIngredientBtn.addEventListener('click', addIngredientInput);
         }
 
-        // Only initialize serving size input if we're on a page with the input
-        const servingSizeInput = document.getElementById('serving-size');
-        if (servingSizeInput) {
-            servingSizeInput.addEventListener('input', updateServingSizeDefault);
+        // Initialize serving size input if available
+        if (elements.servingSizeInput) {
+            elements.servingSizeInput.addEventListener('input', updateServingSizeDefault);
         }
 
-        // Only initialize total weight input if we're on a page with the input
-        const totalWeightInput = document.getElementById('total-weight');
-        if (totalWeightInput) {
-            totalWeightInput.addEventListener('input', updateTotalNutrition);
+        // Initialize total weight input if available
+        if (elements.totalWeightInput) {
+            elements.totalWeightInput.addEventListener('input', updateTotalNutrition);
         }
 
-        // Only initialize total price input if we're on a page with the input
-        const totalPriceInput = document.getElementById('total-price');
-        if (totalPriceInput) {
-            totalPriceInput.addEventListener('input', updateTotalNutrition);
+        // Initialize total price input if available
+        if (elements.totalPriceInput) {
+            elements.totalPriceInput.addEventListener('input', updateTotalNutrition);
         }
 
-        // Only initialize ingredient name input if we're on a page with the input
-        const ingredientNameInput = document.getElementById('ingredient-name');
-        if (ingredientNameInput) {
-            ingredientNameInput.addEventListener('input', updateTotalNutrition);
+        // Initialize ingredient name input if available
+        if (elements.ingredientNameInput) {
+            elements.ingredientNameInput.addEventListener('input', updateTotalNutrition);
         }
 
-        // Only initialize calories input if we're on a page with the input
-        const caloriesInput = document.getElementById('calories');
-        if (caloriesInput) {
-            caloriesInput.addEventListener('input', updateTotalNutrition);
+        // Initialize calories input if available
+        if (elements.caloriesInput) {
+            elements.caloriesInput.addEventListener('input', updateTotalNutrition);
         }
 
-        // Only initialize fat input if we're on a page with the input
-        const fatInput = document.getElementById('fat');
-        if (fatInput) {
-            fatInput.addEventListener('input', updateTotalNutrition);
+        // Initialize fat input if available
+        if (elements.fatInput) {
+            elements.fatInput.addEventListener('input', updateTotalNutrition);
         }
 
-        // Only initialize carbs input if we're on a page with the input
-        const carbsInput = document.getElementById('carbs');
-        if (carbsInput) {
-            carbsInput.addEventListener('input', updateTotalNutrition);
+        // Initialize carbs input if available
+        if (elements.carbsInput) {
+            elements.carbsInput.addEventListener('input', updateTotalNutrition);
         }
 
-        // Only initialize protein input if we're on a page with the input
-        const proteinInput = document.getElementById('protein');
-        if (proteinInput) {
-            proteinInput.addEventListener('input', updateTotalNutrition);
+        // Initialize protein input if available
+        if (elements.proteinInput) {
+            elements.proteinInput.addEventListener('input', updateTotalNutrition);
         }
 
-        // Only initialize custom ingredient form if we're on the custom ingredients page
-        const customIngredientForm = document.getElementById('custom-ingredient-form');
-        if (customIngredientForm) {
-            customIngredientForm.addEventListener('submit', handleCustomIngredientSubmit);
+        // Initialize custom ingredient form if available
+        if (elements.customIngredientForm) {
+            elements.customIngredientForm.addEventListener('submit', handleCustomIngredientSubmit);
         }
 
-        // Only initialize custom ingredients list if we're on the custom ingredients page
-        const customIngredientsList = document.getElementById('custom-ingredients-list');
-        if (customIngredientsList) {
+        // Initialize custom ingredients list if available
+        if (elements.customIngredientsList) {
             updateCustomIngredientsList();
         }
 
-        // Only initialize ingredient search if we're on the custom ingredients page
-        const ingredientSearch = document.getElementById('ingredient-search');
-        if (ingredientSearch) {
-            ingredientSearch.addEventListener('input', () => {
-                const searchTerm = ingredientSearch.value.toLowerCase();
+        // Initialize ingredient search if available
+        if (elements.ingredientSearch) {
+            elements.ingredientSearch.addEventListener('input', () => {
+                const searchTerm = elements.ingredientSearch.value.toLowerCase();
                 const ingredients = JSON.parse(localStorage.getItem('customIngredients') || '[]');
                 const filteredIngredients = ingredients.filter(ingredient => 
                     ingredient.name.toLowerCase().includes(searchTerm)
@@ -790,6 +794,8 @@ function initializeApp() {
                 updateCustomIngredientsList(filteredIngredients);
             });
         }
+
+        console.log('App initialized successfully');
     } catch (error) {
         console.error('Error initializing app:', error);
     }

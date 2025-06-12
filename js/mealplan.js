@@ -635,16 +635,39 @@ export function initializeMealPlanner() {
     // Load recipes first
     const loadRecipes = async () => {
         try {
-            const recipesModule = await import('./recipes.js');
-            window.recipes = recipesModule.recipes;
-            console.log('Recipes loaded:', window.recipes);
-            
-            // Continue initialization after recipes are loaded
-            continueInitialization();
+            // Try to load recipes from localStorage first
+            const savedRecipes = localStorage.getItem('recipes');
+            if (savedRecipes) {
+                window.recipes = JSON.parse(savedRecipes);
+                console.log('Recipes loaded from localStorage:', window.recipes);
+                continueInitialization();
+                return;
+            }
+
+            // If no saved recipes, try to load from module
+            try {
+                const recipesModule = await import('../js/recipes.js');
+                window.recipes = recipesModule.recipes;
+                console.log('Recipes loaded from module:', window.recipes);
+                
+                // Save to localStorage for future use
+                localStorage.setItem('recipes', JSON.stringify(window.recipes));
+                
+                // Continue initialization after recipes are loaded
+                continueInitialization();
+            } catch (moduleError) {
+                console.error('Error loading recipes module:', moduleError);
+                // Initialize with empty recipes array
+                window.recipes = [];
+                localStorage.setItem('recipes', JSON.stringify(window.recipes));
+                continueInitialization();
+            }
         } catch (error) {
-            console.error('Error loading recipes:', error);
-            // Retry after a short delay
-            setTimeout(loadRecipes, 1000);
+            console.error('Error in loadRecipes:', error);
+            // Initialize with empty recipes array
+            window.recipes = [];
+            localStorage.setItem('recipes', JSON.stringify(window.recipes));
+            continueInitialization();
         }
     };
 
