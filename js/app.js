@@ -566,6 +566,107 @@ function initializeSettings() {
     }
 }
 
+// Handle custom ingredient form submission
+function handleCustomIngredientSubmit(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('ingredient-name').value;
+    const totalPrice = parseFloat(document.getElementById('total-price').value);
+    const totalWeight = parseFloat(document.getElementById('total-weight').value);
+    const servingSize = parseFloat(document.getElementById('serving-size').value);
+    const calories = parseFloat(document.getElementById('calories').value);
+    const fat = parseFloat(document.getElementById('fat').value);
+    const carbs = parseFloat(document.getElementById('carbs').value);
+    const protein = parseFloat(document.getElementById('protein').value);
+
+    // Calculate per gram values
+    const pricePerGram = totalPrice / totalWeight;
+    const caloriesPerGram = calories / servingSize;
+    const fatPerGram = fat / servingSize;
+    const carbsPerGram = carbs / servingSize;
+    const proteinPerGram = protein / servingSize;
+
+    const ingredient = {
+        id: Date.now().toString(),
+        name,
+        pricePerGram,
+        caloriesPerGram,
+        fatPerGram,
+        carbsPerGram,
+        proteinPerGram,
+        servingSize,
+        isCustom: true
+    };
+
+    // Get existing ingredients
+    const ingredients = JSON.parse(localStorage.getItem('customIngredients') || '[]');
+    ingredients.push(ingredient);
+    localStorage.setItem('customIngredients', JSON.stringify(ingredients));
+
+    // Update the list
+    updateCustomIngredientsList();
+
+    // Reset form
+    e.target.reset();
+}
+
+// Update custom ingredients list
+function updateCustomIngredientsList(ingredients = null) {
+    const list = document.getElementById('custom-ingredients-list');
+    if (!list) return;
+
+    if (!ingredients) {
+        ingredients = JSON.parse(localStorage.getItem('customIngredients') || '[]');
+    }
+
+    list.innerHTML = ingredients.map(ingredient => `
+        <div class="ingredient-item" data-id="${ingredient.id}">
+            <div class="ingredient-info">
+                <h3>${ingredient.name}</h3>
+                <p>Price: $${(ingredient.pricePerGram * 100).toFixed(2)}/100g</p>
+                <p>Calories: ${(ingredient.caloriesPerGram * 100).toFixed(1)}/100g</p>
+                <p>Macros: ${(ingredient.fatPerGram * 100).toFixed(1)}g fat, ${(ingredient.carbsPerGram * 100).toFixed(1)}g carbs, ${(ingredient.proteinPerGram * 100).toFixed(1)}g protein</p>
+            </div>
+            <div class="ingredient-actions">
+                <button class="btn btn-edit" onclick="editCustomIngredient('${ingredient.id}')">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-delete" onclick="deleteCustomIngredient('${ingredient.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Edit custom ingredient
+function editCustomIngredient(id) {
+    const ingredients = JSON.parse(localStorage.getItem('customIngredients') || '[]');
+    const ingredient = ingredients.find(i => i.id === id);
+    if (!ingredient) return;
+
+    // Populate form
+    document.getElementById('ingredient-name').value = ingredient.name;
+    document.getElementById('total-price').value = (ingredient.pricePerGram * 100).toFixed(2);
+    document.getElementById('total-weight').value = '100';
+    document.getElementById('serving-size').value = ingredient.servingSize;
+    document.getElementById('calories').value = (ingredient.caloriesPerGram * 100).toFixed(1);
+    document.getElementById('fat').value = (ingredient.fatPerGram * 100).toFixed(1);
+    document.getElementById('carbs').value = (ingredient.carbsPerGram * 100).toFixed(1);
+    document.getElementById('protein').value = (ingredient.proteinPerGram * 100).toFixed(1);
+
+    // Remove old ingredient
+    deleteCustomIngredient(id);
+}
+
+// Delete custom ingredient
+function deleteCustomIngredient(id) {
+    const ingredients = JSON.parse(localStorage.getItem('customIngredients') || '[]');
+    const updatedIngredients = ingredients.filter(i => i.id !== id);
+    localStorage.setItem('customIngredients', JSON.stringify(updatedIngredients));
+    updateCustomIngredientsList();
+}
+
 // Initialize app
 function initializeApp() {
     try {

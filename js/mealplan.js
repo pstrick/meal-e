@@ -628,91 +628,45 @@ document.querySelectorAll('.meal-slot').forEach(slot => {
     slot.removeEventListener('click', () => {});
 });
 
-// Export the initialization function
+// Initialize meal planner
 export function initializeMealPlanner() {
     console.log('Initializing meal planner...');
     
-    // Wait for recipes to be available
-    const checkRecipes = setInterval(() => {
-        if (window.recipes && Array.isArray(window.recipes)) {
-            console.log('Recipes loaded, proceeding with initialization');
-            clearInterval(checkRecipes);
+    // Load recipes first
+    const loadRecipes = async () => {
+        try {
+            const recipesModule = await import('./recipes.js');
+            window.recipes = recipesModule.recipes;
+            console.log('Recipes loaded:', window.recipes);
+            
+            // Continue initialization after recipes are loaded
             continueInitialization();
+        } catch (error) {
+            console.error('Error loading recipes:', error);
+            // Retry after a short delay
+            setTimeout(loadRecipes, 1000);
         }
-    }, 100);
+    };
 
-    // Timeout after 5 seconds
-    setTimeout(() => {
-        clearInterval(checkRecipes);
-        if (!window.recipes || !Array.isArray(window.recipes)) {
-            console.error('Recipes not properly loaded after timeout');
-        }
-    }, 5000);
+    // Start loading recipes
+    loadRecipes();
 }
 
 // Continue initialization after recipes are loaded
 function continueInitialization() {
-    console.log('Available recipes:', window.recipes.length);
-    
-    // Verify settings are loaded
-    if (!window.settings) {
-        console.error('Settings not properly loaded');
-        return;
-    }
-    
-    console.log('Using settings for meal planner:', window.settings);
-    
-    // Reset week offset to ensure we start from current week
-    currentWeekOffset = 0;
-    
-    // Initialize the meal planner with current settings
-    const week = getWeekDates();
-    console.log('Initial week dates:', week);
-    
-    // Update the week display
-    updateWeekDisplay();
-    
-    // Load the meal plan
-    loadMealPlan();
-    
-    // Ensure modal is properly initialized
-    if (!mealPlanModal) {
-        console.error('Meal plan modal not found!');
-        return;
-    }
-
-    // Initialize form and its elements
-    const oldForm = mealPlanForm;
-    if (oldForm) {
-        // Remove old event listeners by cloning
-        const newForm = oldForm.cloneNode(true);
-        oldForm.parentNode.replaceChild(newForm, oldForm);
-        mealPlanForm = newForm;
-
-        // Store the current slot in a data attribute
-        mealPlanForm.addEventListener('submit', (e) => {
-            console.log('Form submit event triggered');
-            console.log('Current slot when submitting:', selectedSlot);
-            handleMealPlanSubmit(e);
-        });
-
-        // Reattach event listeners to form elements
-        const recipeSearch = mealPlanForm.querySelector('#recipe-search');
-        const categoryFilter = mealPlanForm.querySelector('#meal-category-filter');
-        const cancelButton = mealPlanForm.querySelector('#cancel-meal');
-
-        if (recipeSearch) {
-            recipeSearch.addEventListener('input', () => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    updateRecipeList();
-                }, 300); // Debounce for 300ms
-            });
-        }
-
-        if (categoryFilter) {
-            categoryFilter.addEventListener('change', updateRecipeList);
-        }
+    try {
+        // Load meal plan
+        loadMealPlan();
+        
+        // Initialize week navigation
+        initializeWeekNavigation();
+        
+        // Initialize search handlers
+        initializeSearchHandlers();
+        
+        console.log('Meal planner initialized successfully');
+    } catch (error) {
+        console.error('Error continuing initialization:', error);
     }
 }
 
