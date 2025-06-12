@@ -459,22 +459,13 @@ function loadFromLocalStorage() {
     const savedRecipes = localStorage.getItem('recipes');
     if (savedRecipes) {
         recipes = JSON.parse(savedRecipes);
-        // Make recipes available globally
+        // Update global recipes
         window.recipes = recipes;
     }
 
     const savedMealPlan = localStorage.getItem('mealPlan');
     if (savedMealPlan) {
         mealPlan = JSON.parse(savedMealPlan);
-    }
-
-    const savedSettings = localStorage.getItem('meale-settings');
-    if (savedSettings) {
-        settings = JSON.parse(savedSettings);
-        console.log('Loaded settings from localStorage:', settings);
-    } else {
-        settings = { mealPlanStartDay: 0 };
-        console.log('Using default settings:', settings);
     }
 
     const savedNutrition = localStorage.getItem('meale-nutrition');
