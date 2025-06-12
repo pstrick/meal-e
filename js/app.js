@@ -462,60 +462,106 @@ async function handleRecipeSubmit(e, editId = null) {
 
 // Local Storage Management
 function loadFromLocalStorage() {
-    const savedRecipes = localStorage.getItem('recipes');
-    if (savedRecipes) {
-        recipes = JSON.parse(savedRecipes);
-        // Update global recipes
-        window.recipes = recipes;
-    }
+    try {
+        console.log('Loading data from localStorage...');
+        
+        const savedRecipes = localStorage.getItem('recipes');
+        if (savedRecipes) {
+            try {
+                recipes = JSON.parse(savedRecipes);
+                // Update global recipes
+                window.recipes = recipes;
+                console.log('Loaded recipes:', recipes.length);
+            } catch (error) {
+                console.error('Error parsing saved recipes:', error);
+            }
+        } else {
+            console.log('No saved recipes found');
+        }
 
-    const savedMealPlan = localStorage.getItem('mealPlan');
-    if (savedMealPlan) {
-        mealPlan = JSON.parse(savedMealPlan);
-    }
+        const savedMealPlan = localStorage.getItem('mealPlan');
+        if (savedMealPlan) {
+            try {
+                mealPlan = JSON.parse(savedMealPlan);
+                console.log('Loaded meal plan');
+            } catch (error) {
+                console.error('Error parsing saved meal plan:', error);
+            }
+        } else {
+            console.log('No saved meal plan found');
+        }
 
-    const savedNutrition = localStorage.getItem('meale-nutrition');
-    if (savedNutrition) {
-        nutritionData = JSON.parse(savedNutrition);
+        const savedNutrition = localStorage.getItem('meale-nutrition');
+        if (savedNutrition) {
+            try {
+                nutritionData = JSON.parse(savedNutrition);
+                console.log('Loaded nutrition data');
+            } catch (error) {
+                console.error('Error parsing saved nutrition data:', error);
+            }
+        } else {
+            console.log('No saved nutrition data found');
+        }
+    } catch (error) {
+        console.error('Error loading from localStorage:', error);
     }
-
-    updateRecipeList();
 }
 
 // Initialize settings UI
 function initializeSettings() {
-    console.log('Initializing settings UI...');
-    const startDaySelect = document.getElementById('meal-plan-start-day');
-    
-    // Set the select value from current settings
-    startDaySelect.value = settings.mealPlanStartDay;
-    console.log('Set start day select to:', settings.mealPlanStartDay);
-    
-    startDaySelect.addEventListener('change', () => {
-        settings.mealPlanStartDay = parseInt(startDaySelect.value);
-        saveToLocalStorage();
-        console.log('Updated settings:', settings);
-        // Reset week offset to current week
-        if (typeof currentWeekOffset !== 'undefined') {
-            currentWeekOffset = 0;
+    try {
+        console.log('Initializing settings UI...');
+        const startDaySelect = document.getElementById('meal-plan-start-day');
+        if (!startDaySelect) {
+            throw new Error('Start day select element not found');
         }
-        // Refresh the meal plan view to reflect the new start day
-        if (typeof updateWeekDisplay === 'function') {
-            updateWeekDisplay();
-        }
-    });
+        
+        // Set the select value from current settings
+        startDaySelect.value = settings.mealPlanStartDay;
+        console.log('Set start day select to:', settings.mealPlanStartDay);
+        
+        startDaySelect.addEventListener('change', () => {
+            try {
+                settings.mealPlanStartDay = parseInt(startDaySelect.value);
+                saveToLocalStorage();
+                console.log('Updated settings:', settings);
+                // Reset week offset to current week
+                if (typeof currentWeekOffset !== 'undefined') {
+                    currentWeekOffset = 0;
+                }
+                // Refresh the meal plan view to reflect the new start day
+                if (typeof updateWeekDisplay === 'function') {
+                    updateWeekDisplay();
+                } else {
+                    console.error('updateWeekDisplay function not found');
+                }
+            } catch (error) {
+                console.error('Error handling start day change:', error);
+            }
+        });
+    } catch (error) {
+        console.error('Error initializing settings:', error);
+    }
 }
 
 // Initialize the application
 function initializeApp() {
-    console.log('Initializing app...');
-    loadFromLocalStorage();
-    initializeSettings();
-    updateRecipeList();
-    
-    // Initialize meal planner after settings are loaded
-    console.log('Initializing meal planner...');
-    initializeMealPlanner();
+    try {
+        console.log('Initializing app...');
+        loadFromLocalStorage();
+        initializeSettings();
+        updateRecipeList();
+        
+        // Initialize meal planner after settings are loaded
+        console.log('Initializing meal planner...');
+        if (typeof initializeMealPlanner === 'function') {
+            initializeMealPlanner();
+        } else {
+            console.error('initializeMealPlanner function not found');
+        }
+    } catch (error) {
+        console.error('Error initializing app:', error);
+    }
 }
 
 // Initialize when the DOM is loaded
