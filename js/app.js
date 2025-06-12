@@ -622,31 +622,48 @@ function handleCustomIngredientSubmit(e) {
 
 // Update custom ingredients list
 function updateCustomIngredientsList(ingredients = null) {
-    const list = document.getElementById('custom-ingredients-list');
-    if (!list) return;
+    const ingredientsList = document.getElementById('custom-ingredients-list');
+    if (!ingredientsList) return;
 
+    // Get ingredients from localStorage if not provided
     if (!ingredients) {
-        ingredients = JSON.parse(localStorage.getItem('customIngredients') || '[]');
+        const storedIngredients = localStorage.getItem('customIngredients');
+        ingredients = storedIngredients ? JSON.parse(storedIngredients) : [];
     }
 
-    list.innerHTML = ingredients.map(ingredient => `
-        <div class="ingredient-item" data-id="${ingredient.id}">
-            <div class="ingredient-info">
-                <h3>${ingredient.name}</h3>
-                <p>Price: $${(ingredient.pricePerGram * 100).toFixed(2)}/100g</p>
-                <p>Calories: ${(ingredient.caloriesPerGram * 100).toFixed(1)}/100g</p>
-                <p>Macros: ${(ingredient.fatPerGram * 100).toFixed(1)}g fat, ${(ingredient.carbsPerGram * 100).toFixed(1)}g carbs, ${(ingredient.proteinPerGram * 100).toFixed(1)}g protein</p>
-            </div>
-            <div class="ingredient-actions">
+    // Clear the table body
+    const tbody = ingredientsList.querySelector('tbody');
+    tbody.innerHTML = '';
+
+    if (ingredients.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td colspan="5" class="no-items">No custom ingredients added yet</td>';
+        tbody.appendChild(tr);
+        return;
+    }
+
+    // Add each ingredient as a table row
+    ingredients.forEach(ingredient => {
+        const tr = document.createElement('tr');
+        tr.dataset.id = ingredient.id;
+        
+        tr.innerHTML = `
+            <td>${ingredient.name}</td>
+            <td>$${ingredient.pricePerGram.toFixed(2)}/100g</td>
+            <td>${ingredient.caloriesPerGram.toFixed(1)}/100g</td>
+            <td>${ingredient.fatPerGram.toFixed(1)}g fat, ${ingredient.carbsPerGram.toFixed(1)}g carbs, ${ingredient.proteinPerGram.toFixed(1)}g protein</td>
+            <td>
                 <button class="btn btn-edit" onclick="editCustomIngredient('${ingredient.id}')">
                     <i class="fas fa-edit"></i>
                 </button>
                 <button class="btn btn-delete" onclick="deleteCustomIngredient('${ingredient.id}')">
                     <i class="fas fa-trash"></i>
                 </button>
-            </div>
-        </div>
-    `).join('');
+            </td>
+        `;
+        
+        tbody.appendChild(tr);
+    });
 }
 
 // Edit custom ingredient

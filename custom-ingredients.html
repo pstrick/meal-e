@@ -88,8 +88,21 @@
                 <div class="search-bar">
                     <input type="text" id="ingredient-search" placeholder="Search ingredients...">
                 </div>
-                <div id="custom-ingredients-list" class="ingredients-list">
-                    <!-- Ingredients will be populated here -->
+                <div class="table-container">
+                    <table id="custom-ingredients-list" class="ingredients-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Price</th>
+                                <th>Calories</th>
+                                <th>Macros</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Ingredients will be populated here -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -104,5 +117,23 @@
 
     <!-- Scripts -->
     <script src="js/app.js" type="module"></script>
+
+    <!-- Ingredient Search Modal -->
+    <div id="ingredient-search-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Search Ingredients</h3>
+                <button type="button" class="close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="search-container">
+                    <input type="text" id="ingredient-search-input" placeholder="Search for ingredients...">
+                </div>
+                <div id="search-results" class="search-results">
+                    <!-- Search results will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html> 
