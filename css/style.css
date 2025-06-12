@@ -1,7 +1,7 @@
 /* Base Styles and Variables */
 :root {
     --primary-color: #4CAF50;
-    --secondary-color: #2196F3;
+    --secondary-color: #45a049;
     --text-color: #333;
     --text-secondary: #666;
     --background-color: #f5f5f5;
@@ -10,6 +10,7 @@
     --error-color: #f44336;
     --success-color: #4CAF50;
     --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-color: rgba(0, 0, 0, 0.1);
 }
 
 * {
@@ -19,7 +20,7 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
     color: var(--text-color);
     background-color: var(--background-color);
@@ -27,8 +28,8 @@ body {
 
 /* Header and Navigation */
 header {
-    background-color: var(--card-bg);
-    box-shadow: var(--shadow);
+    background-color: white;
+    box-shadow: 0 2px 4px var(--shadow-color);
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -58,9 +59,9 @@ header {
 .nav-links a {
     color: var(--text-color);
     text-decoration: none;
-    padding: 0.5rem;
+    padding: 0.5rem 1rem;
     border-radius: 4px;
-    transition: background-color 0.2s;
+    transition: all 0.3s ease;
 }
 
 .nav-links a:hover {
@@ -69,7 +70,7 @@ header {
 
 .nav-links a.active {
     color: var(--primary-color);
-    font-weight: 500;
+    font-weight: 600;
 }
 
 /* Main Content */
@@ -80,10 +81,11 @@ main {
 }
 
 .container {
-    background-color: var(--card-bg);
+    background-color: white;
     border-radius: 8px;
-    box-shadow: var(--shadow);
+    box-shadow: 0 2px 4px var(--shadow-color);
     padding: 2rem;
+    margin-bottom: 2rem;
 }
 
 h1 {
@@ -107,16 +109,17 @@ h2 {
 
 /* Forms */
 .form-group {
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
 }
 
-label {
+.form-group label {
     display: block;
     margin-bottom: 0.5rem;
-    color: var(--text-color);
+    font-weight: 600;
 }
 
-input, select, textarea {
+.form-group input,
+.form-group select {
     width: 100%;
     padding: 0.75rem;
     border: 1px solid var(--border-color);
@@ -124,20 +127,14 @@ input, select, textarea {
     font-size: 1rem;
 }
 
-input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: var(--primary-color);
-}
-
 /* Buttons */
 .btn {
-    display: inline-block;
     padding: 0.75rem 1.5rem;
     border: none;
     border-radius: 4px;
-    font-size: 1rem;
     cursor: pointer;
-    transition: background-color 0.2s;
+    font-weight: 600;
+    transition: all 0.3s ease;
 }
 
 .btn-primary {
@@ -146,16 +143,17 @@ input:focus, select:focus, textarea:focus {
 }
 
 .btn-primary:hover {
-    background-color: #45a049;
+    background-color: var(--secondary-color);
 }
 
 .btn-secondary {
-    background-color: var(--secondary-color);
-    color: white;
+    background-color: white;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
-    background-color: #1976D2;
+    background-color: var(--background-color);
 }
 
 /* Modals */
@@ -175,23 +173,24 @@ input:focus, select:focus, textarea:focus {
 }
 
 .modal-content {
-    background-color: var(--card-bg);
-    border-radius: 8px;
-    box-shadow: var(--shadow);
+    background-color: white;
+    margin: 5% auto;
     padding: 2rem;
-    max-width: 600px;
     width: 90%;
-    margin: 2rem auto;
+    max-width: 600px;
+    border-radius: 8px;
     position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .close {
     position: absolute;
+    right: 1.5rem;
     top: 1rem;
-    right: 1rem;
     font-size: 1.5rem;
     cursor: pointer;
-    color: var(--text-secondary);
+    color: #666;
 }
 
 .close:hover {
@@ -200,16 +199,16 @@ input:focus, select:focus, textarea:focus {
 
 /* Footer */
 footer {
-    background-color: var(--card-bg);
-    padding: 1.5rem;
+    background-color: white;
+    padding: 2rem;
     text-align: center;
-    margin-top: 2rem;
+    margin-top: 4rem;
+    box-shadow: 0 -2px 4px var(--shadow-color);
 }
 
 .footer-content {
     max-width: 1200px;
     margin: 0 auto;
-    color: var(--text-secondary);
 }
 
 /* Custom Ingredients Page Styles */
@@ -278,26 +277,84 @@ footer {
 }
 
 .recipe-card {
-    background-color: var(--card-bg);
+    background-color: white;
     border-radius: 8px;
-    box-shadow: var(--shadow);
+    box-shadow: 0 2px 4px var(--shadow-color);
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.recipe-card:hover {
+    transform: translateY(-4px);
+}
+
+.recipe-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.recipe-card-content {
     padding: 1.5rem;
+}
+
+.recipe-card h3 {
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+}
+
+.recipe-card p {
+    margin: 0.5rem 0;
+    color: #666;
 }
 
 /* Meal Plan Grid */
 .meal-plan-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: 120px repeat(7, 1fr);
     gap: 1rem;
-    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px var(--shadow-color);
+    overflow-x: auto;
+}
+
+.meal-plan-header {
+    display: contents;
+}
+
+.day-header {
+    padding: 1rem;
+    text-align: center;
+    font-weight: 600;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 4px 4px 0 0;
+}
+
+.time-slot {
+    padding: 1rem;
+    font-weight: 600;
+    background-color: var(--background-color);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
 }
 
 .meal-slot {
-    background-color: var(--card-bg);
-    border-radius: 8px;
-    box-shadow: var(--shadow);
+    min-height: 100px;
     padding: 1rem;
-    min-height: 150px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.meal-slot:hover {
+    background-color: var(--background-color);
+    border-color: var(--primary-color);
 }
 
 /* Search and Results */
@@ -314,15 +371,18 @@ footer {
 }
 
 .search-results {
-    max-height: 400px;
-    overflow-y: auto;
     margin-top: 1rem;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
 }
 
 .search-result-item {
     padding: 1rem;
     border-bottom: 1px solid var(--border-color);
     cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
 .search-result-item:hover {
@@ -373,9 +433,7 @@ footer {
     }
 
     .nav-links {
-        flex-direction: column;
-        width: 100%;
-        text-align: center;
+        display: none;
     }
 
     .form-row {
@@ -392,6 +450,16 @@ footer {
     }
 
     .meal-plan-grid {
+        grid-template-columns: 100px repeat(7, 1fr);
+    }
+
+    .week-navigation {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .card-grid {
         grid-template-columns: 1fr;
     }
 }
