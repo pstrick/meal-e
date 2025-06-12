@@ -31,7 +31,7 @@ const addIngredientBtn = document.getElementById('add-ingredient');
 const ingredientsList = document.getElementById('ingredients-list');
 const categoryFilter = document.getElementById('recipe-category-filter');
 const ingredientSearchModal = document.getElementById('ingredient-search-modal');
-const ingredientSearchInput = document.getElementById('ingredient-search');
+const ingredientSearchInput = document.getElementById('ingredient-search-input');
 const searchBtn = document.getElementById('search-btn');
 const searchResults = document.getElementById('search-results');
 const totalCalories = document.getElementById('total-calories');
@@ -1129,19 +1129,18 @@ if (addIngredientBtn) {
     addIngredientBtn.addEventListener('click', addIngredientInput);
 }
 
-if (recipeForm) {
-    recipeForm.addEventListener('submit', handleRecipeSubmit);
-}
-
-if (categoryFilter) {
-    categoryFilter.addEventListener('change', updateRecipeList);
+// Ingredient Search Event Listeners
+if (ingredientSearchModal) {
+    const closeButtons = ingredientSearchModal.querySelectorAll('.close');
+    closeButtons.forEach(button => {
+        button.addEventListener('click', closeIngredientSearch);
+    });
 }
 
 if (searchBtn) {
     searchBtn.addEventListener('click', async () => {
         const query = ingredientSearchInput.value.trim();
         if (query) {
-            searchResults.innerHTML = '<div class="loading">Searching...</div>';
             try {
                 const results = await searchIngredients(query);
                 displaySearchResults(results);
@@ -1157,7 +1156,16 @@ if (ingredientSearchInput) {
     ingredientSearchInput.addEventListener('keypress', async (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            searchBtn.click();
+            const query = ingredientSearchInput.value.trim();
+            if (query) {
+                try {
+                    const results = await searchIngredients(query);
+                    displaySearchResults(results);
+                } catch (error) {
+                    console.error('Error searching ingredients:', error);
+                    searchResults.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
+                }
+            }
         }
     });
 }
