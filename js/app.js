@@ -704,11 +704,11 @@ function initializeApp() {
         const elements = {
             recipeList: document.getElementById('recipe-list'),
             recipeForm: document.getElementById('recipe-form'),
-            addRecipeBtn: document.getElementById('add-recipe-btn'),
-            closeButtons: document.querySelectorAll('.close-modal'),
-            ingredientInputs: document.querySelectorAll('.ingredient-input'),
-            addIngredientBtn: document.getElementById('add-ingredient-btn'),
-            servingSizeInput: document.getElementById('serving-size'),
+            addRecipeBtn: document.getElementById('add-recipe'),
+            closeButtons: document.querySelectorAll('.close'),
+            ingredientInputs: document.querySelectorAll('.ingredient-name'),
+            addIngredientBtn: document.getElementById('add-ingredient'),
+            servingSizeInput: document.getElementById('recipe-serving-size'),
             totalWeightInput: document.getElementById('total-weight'),
             totalPriceInput: document.getElementById('total-price'),
             ingredientNameInput: document.getElementById('ingredient-name'),
@@ -748,7 +748,18 @@ function initializeApp() {
         if (elements.closeButtons.length > 0) {
             elements.closeButtons.forEach(button => {
                 if (button) {
-                    button.addEventListener('click', closeModalHandler);
+                    button.addEventListener('click', () => {
+                        const modal = button.closest('.modal');
+                        if (modal) {
+                            if (modal.id === 'recipe-modal') {
+                                closeModalHandler();
+                            } else if (modal.id === 'ingredient-search-modal') {
+                                closeIngredientSearch();
+                            } else if (modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
+                                window.closeMealPlanModal();
+                            }
+                        }
+                    });
                 }
             });
         }
@@ -757,7 +768,7 @@ function initializeApp() {
         if (elements.ingredientInputs.length > 0) {
             elements.ingredientInputs.forEach(input => {
                 if (input) {
-                    input.addEventListener('focus', () => openIngredientSearch(input));
+                    input.addEventListener('click', () => openIngredientSearch(input.closest('.ingredient-item')));
                 }
             });
         }
@@ -769,30 +780,16 @@ function initializeApp() {
 
         // Initialize ingredient search modal if available
         if (elements.ingredientSearchModal) {
-            const closeButtons = elements.ingredientSearchModal.querySelectorAll('.close');
-            closeButtons.forEach(button => {
-                button.addEventListener('click', closeIngredientSearch);
-            });
-        }
-
-        // Initialize ingredient search if available
-        if (elements.ingredientSearchInput && elements.searchBtn) {
-            elements.searchBtn.addEventListener('click', async () => {
-                const query = elements.ingredientSearchInput.value.trim();
-                if (query) {
-                    try {
-                        const results = await searchIngredients(query);
-                        displaySearchResults(results);
-                    } catch (error) {
-                        console.error('Error searching ingredients:', error);
-                        elements.searchResults.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
-                    }
+            // Close modal when clicking outside
+            elements.ingredientSearchModal.addEventListener('click', (e) => {
+                if (e.target === elements.ingredientSearchModal) {
+                    closeIngredientSearch();
                 }
             });
 
-            elements.ingredientSearchInput.addEventListener('keypress', async (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
+            // Initialize search functionality
+            if (elements.ingredientSearchInput && elements.searchBtn) {
+                elements.searchBtn.addEventListener('click', async () => {
                     const query = elements.ingredientSearchInput.value.trim();
                     if (query) {
                         try {
@@ -803,8 +800,24 @@ function initializeApp() {
                             elements.searchResults.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
                         }
                     }
-                }
-            });
+                });
+
+                elements.ingredientSearchInput.addEventListener('keypress', async (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const query = elements.ingredientSearchInput.value.trim();
+                        if (query) {
+                            try {
+                                const results = await searchIngredients(query);
+                                displaySearchResults(results);
+                            } catch (error) {
+                                console.error('Error searching ingredients:', error);
+                                elements.searchResults.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
+                            }
+                        }
+                    }
+                });
+            }
         }
 
         // Initialize serving size input if available
