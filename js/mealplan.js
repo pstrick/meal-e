@@ -800,43 +800,6 @@ function addAddMealButton(slot) {
     }
 }
 
-prevWeekBtn.addEventListener('click', () => {
-    currentWeekOffset--;
-    updateWeekDisplay();
-    updateNutritionSummary();
-});
-
-nextWeekBtn.addEventListener('click', () => {
-    currentWeekOffset++;
-    updateWeekDisplay();
-    updateNutritionSummary();
-});
-
-// Add debounced search
-let searchTimeout;
-function initializeSearchHandlers() {
-    const searchInput = document.getElementById('recipe-search');
-    const categoryFilter = document.getElementById('meal-category-filter');
-    
-    if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                updateRecipeList();
-            }, 300); // Debounce for 300ms
-        });
-    }
-    
-    if (categoryFilter) {
-        categoryFilter.addEventListener('change', updateRecipeList);
-    }
-}
-
-// Initialize search handlers when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    initializeSearchHandlers();
-});
-
 // Add window resize handler to reload meal plan when switching between mobile and desktop
 let lastIsMobile = window.innerWidth <= 768;
 window.addEventListener('resize', () => {
@@ -845,6 +808,34 @@ window.addEventListener('resize', () => {
         lastIsMobile = isMobile;
         loadMealPlan();
     }
+});
+
+// Initialize week navigation buttons
+function initializeWeekNavigation() {
+    const prevWeekBtn = document.getElementById('prev-week');
+    const nextWeekBtn = document.getElementById('next-week');
+    
+    if (prevWeekBtn) {
+        prevWeekBtn.addEventListener('click', () => {
+            currentWeekOffset--;
+            updateWeekDisplay();
+            updateNutritionSummary();
+        });
+    }
+    
+    if (nextWeekBtn) {
+        nextWeekBtn.addEventListener('click', () => {
+            currentWeekOffset++;
+            updateWeekDisplay();
+            updateNutritionSummary();
+        });
+    }
+}
+
+// Initialize search handlers when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    initializeSearchHandlers();
+    initializeWeekNavigation();
 });
 
 // Update meal plan display
@@ -991,4 +982,24 @@ function updateMealPlanDisplay() {
     
     // Update nutrition summary
     updateNutritionSummary();
+}
+
+// Add debounced search
+let searchTimeout;
+function initializeSearchHandlers() {
+    const searchInput = document.getElementById('recipe-search');
+    const categoryFilter = document.getElementById('meal-category-filter');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                updateRecipeList();
+            }, 300); // Debounce for 300ms
+        });
+    }
+    
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', updateRecipeList);
+    }
 } 
