@@ -54,35 +54,34 @@ let currentIngredientInput = null;
 let selectedIngredients = new Map(); // Maps ingredient IDs to their nutrition data
 
 // Navigation
-document.addEventListener('DOMContentLoaded', () => {
-    const navLinks = document.querySelectorAll('.nav-links a');
-    const sections = document.querySelectorAll('section');
+document.querySelectorAll('nav a').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetId = link.getAttribute('href').substring(1);
+        const targetElement = document.getElementById(targetId);
+        const navLinks = document.querySelectorAll('nav a');
+        const sections = document.querySelectorAll('section');
 
-    navLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            const href = link.getAttribute('href');
-            
-            // Only handle same-page navigation
-            if (href.startsWith('#')) {
-                e.preventDefault();
-                const targetId = href.substring(1);
-                const targetElement = document.getElementById(targetId);
-                
-                if (targetElement) {
-                    // Update active states
-                    navLinks.forEach(l => l.classList.remove('active'));
-                    sections.forEach(s => s.classList.remove('active'));
-                    
-                    link.classList.add('active');
-                    targetElement.classList.add('active');
-                }
-            }
-        });
+        if (!targetElement) {
+            console.log(`Target element ${targetId} not found`);
+            return;
+        }
+
+        navLinks.forEach(l => l.classList.remove('active'));
+        sections.forEach(s => s.classList.remove('active'));
+        
+        link.classList.add('active');
+        targetElement.classList.add('active');
     });
 });
 
 // Modal Management
 function openModal() {
+    const recipeModal = document.getElementById('recipe-modal');
+    if (!recipeModal) {
+        console.log('Recipe modal not found');
+        return;
+    }
     recipeModal.classList.add('active');
     // Add first ingredient input if none exists
     if (ingredientsList.children.length === 0) {
@@ -93,6 +92,11 @@ function openModal() {
 }
 
 function closeModalHandler() {
+    const recipeModal = document.getElementById('recipe-modal');
+    if (!recipeModal) {
+        console.log('Recipe modal not found');
+        return;
+    }
     recipeModal.classList.remove('active');
     recipeForm.reset();
     ingredientsList.innerHTML = '';
@@ -278,8 +282,16 @@ function calculateNutritionPerGram(foodData) {
 }
 
 function updateTotalNutrition() {
+    // Check if we're on the recipe form page
+    const servingSizeInput = document.getElementById('recipe-serving-size');
+    const ingredientsList = document.getElementById('ingredients-list');
+    if (!servingSizeInput || !ingredientsList) {
+        console.log('Not on recipe form page, skipping nutrition update');
+        return;
+    }
+
     const totalWeight = calculateTotalWeight();
-    const servingSize = parseFloat(document.getElementById('recipe-serving-size').value) || totalWeight;
+    const servingSize = parseFloat(servingSizeInput.value) || totalWeight;
     const numberOfServings = Math.round((totalWeight / servingSize) * 10) / 10; // Round to 1 decimal
 
     let totals = {
@@ -293,8 +305,12 @@ function updateTotalNutrition() {
     const ingredientItems = ingredientsList.querySelectorAll('.ingredient-item');
     
     ingredientItems.forEach(item => {
-        const fdcId = item.querySelector('.ingredient-name').dataset.fdcId;
-        const amount = parseFloat(item.querySelector('.ingredient-amount').value) || 0;
+        const nameInput = item.querySelector('.ingredient-name');
+        const amountInput = item.querySelector('.ingredient-amount');
+        if (!nameInput || !amountInput) return;
+
+        const fdcId = nameInput.dataset.fdcId;
+        const amount = parseFloat(amountInput.value) || 0;
         
         if (fdcId && selectedIngredients.has(fdcId)) {
             const ingredient = selectedIngredients.get(fdcId);
@@ -315,20 +331,31 @@ function updateTotalNutrition() {
         fat: Math.round(totals.fat * (servingSize / totalWeight))
     };
 
-    // Update display
-    document.getElementById('total-calories').textContent = perServing.calories;
-    document.getElementById('total-protein').textContent = perServing.protein;
-    document.getElementById('total-carbs').textContent = perServing.carbs;
-    document.getElementById('total-fat').textContent = perServing.fat;
-    document.getElementById('recipe-servings').textContent = numberOfServings;
+    // Update display if elements exist
+    const totalCalories = document.getElementById('total-calories');
+    const totalProtein = document.getElementById('total-protein');
+    const totalCarbs = document.getElementById('total-carbs');
+    const totalFat = document.getElementById('total-fat');
+    const recipeServings = document.getElementById('recipe-servings');
+
+    if (totalCalories) totalCalories.textContent = perServing.calories;
+    if (totalProtein) totalProtein.textContent = perServing.protein;
+    if (totalCarbs) totalCarbs.textContent = perServing.carbs;
+    if (totalFat) totalFat.textContent = perServing.fat;
+    if (recipeServings) recipeServings.textContent = numberOfServings;
 }
 
 function calculateTotalWeight() {
+    const ingredientsList = document.getElementById('ingredients-list');
+    if (!ingredientsList) return 0;
+
     let totalWeight = 0;
     const ingredientItems = ingredientsList.querySelectorAll('.ingredient-item');
     
     ingredientItems.forEach(item => {
-        const amount = parseFloat(item.querySelector('.ingredient-amount').value) || 0;
+        const amountInput = item.querySelector('.ingredient-amount');
+        if (!amountInput) return;
+        const amount = parseFloat(amountInput.value) || 0;
         totalWeight += amount;
     });
 
@@ -337,8 +364,13 @@ function calculateTotalWeight() {
 
 // Update serving size when ingredients change
 function updateServingSizeDefault() {
-    const totalWeight = calculateTotalWeight();
     const servingSizeInput = document.getElementById('recipe-serving-size');
+    if (!servingSizeInput) {
+        console.log('Serving size input not found, skipping update');
+        return;
+    }
+
+    const totalWeight = calculateTotalWeight();
     if (!servingSizeInput.value) {
         servingSizeInput.value = totalWeight;
     }
@@ -909,15 +941,33 @@ document.head.appendChild(style);
 
 // Ingredient Search Functions
 function openIngredientSearch(ingredientInput) {
+    const searchModal = document.getElementById('ingredient-search-modal');
+    if (!searchModal) {
+        console.log('Ingredient search modal not found');
+        return;
+    }
+
+    // Store reference to the input being edited
     currentIngredientInput = ingredientInput;
-    ingredientSearchModal.classList.add('active');
-    ingredientSearchInput.value = '';
-    ingredientSearchInput.focus();
+    
+    // Show modal
+    searchModal.classList.add('active');
+    
+    // Focus search input
+    const searchInput = document.getElementById('ingredient-search-input');
+    if (searchInput) {
+        searchInput.focus();
+    }
 }
 
 function closeIngredientSearch() {
-    ingredientSearchModal.classList.remove('active');
-    searchResults.innerHTML = '';
+    const searchModal = document.getElementById('ingredient-search-modal');
+    if (!searchModal) {
+        console.log('Ingredient search modal not found');
+        return;
+    }
+    searchModal.classList.remove('active');
+    currentIngredientInput = null;
 }
 
 // Modified Ingredient Search Result Handler
