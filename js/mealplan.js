@@ -9,8 +9,8 @@ const weekDisplay = document.getElementById('week-display');
 const prevWeekBtn = document.getElementById('prev-week');
 const nextWeekBtn = document.getElementById('next-week');
 
-// Initialize meal plan data structure
-const mealPlan = JSON.parse(localStorage.getItem('meale-mealPlan')) || {};
+// Initialize meal plan data
+let mealPlan = {};
 
 // Get week dates based on current week and start day setting
 function getWeekDates(weekOffset = 0) {
@@ -360,12 +360,19 @@ function loadMealPlan() {
         const savedMealPlan = localStorage.getItem('mealPlan');
         if (savedMealPlan) {
             mealPlan = JSON.parse(savedMealPlan);
+            console.log('Meal plan loaded from localStorage:', mealPlan);
+        } else {
+            // Initialize empty meal plan if none exists
+            mealPlan = {};
+            console.log('No saved meal plan found, initializing empty plan');
         }
 
         // Update the display
         updateMealPlanDisplay();
     } catch (error) {
         console.error('Error loading meal plan:', error);
+        // Initialize empty meal plan on error
+        mealPlan = {};
     }
 }
 
