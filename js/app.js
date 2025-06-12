@@ -718,7 +718,10 @@ function initializeApp() {
             proteinInput: document.getElementById('protein'),
             customIngredientForm: document.getElementById('custom-ingredient-form'),
             customIngredientsList: document.getElementById('custom-ingredients-list'),
-            ingredientSearch: document.getElementById('ingredient-search')
+            ingredientSearchModal: document.getElementById('ingredient-search-modal'),
+            ingredientSearchInput: document.getElementById('ingredient-search-input'),
+            searchBtn: document.getElementById('search-btn'),
+            searchResults: document.getElementById('search-results')
         };
 
         // Initialize recipe list if we're on the recipes page
@@ -762,6 +765,46 @@ function initializeApp() {
         // Initialize add ingredient button if available
         if (elements.addIngredientBtn) {
             elements.addIngredientBtn.addEventListener('click', addIngredientInput);
+        }
+
+        // Initialize ingredient search modal if available
+        if (elements.ingredientSearchModal) {
+            const closeButtons = elements.ingredientSearchModal.querySelectorAll('.close');
+            closeButtons.forEach(button => {
+                button.addEventListener('click', closeIngredientSearch);
+            });
+        }
+
+        // Initialize ingredient search if available
+        if (elements.ingredientSearchInput && elements.searchBtn) {
+            elements.searchBtn.addEventListener('click', async () => {
+                const query = elements.ingredientSearchInput.value.trim();
+                if (query) {
+                    try {
+                        const results = await searchIngredients(query);
+                        displaySearchResults(results);
+                    } catch (error) {
+                        console.error('Error searching ingredients:', error);
+                        elements.searchResults.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
+                    }
+                }
+            });
+
+            elements.ingredientSearchInput.addEventListener('keypress', async (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const query = elements.ingredientSearchInput.value.trim();
+                    if (query) {
+                        try {
+                            const results = await searchIngredients(query);
+                            displaySearchResults(results);
+                        } catch (error) {
+                            console.error('Error searching ingredients:', error);
+                            elements.searchResults.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
+                        }
+                    }
+                }
+            });
         }
 
         // Initialize serving size input if available
@@ -812,18 +855,6 @@ function initializeApp() {
         // Initialize custom ingredients list if available
         if (elements.customIngredientsList) {
             updateCustomIngredientsList();
-        }
-
-        // Initialize ingredient search if available
-        if (elements.ingredientSearch) {
-            elements.ingredientSearch.addEventListener('input', () => {
-                const searchTerm = elements.ingredientSearch.value.toLowerCase();
-                const ingredients = JSON.parse(localStorage.getItem('customIngredients') || '[]');
-                const filteredIngredients = ingredients.filter(ingredient => 
-                    ingredient.name.toLowerCase().includes(searchTerm)
-                );
-                updateCustomIngredientsList(filteredIngredients);
-            });
         }
 
         console.log('App initialized successfully');
@@ -1177,9 +1208,7 @@ document.querySelectorAll('.modal .close').forEach(closeBtn => {
             const modal = event.target.closest('.modal');
             if (modal.id === 'recipe-modal') {
                 closeModalHandler();
-            } else if (modal.id === 'ingredient-search-modal') {
-                closeIngredientSearch();
-            } else if (modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
+            } else if (modal.id === 'ingredient-search-modal' && window.closeMealPlanModal) {
                 window.closeMealPlanModal();
             }
         });
@@ -1193,9 +1222,7 @@ document.querySelectorAll('.modal').forEach(modal => {
             if (event.target === modal) {
                 if (modal.id === 'recipe-modal') {
                     closeModalHandler();
-                } else if (modal.id === 'ingredient-search-modal') {
-                    closeIngredientSearch();
-                } else if (modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
+                } else if (modal.id === 'ingredient-search-modal' && window.closeMealPlanModal) {
                     window.closeMealPlanModal();
                 }
             }
