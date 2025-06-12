@@ -2,6 +2,7 @@ import config from './config.js';
 import { version } from './version.js';
 import './mealplan.js';
 import { initializeMealPlanner } from './mealplan.js';
+import { settings, saveToLocalStorage } from './settings.js';
 
 // Update version in footer
 document.querySelector('footer p').innerHTML = `&copy; ${version.year} Meal-E <span class="version">v${version.toString()}</span>`;
@@ -41,15 +42,6 @@ const totalFat = document.getElementById('total-fat');
 // Sample data structure
 let recipes = [];
 let mealPlan = {};
-let settings = {
-    mealPlanStartDay: 0 // Default to Sunday
-};
-let nutritionData = {
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0
-};
 
 // Current state
 let currentIngredientInput = null;
@@ -463,15 +455,6 @@ async function handleRecipeSubmit(e, editId = null) {
 }
 
 // Local Storage Management
-function saveToLocalStorage() {
-    localStorage.setItem('recipes', JSON.stringify(recipes));
-    localStorage.setItem('mealPlan', JSON.stringify(mealPlan));
-    localStorage.setItem('settings', JSON.stringify(settings));
-    localStorage.setItem('meale-nutrition', JSON.stringify(nutritionData));
-    // Update global recipes
-    window.recipes = recipes;
-}
-
 function loadFromLocalStorage() {
     const savedRecipes = localStorage.getItem('recipes');
     if (savedRecipes) {
@@ -485,11 +468,13 @@ function loadFromLocalStorage() {
         mealPlan = JSON.parse(savedMealPlan);
     }
 
-    const savedSettings = localStorage.getItem('settings');
+    const savedSettings = localStorage.getItem('meale-settings');
     if (savedSettings) {
         settings = JSON.parse(savedSettings);
-        // Apply saved settings
-        document.getElementById('meal-plan-start-day').value = settings.mealPlanStartDay;
+        console.log('Loaded settings from localStorage:', settings);
+    } else {
+        settings = { mealPlanStartDay: 0 };
+        console.log('Using default settings:', settings);
     }
 
     const savedNutrition = localStorage.getItem('meale-nutrition');
@@ -500,33 +485,18 @@ function loadFromLocalStorage() {
     updateRecipeList();
 }
 
-// Initialize settings
+// Initialize settings UI
 function initializeSettings() {
-    console.log('Initializing settings...');
+    console.log('Initializing settings UI...');
     const startDaySelect = document.getElementById('meal-plan-start-day');
     
-    // Load settings from localStorage
-    const savedSettings = localStorage.getItem('meale-settings');
-    if (savedSettings) {
-        settings = JSON.parse(savedSettings);
-        console.log('Loaded settings from localStorage:', settings);
-    } else {
-        settings = { mealPlanStartDay: 0 };
-        console.log('Using default settings:', settings);
-    }
-    
-    // Make settings available globally
-    window.settings = settings;
-    
-    // Set the select value
+    // Set the select value from current settings
     startDaySelect.value = settings.mealPlanStartDay;
     console.log('Set start day select to:', settings.mealPlanStartDay);
     
     startDaySelect.addEventListener('change', () => {
         settings.mealPlanStartDay = parseInt(startDaySelect.value);
         saveToLocalStorage();
-        // Make settings available globally
-        window.settings = settings;
         console.log('Updated settings:', settings);
         // Reset week offset to current week
         if (typeof currentWeekOffset !== 'undefined') {
