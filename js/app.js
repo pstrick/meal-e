@@ -1068,50 +1068,60 @@ macroStyles.textContent = `
 document.head.appendChild(macroStyles);
 
 // Event Listeners
-addRecipeBtn.addEventListener('click', openModal);
-closeModal.addEventListener('click', closeModalHandler);
-cancelRecipe.addEventListener('click', closeModalHandler);
-addIngredientBtn.addEventListener('click', addIngredientInput);
-recipeForm.addEventListener('submit', handleRecipeSubmit);
-categoryFilter.addEventListener('change', updateRecipeList);
-searchBtn.addEventListener('click', async () => {
-    const query = ingredientSearchInput.value.trim();
-    if (query) {
-        searchResults.innerHTML = '<div class="loading">Searching...</div>';
-        try {
-            const results = await searchIngredients(query);
-            displaySearchResults(results);
-        } catch (error) {
-            console.error('Error searching ingredients:', error);
-            searchResults.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
+if (addRecipeBtn) {
+    addRecipeBtn.addEventListener('click', openModal);
+}
+
+if (closeModal) {
+    closeModal.addEventListener('click', closeModalHandler);
+}
+
+if (cancelRecipe) {
+    cancelRecipe.addEventListener('click', closeModalHandler);
+}
+
+if (addIngredientBtn) {
+    addIngredientBtn.addEventListener('click', addIngredientInput);
+}
+
+if (recipeForm) {
+    recipeForm.addEventListener('submit', handleRecipeSubmit);
+}
+
+if (categoryFilter) {
+    categoryFilter.addEventListener('change', updateRecipeList);
+}
+
+if (searchBtn) {
+    searchBtn.addEventListener('click', async () => {
+        const query = ingredientSearchInput.value.trim();
+        if (query) {
+            searchResults.innerHTML = '<div class="loading">Searching...</div>';
+            try {
+                const results = await searchIngredients(query);
+                displaySearchResults(results);
+            } catch (error) {
+                console.error('Error searching ingredients:', error);
+                searchResults.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
+            }
         }
-    }
-});
-ingredientSearchInput.addEventListener('keypress', async (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        searchBtn.click();
-    }
-});
+    });
+}
+
+if (ingredientSearchInput) {
+    ingredientSearchInput.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchBtn.click();
+        }
+    });
+}
 
 // Close buttons for all modals
 document.querySelectorAll('.modal .close').forEach(closeBtn => {
-    closeBtn.addEventListener('click', (event) => {
-        const modal = event.target.closest('.modal');
-        if (modal.id === 'recipe-modal') {
-            closeModalHandler();
-        } else if (modal.id === 'ingredient-search-modal') {
-            closeIngredientSearch();
-        } else if (modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
-            window.closeMealPlanModal();
-        }
-    });
-});
-
-// Close modal when clicking outside
-document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('click', (event) => {
-        if (event.target === modal) {
+    if (closeBtn) {
+        closeBtn.addEventListener('click', (event) => {
+            const modal = event.target.closest('.modal');
             if (modal.id === 'recipe-modal') {
                 closeModalHandler();
             } else if (modal.id === 'ingredient-search-modal') {
@@ -1119,8 +1129,25 @@ document.querySelectorAll('.modal').forEach(modal => {
             } else if (modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
                 window.closeMealPlanModal();
             }
-        }
-    });
+        });
+    }
+});
+
+// Close modal when clicking outside
+document.querySelectorAll('.modal').forEach(modal => {
+    if (modal) {
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                if (modal.id === 'recipe-modal') {
+                    closeModalHandler();
+                } else if (modal.id === 'ingredient-search-modal') {
+                    closeIngredientSearch();
+                } else if (modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
+                    window.closeMealPlanModal();
+                }
+            }
+        });
+    }
 });
 
 // Modified Recipe Management
