@@ -520,64 +520,181 @@ function loadFromLocalStorage() {
     }
 }
 
-// Initialize settings UI
+// Initialize settings
 function initializeSettings() {
     try {
-        console.log('Initializing settings UI...');
-        const startDaySelect = document.getElementById('meal-plan-start-day');
-        if (!startDaySelect) {
-            throw new Error('Start day select element not found');
+        // Get settings from localStorage if not already loaded
+        if (!window.settings) {
+            const savedSettings = localStorage.getItem('settings');
+            window.settings = savedSettings ? JSON.parse(savedSettings) : {
+                mealPlanStartDay: 0, // Default to Sunday
+                theme: 'light'
+            };
         }
-        
-        // Set the select value from current settings
-        startDaySelect.value = settings.mealPlanStartDay;
-        console.log('Set start day select to:', settings.mealPlanStartDay);
-        
-        startDaySelect.addEventListener('change', () => {
-            try {
-                settings.mealPlanStartDay = parseInt(startDaySelect.value);
-                saveToLocalStorage();
-                console.log('Updated settings:', settings);
-                // Reset week offset to current week
-                if (typeof currentWeekOffset !== 'undefined') {
-                    currentWeekOffset = 0;
+
+        // Only initialize settings UI if we're on the settings page
+        const startDaySelect = document.getElementById('meal-plan-start-day');
+        if (startDaySelect) {
+            startDaySelect.value = window.settings.mealPlanStartDay;
+            startDaySelect.addEventListener('change', (e) => {
+                window.settings.mealPlanStartDay = parseInt(e.target.value);
+                localStorage.setItem('settings', JSON.stringify(window.settings));
+                // Reset week offset when start day changes
+                if (window.currentWeekOffset !== undefined) {
+                    window.currentWeekOffset = 0;
                 }
-                // Refresh the meal plan view to reflect the new start day
+                // Update meal plan if we're on that page
                 if (typeof updateWeekDisplay === 'function') {
                     updateWeekDisplay();
-                } else {
-                    console.error('updateWeekDisplay function not found');
                 }
-            } catch (error) {
-                console.error('Error handling start day change:', error);
-            }
-        });
+            });
+        }
+
+        // Only initialize theme if we're on a page with theme elements
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            themeToggle.checked = window.settings.theme === 'dark';
+            themeToggle.addEventListener('change', (e) => {
+                window.settings.theme = e.target.checked ? 'dark' : 'light';
+                localStorage.setItem('settings', JSON.stringify(window.settings));
+                document.body.classList.toggle('dark-theme', e.target.checked);
+            });
+            document.body.classList.toggle('dark-theme', window.settings.theme === 'dark');
+        }
     } catch (error) {
         console.error('Error initializing settings:', error);
     }
 }
 
-// Initialize the application
+// Initialize app
 function initializeApp() {
     try {
-        console.log('Initializing app...');
-        loadFromLocalStorage();
+        // Initialize settings first
         initializeSettings();
-        updateRecipeList();
-        
-        // Initialize meal planner after settings are loaded
-        console.log('Initializing meal planner...');
+
+        // Only initialize recipe list if we're on a page with recipe elements
+        const recipeList = document.getElementById('recipe-list');
+        if (recipeList) {
+            updateRecipeList();
+        }
+
+        // Only initialize meal planner if we're on the meal plan page
         if (typeof initializeMealPlanner === 'function') {
             initializeMealPlanner();
-        } else {
-            console.error('initializeMealPlanner function not found');
+        }
+
+        // Only initialize recipe form if we're on a page with the form
+        const recipeForm = document.getElementById('recipe-form');
+        if (recipeForm) {
+            recipeForm.addEventListener('submit', handleRecipeSubmit);
+        }
+
+        // Only initialize add recipe button if we're on a page with the button
+        const addRecipeBtn = document.getElementById('add-recipe-btn');
+        if (addRecipeBtn) {
+            addRecipeBtn.addEventListener('click', openModal);
+        }
+
+        // Only initialize modal close buttons if we're on a page with modals
+        const closeButtons = document.querySelectorAll('.close-modal');
+        if (closeButtons.length > 0) {
+            closeButtons.forEach(button => {
+                button.addEventListener('click', closeModalHandler);
+            });
+        }
+
+        // Only initialize ingredient search if we're on a page with ingredient inputs
+        const ingredientInputs = document.querySelectorAll('.ingredient-input');
+        if (ingredientInputs.length > 0) {
+            ingredientInputs.forEach(input => {
+                input.addEventListener('focus', () => openIngredientSearch(input));
+            });
+        }
+
+        // Only initialize add ingredient button if we're on a page with the button
+        const addIngredientBtn = document.getElementById('add-ingredient-btn');
+        if (addIngredientBtn) {
+            addIngredientBtn.addEventListener('click', addIngredientInput);
+        }
+
+        // Only initialize serving size input if we're on a page with the input
+        const servingSizeInput = document.getElementById('serving-size');
+        if (servingSizeInput) {
+            servingSizeInput.addEventListener('input', updateServingSizeDefault);
+        }
+
+        // Only initialize total weight input if we're on a page with the input
+        const totalWeightInput = document.getElementById('total-weight');
+        if (totalWeightInput) {
+            totalWeightInput.addEventListener('input', updateTotalNutrition);
+        }
+
+        // Only initialize total price input if we're on a page with the input
+        const totalPriceInput = document.getElementById('total-price');
+        if (totalPriceInput) {
+            totalPriceInput.addEventListener('input', updateTotalNutrition);
+        }
+
+        // Only initialize ingredient name input if we're on a page with the input
+        const ingredientNameInput = document.getElementById('ingredient-name');
+        if (ingredientNameInput) {
+            ingredientNameInput.addEventListener('input', updateTotalNutrition);
+        }
+
+        // Only initialize calories input if we're on a page with the input
+        const caloriesInput = document.getElementById('calories');
+        if (caloriesInput) {
+            caloriesInput.addEventListener('input', updateTotalNutrition);
+        }
+
+        // Only initialize fat input if we're on a page with the input
+        const fatInput = document.getElementById('fat');
+        if (fatInput) {
+            fatInput.addEventListener('input', updateTotalNutrition);
+        }
+
+        // Only initialize carbs input if we're on a page with the input
+        const carbsInput = document.getElementById('carbs');
+        if (carbsInput) {
+            carbsInput.addEventListener('input', updateTotalNutrition);
+        }
+
+        // Only initialize protein input if we're on a page with the input
+        const proteinInput = document.getElementById('protein');
+        if (proteinInput) {
+            proteinInput.addEventListener('input', updateTotalNutrition);
+        }
+
+        // Only initialize custom ingredient form if we're on the custom ingredients page
+        const customIngredientForm = document.getElementById('custom-ingredient-form');
+        if (customIngredientForm) {
+            customIngredientForm.addEventListener('submit', handleCustomIngredientSubmit);
+        }
+
+        // Only initialize custom ingredients list if we're on the custom ingredients page
+        const customIngredientsList = document.getElementById('custom-ingredients-list');
+        if (customIngredientsList) {
+            updateCustomIngredientsList();
+        }
+
+        // Only initialize ingredient search if we're on the custom ingredients page
+        const ingredientSearch = document.getElementById('ingredient-search');
+        if (ingredientSearch) {
+            ingredientSearch.addEventListener('input', () => {
+                const searchTerm = ingredientSearch.value.toLowerCase();
+                const ingredients = JSON.parse(localStorage.getItem('customIngredients') || '[]');
+                const filteredIngredients = ingredients.filter(ingredient => 
+                    ingredient.name.toLowerCase().includes(searchTerm)
+                );
+                updateCustomIngredientsList(filteredIngredients);
+            });
         }
     } catch (error) {
         console.error('Error initializing app:', error);
     }
 }
 
-// Initialize when the DOM is loaded
+// Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 // Recipe Management
