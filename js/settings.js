@@ -1,7 +1,7 @@
 import { version } from './version.js';
 
 // Update version in footer
-document.getElementById('version').textContent = version;
+document.querySelector('footer .version').textContent = `v${version.toString()}`;
 
 // Initialize settings immediately
 let settings = {
