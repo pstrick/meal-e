@@ -551,84 +551,143 @@ function handleMealPlanSubmit(e) {
     console.log('Form submission triggered');
     e.preventDefault();
     
-    // Find the current slot using the stored reference
-    if (!selectedRecipe) {
-        console.error('No recipe selected');
+    if (!selectedSlot || !selectedRecipe) {
+        console.error('No slot or recipe selected');
         return;
     }
     
-    if (!selectedSlot) {
-        console.error('No slot selected');
-        // Try to recover the slot reference
-        const slotRef = mealPlanForm.dataset.currentSlot;
-        if (slotRef) {
-            const [day, meal] = slotRef.split('-');
-            selectedSlot = document.querySelector(`.meal-slot[data-day="${day}"][data-meal="${meal}"]`);
-            console.log('Recovered slot reference:', selectedSlot);
-        }
-    }
+    const servings = parseInt(document.getElementById('meal-servings').value) || 1;
+    const mealKey = getMealKey(selectedSlot.dataset.day, selectedSlot.dataset.meal);
     
-    if (!selectedSlot) {
-        console.error('Could not recover slot reference');
-        return;
-    }
+    // Save the meal
+    mealPlan[mealKey] = {
+        recipe: selectedRecipe,
+        servings: servings
+    };
     
-    const servingsInput = mealPlanForm.querySelector('#meal-servings');
-    if (!servingsInput) {
-        console.error('Servings input not found');
-        return;
-    }
-    
-    const servings = parseFloat(servingsInput.value);
-    console.log('Creating meal item with:', { recipe: selectedRecipe, servings, slot: selectedSlot });
-    
-    const mealItem = createMealItem(selectedRecipe, servings);
-    mealItem.dataset.recipeId = selectedRecipe.id;
-    mealItem.dataset.servings = servings;
-    
-    // Remove the "Add Meal" button if it exists
-    const addButton = selectedSlot.querySelector('.add-meal-btn');
-    if (addButton) {
-        addButton.remove();
-    }
-    
-    // Append the new meal item
-    selectedSlot.appendChild(mealItem);
-    
-    // Add the "Add Meal" button back
-    addAddMealButton(selectedSlot);
-    
-    // Save and update nutrition
+    // Update storage and display
     saveMealPlan();
+    updateMealPlanDisplay();
     updateNutritionSummary();
     
+    // Close modal
     closeMealPlanModal();
 }
 
-// Helper function to create and add the "Add Meal" button
 function addAddMealButton(slot) {
-    if (!slot) {
-        console.error('Cannot add button to null slot');
-        return;
-    }
+    if (!slot) return;
     
-    // Only add if there isn't already an add button
-    if (!slot.querySelector('.add-meal-btn')) {
-        const addButton = document.createElement('button');
-        addButton.className = 'add-meal-btn';
-        addButton.innerHTML = '<i class="fas fa-plus"></i> Add Meal';
-        addButton.addEventListener('click', function(e) {
+    // Clear existing content
+    slot.innerHTML = '';
+    
+    // Add click handler for the entire slot
+    slot.addEventListener('click', (e) => {
+        // Don't open modal if clicking on meal actions
+        if (e.target.closest('.meal-actions')) return;
+        openMealPlanModal(slot);
+    });
+    
+    // Add meal actions if there's a meal
+    const mealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
+    const meal = mealPlan[mealKey];
+    
+    if (meal) {
+        const mealContent = createMealItem(meal.recipe, meal.servings);
+        slot.innerHTML = mealContent;
+        slot.classList.add('has-meal');
+        
+        // Add meal actions
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'meal-actions';
+        
+        const editBtn = document.createElement('button');
+        editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+        editBtn.title = 'Edit Meal';
+        editBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            // Use the parent slot element as the reference
-            const mealSlot = this.closest('.meal-slot');
-            if (mealSlot) {
-                openMealPlanModal(mealSlot);
-            } else {
-                console.error('Could not find parent meal slot');
-            }
+            openMealPlanModal(slot);
         });
-        slot.appendChild(addButton);
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+        deleteBtn.title = 'Delete Meal';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteMeal(slot);
+        });
+        
+        actionsDiv.appendChild(editBtn);
+        actionsDiv.appendChild(deleteBtn);
+        slot.appendChild(actionsDiv);
+    } else {
+        slot.classList.remove('has-meal');
     }
+}
+
+function deleteMeal(slot) {
+    if (!slot || !slot.dataset) return;
+    
+    const mealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
+    if (mealPlan[mealKey]) {
+        delete mealPlan[mealKey];
+        saveMealPlan();
+        updateMealPlanDisplay();
+        updateNutritionSummary();
+    }
+}
+
+function updateMealPlanDisplay() {
+    const mealPlanGrid = document.querySelector('.meal-plan-grid');
+    if (!mealPlanGrid) return;
+    
+    // Clear existing content
+    mealPlanGrid.innerHTML = '';
+    
+    // Add header row
+    const headerRow = document.createElement('div');
+    headerRow.className = 'meal-plan-header';
+    
+    // Add empty cell for time column
+    const emptyCell = document.createElement('div');
+    emptyCell.className = 'day-header';
+    headerRow.appendChild(emptyCell);
+    
+    // Add day headers
+    const week = getWeekDates(currentWeekOffset);
+    week.dayNames.forEach((day, index) => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'day-header';
+        dayHeader.textContent = `${day}\n${formatDate(week.dates[index])}`;
+        headerRow.appendChild(dayHeader);
+    });
+    
+    mealPlanGrid.appendChild(headerRow);
+    
+    // Add meal slots
+    const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+    mealTypes.forEach(mealType => {
+        const row = document.createElement('div');
+        row.className = 'meal-row';
+        
+        // Add time slot
+        const timeSlot = document.createElement('div');
+        timeSlot.className = 'time-slot';
+        timeSlot.textContent = mealType;
+        row.appendChild(timeSlot);
+        
+        // Add meal slots for each day
+        week.dates.forEach(date => {
+            const mealSlot = document.createElement('div');
+            mealSlot.className = 'meal-slot';
+            mealSlot.dataset.day = date;
+            mealSlot.dataset.meal = mealType.toLowerCase();
+            
+            addAddMealButton(mealSlot);
+            row.appendChild(mealSlot);
+        });
+        
+        mealPlanGrid.appendChild(row);
+    });
 }
 
 // Add window resize handler to reload meal plan when switching between mobile and desktop
@@ -668,152 +727,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeSearchHandlers();
     initializeWeekNavigation();
 });
-
-// Update meal plan display
-function updateMealPlanDisplay() {
-    const week = getWeekDates(currentWeekOffset);
-    
-    // Update week display
-    const startDateStr = new Date(week.startDate).toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric'
-    });
-    const endDateStr = new Date(week.endDate).toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric', 
-        year: 'numeric'
-    });
-    document.getElementById('week-display').textContent = `Week of ${startDateStr} - ${endDateStr}`;
-    
-    // Clear existing meal plan grid
-    const mealPlanGrid = document.querySelector('.meal-plan-grid');
-    mealPlanGrid.innerHTML = '';
-    
-    // Get device type
-    const isMobile = window.innerWidth <= 768;
-    
-    if (!isMobile) {
-        // Desktop layout
-        // Add header row
-        const headerRow = document.createElement('div');
-        headerRow.className = 'meal-plan-header';
-        
-        // Add empty cell for time slots
-        const emptyCell = document.createElement('div');
-        emptyCell.className = 'day-header';
-        headerRow.appendChild(emptyCell);
-        
-        // Add day headers
-        week.dayNames.forEach(dayName => {
-            const dayHeader = document.createElement('div');
-            dayHeader.className = 'day-header';
-            dayHeader.textContent = dayName;
-            headerRow.appendChild(dayHeader);
-        });
-        
-        mealPlanGrid.appendChild(headerRow);
-        
-        // Create body container
-        const bodyContainer = document.createElement('div');
-        bodyContainer.className = 'meal-plan-body';
-        
-        // Add time slots
-        ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
-            const timeSlot = document.createElement('div');
-            timeSlot.className = 'time-slot';
-            timeSlot.textContent = mealType.charAt(0).toUpperCase() + mealType.slice(1);
-            bodyContainer.appendChild(timeSlot);
-            
-            // Add meal slots for each day
-            week.dates.forEach((date, index) => {
-                const mealSlot = document.createElement('div');
-                mealSlot.className = 'meal-slot';
-                const dayName = week.dayNames[index].toLowerCase();
-                mealSlot.dataset.day = dayName;
-                mealSlot.dataset.meal = mealType;
-                mealSlot.dataset.date = date;
-                
-                // Add meals for this slot
-                const key = `${date}-${mealType}`;
-                const meals = mealPlan[key] || [];
-                
-                meals.forEach(mealData => {
-                    const recipe = window.recipes.find(r => r.id === mealData.recipeId);
-                    if (recipe) {
-                        const mealItem = createMealItem(recipe, mealData.servings);
-                        mealItem.dataset.recipeId = recipe.id;
-                        mealItem.dataset.servings = mealData.servings;
-                        mealSlot.appendChild(mealItem);
-                    }
-                });
-                
-                // Add the "Add Meal" button
-                addAddMealButton(mealSlot);
-                
-                bodyContainer.appendChild(mealSlot);
-            });
-        });
-        
-        mealPlanGrid.appendChild(bodyContainer);
-    } else {
-        // Mobile layout
-        const bodyContainer = document.createElement('div');
-        bodyContainer.className = 'meal-plan-body';
-        
-        // Create a column for each day
-        week.dates.forEach((date, index) => {
-            const dayColumn = document.createElement('div');
-            dayColumn.className = 'day-column';
-            
-            // Add day header
-            const dayHeader = document.createElement('div');
-            dayHeader.className = 'day-header';
-            dayHeader.textContent = week.dayNames[index];
-            dayColumn.appendChild(dayHeader);
-            
-            // Add meal slots
-            ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
-                const timeSlot = document.createElement('div');
-                timeSlot.className = 'time-slot';
-                timeSlot.textContent = mealType.charAt(0).toUpperCase() + mealType.slice(1);
-                dayColumn.appendChild(timeSlot);
-                
-                const mealSlot = document.createElement('div');
-                mealSlot.className = 'meal-slot';
-                const dayName = week.dayNames[index].toLowerCase();
-                mealSlot.dataset.day = dayName;
-                mealSlot.dataset.meal = mealType;
-                mealSlot.dataset.date = date;
-                
-                // Add meals for this slot
-                const key = `${date}-${mealType}`;
-                const meals = mealPlan[key] || [];
-                
-                meals.forEach(mealData => {
-                    const recipe = window.recipes.find(r => r.id === mealData.recipeId);
-                    if (recipe) {
-                        const mealItem = createMealItem(recipe, mealData.servings);
-                        mealItem.dataset.recipeId = recipe.id;
-                        mealItem.dataset.servings = mealData.servings;
-                        mealSlot.appendChild(mealItem);
-                    }
-                });
-                
-                // Add the "Add Meal" button
-                addAddMealButton(mealSlot);
-                
-                dayColumn.appendChild(mealSlot);
-            });
-            
-            bodyContainer.appendChild(dayColumn);
-        });
-        
-        mealPlanGrid.appendChild(bodyContainer);
-    }
-    
-    // Update nutrition summary
-    updateNutritionSummary();
-}
 
 // Add debounced search
 let searchTimeout;
