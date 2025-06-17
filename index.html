@@ -10,141 +10,145 @@
 <body>
     <header>
         <nav>
-            <h1>Meal-E</h1>
-            <div class="nav-links">
-                <a href="index.html" class="active">Home</a>
-                <a href="recipes.html">Recipes</a>
-                <a href="mealplan.html">Meal Plan</a>
-                <a href="custom-ingredients.html">Custom Ingredients</a>
-                <a href="settings.html">Settings</a>
+            <div class="nav-container">
+                <a href="index.html" class="logo">Meal-E</a>
+                <div class="nav-links">
+                    <a href="index.html" class="active">Home</a>
+                    <a href="recipes.html">Recipes</a>
+                    <a href="mealplan.html">Meal Plan</a>
+                    <a href="custom-ingredients.html">Custom Ingredients</a>
+                    <a href="settings.html">Settings</a>
+                </div>
             </div>
         </nav>
     </header>
 
     <main>
-        <!-- Recipes Section -->
-        <section id="recipes" class="section active">
-            <h2>My Recipes</h2>
-            <div class="recipe-filters">
-                <select id="recipe-category-filter">
-                    <option value="all">All Categories</option>
-                    <option value="breakfast">Breakfast</option>
-                    <option value="lunch">Lunch</option>
-                    <option value="dinner">Dinner</option>
-                    <option value="snack">Snack</option>
-                </select>
-            </div>
-            <button id="add-recipe" class="btn">Add New Recipe</button>
-            <div id="recipe-list" class="card-grid">
-                <!-- Recipe cards will be added here dynamically -->
-            </div>
-        </section>
-
-        <!-- Meal Plan Section -->
-        <section id="meal-plan" class="section">
-            <h2>Meal Plan</h2>
-            <div class="meal-plan-controls">
-                <button id="prev-week" class="btn">&lt; Previous Week</button>
-                <h3 id="week-display">Week of </h3>
-                <button id="next-week" class="btn">Next Week &gt;</button>
-            </div>
-            <div class="meal-plan-grid">
-                <div class="meal-plan-header">
-                    <div class="time-slot"></div>
-                    <div class="day-header">Monday</div>
-                    <div class="day-header">Tuesday</div>
-                    <div class="day-header">Wednesday</div>
-                    <div class="day-header">Thursday</div>
-                    <div class="day-header">Friday</div>
-                    <div class="day-header">Saturday</div>
-                    <div class="day-header">Sunday</div>
+        <div class="container">
+            <!-- Recipes Section -->
+            <section id="recipes" class="section active">
+                <h2>My Recipes</h2>
+                <div class="recipe-filters">
+                    <select id="recipe-category-filter">
+                        <option value="all">All Categories</option>
+                        <option value="breakfast">Breakfast</option>
+                        <option value="lunch">Lunch</option>
+                        <option value="dinner">Dinner</option>
+                        <option value="snack">Snack</option>
+                    </select>
+                    <button id="add-recipe" class="btn">Add New Recipe</button>
                 </div>
-                <div class="meal-plan-body">
-                    <!-- Breakfast Row -->
-                    <div class="time-slot">Breakfast</div>
-                    <div class="meal-slot" data-day="monday" data-meal="breakfast"></div>
-                    <div class="meal-slot" data-day="tuesday" data-meal="breakfast"></div>
-                    <div class="meal-slot" data-day="wednesday" data-meal="breakfast"></div>
-                    <div class="meal-slot" data-day="thursday" data-meal="breakfast"></div>
-                    <div class="meal-slot" data-day="friday" data-meal="breakfast"></div>
-                    <div class="meal-slot" data-day="saturday" data-meal="breakfast"></div>
-                    <div class="meal-slot" data-day="sunday" data-meal="breakfast"></div>
-
-                    <!-- Lunch Row -->
-                    <div class="time-slot">Lunch</div>
-                    <div class="meal-slot" data-day="monday" data-meal="lunch"></div>
-                    <div class="meal-slot" data-day="tuesday" data-meal="lunch"></div>
-                    <div class="meal-slot" data-day="wednesday" data-meal="lunch"></div>
-                    <div class="meal-slot" data-day="thursday" data-meal="lunch"></div>
-                    <div class="meal-slot" data-day="friday" data-meal="lunch"></div>
-                    <div class="meal-slot" data-day="saturday" data-meal="lunch"></div>
-                    <div class="meal-slot" data-day="sunday" data-meal="lunch"></div>
-
-                    <!-- Dinner Row -->
-                    <div class="time-slot">Dinner</div>
-                    <div class="meal-slot" data-day="monday" data-meal="dinner"></div>
-                    <div class="meal-slot" data-day="tuesday" data-meal="dinner"></div>
-                    <div class="meal-slot" data-day="wednesday" data-meal="dinner"></div>
-                    <div class="meal-slot" data-day="thursday" data-meal="dinner"></div>
-                    <div class="meal-slot" data-day="friday" data-meal="dinner"></div>
-                    <div class="meal-slot" data-day="saturday" data-meal="dinner"></div>
-                    <div class="meal-slot" data-day="sunday" data-meal="dinner"></div>
-
-                    <!-- Snacks Row -->
-                    <div class="time-slot">Snacks</div>
-                    <div class="meal-slot" data-day="monday" data-meal="snacks"></div>
-                    <div class="meal-slot" data-day="tuesday" data-meal="snacks"></div>
-                    <div class="meal-slot" data-day="wednesday" data-meal="snacks"></div>
-                    <div class="meal-slot" data-day="thursday" data-meal="snacks"></div>
-                    <div class="meal-slot" data-day="friday" data-meal="snacks"></div>
-                    <div class="meal-slot" data-day="saturday" data-meal="snacks"></div>
-                    <div class="meal-slot" data-day="sunday" data-meal="snacks"></div>
+                <div id="recipe-list" class="card-grid">
+                    <!-- Recipe cards will be added here dynamically -->
                 </div>
-            </div>
+            </section>
 
-            <!-- Daily Nutrition Summary -->
-            <div class="daily-nutrition">
-                <h3>Daily Nutrition Summary</h3>
-                <div class="nutrition-grid">
-                    <!-- Will be populated by JavaScript -->
+            <!-- Meal Plan Section -->
+            <section id="meal-plan" class="section">
+                <h2>Meal Plan</h2>
+                <div class="meal-plan-controls">
+                    <button id="prev-week" class="btn">&lt; Previous Week</button>
+                    <h3 id="week-display">Week of </h3>
+                    <button id="next-week" class="btn">Next Week &gt;</button>
                 </div>
-            </div>
-        </section>
+                <div class="meal-plan-grid">
+                    <div class="meal-plan-header">
+                        <div class="time-slot"></div>
+                        <div class="day-header">Monday</div>
+                        <div class="day-header">Tuesday</div>
+                        <div class="day-header">Wednesday</div>
+                        <div class="day-header">Thursday</div>
+                        <div class="day-header">Friday</div>
+                        <div class="day-header">Saturday</div>
+                        <div class="day-header">Sunday</div>
+                    </div>
+                    <div class="meal-plan-body">
+                        <!-- Breakfast Row -->
+                        <div class="time-slot">Breakfast</div>
+                        <div class="meal-slot" data-day="monday" data-meal="breakfast"></div>
+                        <div class="meal-slot" data-day="tuesday" data-meal="breakfast"></div>
+                        <div class="meal-slot" data-day="wednesday" data-meal="breakfast"></div>
+                        <div class="meal-slot" data-day="thursday" data-meal="breakfast"></div>
+                        <div class="meal-slot" data-day="friday" data-meal="breakfast"></div>
+                        <div class="meal-slot" data-day="saturday" data-meal="breakfast"></div>
+                        <div class="meal-slot" data-day="sunday" data-meal="breakfast"></div>
 
-        <!-- Nutrition Tracking Section -->
-        <section id="nutrition" class="section">
-            <h2>Nutrition Tracking</h2>
-            <div class="nutrition-summary">
-                <div class="macro-card">
-                    <h3>Today's Macros</h3>
-                    <div id="macro-stats">
-                        <!-- Macro statistics will be added here -->
+                        <!-- Lunch Row -->
+                        <div class="time-slot">Lunch</div>
+                        <div class="meal-slot" data-day="monday" data-meal="lunch"></div>
+                        <div class="meal-slot" data-day="tuesday" data-meal="lunch"></div>
+                        <div class="meal-slot" data-day="wednesday" data-meal="lunch"></div>
+                        <div class="meal-slot" data-day="thursday" data-meal="lunch"></div>
+                        <div class="meal-slot" data-day="friday" data-meal="lunch"></div>
+                        <div class="meal-slot" data-day="saturday" data-meal="lunch"></div>
+                        <div class="meal-slot" data-day="sunday" data-meal="lunch"></div>
+
+                        <!-- Dinner Row -->
+                        <div class="time-slot">Dinner</div>
+                        <div class="meal-slot" data-day="monday" data-meal="dinner"></div>
+                        <div class="meal-slot" data-day="tuesday" data-meal="dinner"></div>
+                        <div class="meal-slot" data-day="wednesday" data-meal="dinner"></div>
+                        <div class="meal-slot" data-day="thursday" data-meal="dinner"></div>
+                        <div class="meal-slot" data-day="friday" data-meal="dinner"></div>
+                        <div class="meal-slot" data-day="saturday" data-meal="dinner"></div>
+                        <div class="meal-slot" data-day="sunday" data-meal="dinner"></div>
+
+                        <!-- Snacks Row -->
+                        <div class="time-slot">Snacks</div>
+                        <div class="meal-slot" data-day="monday" data-meal="snacks"></div>
+                        <div class="meal-slot" data-day="tuesday" data-meal="snacks"></div>
+                        <div class="meal-slot" data-day="wednesday" data-meal="snacks"></div>
+                        <div class="meal-slot" data-day="thursday" data-meal="snacks"></div>
+                        <div class="meal-slot" data-day="friday" data-meal="snacks"></div>
+                        <div class="meal-slot" data-day="saturday" data-meal="snacks"></div>
+                        <div class="meal-slot" data-day="sunday" data-meal="snacks"></div>
                     </div>
                 </div>
-            </div>
-        </section>
 
-        <!-- Settings Section -->
-        <section id="settings" class="section">
-            <h2>Settings</h2>
-            <div class="settings-container">
-                <div class="setting-group">
-                    <h3>Meal Plan Settings</h3>
-                    <div class="setting-item">
-                        <label for="meal-plan-start-day">Week Starts On:</label>
-                        <select id="meal-plan-start-day" class="setting-input">
-                            <option value="0">Sunday</option>
-                            <option value="1">Monday</option>
-                            <option value="2">Tuesday</option>
-                            <option value="3">Wednesday</option>
-                            <option value="4">Thursday</option>
-                            <option value="5">Friday</option>
-                            <option value="6">Saturday</option>
-                        </select>
+                <!-- Daily Nutrition Summary -->
+                <div class="daily-nutrition">
+                    <h3>Daily Nutrition Summary</h3>
+                    <div class="nutrition-grid">
+                        <!-- Will be populated by JavaScript -->
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
+
+            <!-- Nutrition Tracking Section -->
+            <section id="nutrition" class="section">
+                <h2>Nutrition Tracking</h2>
+                <div class="nutrition-summary">
+                    <div class="macro-card">
+                        <h3>Today's Macros</h3>
+                        <div id="macro-stats">
+                            <!-- Macro statistics will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="section">
+                <h2>Settings</h2>
+                <div class="settings-container">
+                    <div class="setting-group">
+                        <h3>Meal Plan Settings</h3>
+                        <div class="setting-item">
+                            <label for="meal-plan-start-day">Week Starts On:</label>
+                            <select id="meal-plan-start-day" class="setting-input">
+                                <option value="0">Sunday</option>
+                                <option value="1">Monday</option>
+                                <option value="2">Tuesday</option>
+                                <option value="3">Wednesday</option>
+                                <option value="4">Thursday</option>
+                                <option value="5">Friday</option>
+                                <option value="6">Saturday</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
     </main>
 
     <!-- Recipe Modal -->
