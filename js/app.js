@@ -342,6 +342,13 @@ function calculateTotalWeight() {
 
 // Update serving size when ingredients change
 function updateServingSizeDefault() {
+    // Check if we're on the recipe form page
+    const recipeForm = document.getElementById('recipe-form');
+    if (!recipeForm) {
+        console.log('Not on recipe form page, skipping serving size update');
+        return;
+    }
+
     const servingSizeInput = document.getElementById('recipe-serving-size');
     if (!servingSizeInput) {
         console.log('Serving size input not found, skipping update');
@@ -913,9 +920,10 @@ document.head.appendChild(style);
 
 // Ingredient Search Functions
 function openIngredientSearch(ingredientInput) {
+    // Check if we're on a page with the ingredient search modal
     const searchModal = document.getElementById('ingredient-search-modal');
     if (!searchModal) {
-        console.log('Ingredient search modal not found');
+        console.log('Not on a page with ingredient search, skipping modal open');
         return;
     }
 
