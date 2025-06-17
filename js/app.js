@@ -748,6 +748,9 @@ function deleteCustomIngredient(id) {
 // Initialize app
 function initializeApp() {
     try {
+        // Load recipes and meal plan from localStorage first
+        loadFromLocalStorage();
+
         // Initialize settings first
         initializeSettings();
 
