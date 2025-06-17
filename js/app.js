@@ -400,6 +400,13 @@ function createRecipeCard(recipe) {
 async function handleRecipeSubmit(e, editId = null) {
     e.preventDefault();
 
+    // Check if we're on the recipe form page
+    const recipeForm = document.getElementById('recipe-form');
+    if (!recipeForm) {
+        console.log('Not on recipe form page, skipping submission');
+        return;
+    }
+
     // Validate that we have at least one ingredient
     if (selectedIngredients.size === 0) {
         alert('Please add at least one ingredient to your recipe');
@@ -407,9 +414,18 @@ async function handleRecipeSubmit(e, editId = null) {
     }
 
     // Validate required fields
-    const name = document.getElementById('recipe-name').value.trim();
-    const servingSize = parseFloat(document.getElementById('recipe-serving-size').value);
-    const category = document.getElementById('recipe-category').value;
+    const nameInput = document.getElementById('recipe-name');
+    const servingSizeInput = document.getElementById('recipe-serving-size');
+    const categoryInput = document.getElementById('recipe-category');
+
+    if (!nameInput || !servingSizeInput || !categoryInput) {
+        console.error('Required form elements not found');
+        return;
+    }
+
+    const name = nameInput.value.trim();
+    const servingSize = parseFloat(servingSizeInput.value);
+    const category = categoryInput.value;
     
     if (!name || !servingSize || servingSize <= 0) {
         alert('Please fill in all required fields');
