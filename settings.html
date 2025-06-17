@@ -17,7 +17,7 @@
                     <a href="index.html">Home</a>
                     <a href="recipes.html">Recipes</a>
                     <a href="mealplan.html">Meal Plan</a>
-                    <a href="custom-ingredients.html">Custom Ingredients</a>
+                    <a href="ingredients.html">Ingredients</a>
                     <a href="settings.html" class="active">Settings</a>
                 </div>
             </div>
@@ -34,19 +34,14 @@
                     <div class="form-group">
                         <label for="start-day">Start Day of Week</label>
                         <select id="start-day" required>
-                            <option value="sunday">Sunday</option>
-                            <option value="monday">Monday</option>
-                            <option value="tuesday">Tuesday</option>
-                            <option value="wednesday">Wednesday</option>
-                            <option value="thursday">Thursday</option>
-                            <option value="friday">Friday</option>
-                            <option value="saturday">Saturday</option>
+                            <option value="0">Sunday</option>
+                            <option value="1">Monday</option>
+                            <option value="2">Tuesday</option>
+                            <option value="3">Wednesday</option>
+                            <option value="4">Thursday</option>
+                            <option value="5">Friday</option>
+                            <option value="6">Saturday</option>
                         </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="default-servings">Default Servings</label>
-                        <input type="number" id="default-servings" min="1" step="1" value="1" required>
                     </div>
                     
                     <button type="submit" class="btn btn-primary">Save Settings</button>
@@ -58,10 +53,11 @@
     <footer>
         <div class="footer-content">
             <p>&copy; 2024 Meal-E. All rights reserved.</p>
+            <p>Version: <span id="version"></span></p>
         </div>
     </footer>
 
     <!-- Scripts -->
-    <script src="js/app.js" type="module"></script>
+    <script src="js/settings.js" type="module"></script>
 </body>
 </html> 

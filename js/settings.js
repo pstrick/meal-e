@@ -1,3 +1,8 @@
+import { version } from './version.js';
+
+// Update version in footer
+document.getElementById('version').textContent = version;
+
 // Initialize settings immediately
 let settings = {
     mealPlanStartDay: 0  // Default to Sunday
@@ -24,6 +29,48 @@ function saveToLocalStorage() {
     // Update global settings
     window.settings = settings;
 }
+
+// Handle form submission
+function handleSettingsSubmit(event) {
+    event.preventDefault();
+    
+    try {
+        // Get the selected start day
+        const startDay = parseInt(document.getElementById('start-day').value);
+        
+        // Update settings
+        settings.mealPlanStartDay = startDay;
+        
+        // Save to localStorage
+        saveToLocalStorage();
+        
+        // Show success message
+        alert('Settings saved successfully!');
+        
+        console.log('Settings updated:', settings);
+    } catch (error) {
+        console.error('Error saving settings:', error);
+        alert('Error saving settings. Please try again.');
+    }
+}
+
+// Initialize form with current settings
+function initializeForm() {
+    const startDaySelect = document.getElementById('start-day');
+    if (startDaySelect) {
+        startDaySelect.value = settings.mealPlanStartDay.toString();
+    }
+}
+
+// Add event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('settings-form');
+    if (form) {
+        form.addEventListener('submit', handleSettingsSubmit);
+    }
+    
+    initializeForm();
+});
 
 // Export settings and save function
 export { settings, saveToLocalStorage }; 
