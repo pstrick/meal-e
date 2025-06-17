@@ -559,11 +559,11 @@ function handleMealPlanSubmit(e) {
     const servings = parseInt(document.getElementById('meal-servings').value) || 1;
     const mealKey = getMealKey(selectedSlot.dataset.day, selectedSlot.dataset.meal);
     
-    // Save the meal
-    mealPlan[mealKey] = {
-        recipe: selectedRecipe,
+    // Save the meal as an array of meal objects (for consistency)
+    mealPlan[mealKey] = [{
+        recipeId: selectedRecipe.id,
         servings: servings
-    };
+    }];
     
     // Update storage and display
     saveMealPlan();
@@ -589,36 +589,41 @@ function addAddMealButton(slot) {
     
     // Add meal actions if there's a meal
     const mealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
-    const meal = mealPlan[mealKey];
+    const meals = mealPlan[mealKey];
     
-    if (meal) {
-        const mealContent = createMealItem(meal.recipe, meal.servings);
-        slot.innerHTML = mealContent;
-        slot.classList.add('has-meal');
-        
-        // Add meal actions
-        const actionsDiv = document.createElement('div');
-        actionsDiv.className = 'meal-actions';
-        
-        const editBtn = document.createElement('button');
-        editBtn.innerHTML = '<i class="fas fa-edit"></i>';
-        editBtn.title = 'Edit Meal';
-        editBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            openMealPlanModal(slot);
-        });
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
-        deleteBtn.title = 'Delete Meal';
-        deleteBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            deleteMeal(slot);
-        });
-        
-        actionsDiv.appendChild(editBtn);
-        actionsDiv.appendChild(deleteBtn);
-        slot.appendChild(actionsDiv);
+    if (meals && Array.isArray(meals) && meals.length > 0) {
+        // Only support one meal per slot for now
+        const mealData = meals[0];
+        const recipe = window.recipes.find(r => r.id === mealData.recipeId);
+        if (recipe) {
+            const mealContent = createMealItem(recipe, mealData.servings);
+            slot.appendChild(mealContent); // Use appendChild instead of innerHTML
+            slot.classList.add('has-meal');
+            
+            // Add meal actions
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'meal-actions';
+            
+            const editBtn = document.createElement('button');
+            editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+            editBtn.title = 'Edit Meal';
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openMealPlanModal(slot);
+            });
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+            deleteBtn.title = 'Delete Meal';
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteMeal(slot);
+            });
+            
+            actionsDiv.appendChild(editBtn);
+            actionsDiv.appendChild(deleteBtn);
+            slot.appendChild(actionsDiv);
+        }
     } else {
         slot.classList.remove('has-meal');
     }
