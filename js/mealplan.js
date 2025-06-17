@@ -746,4 +746,9 @@ function initializeSearchHandlers() {
     if (categoryFilter) {
         categoryFilter.addEventListener('change', updateRecipeList);
     }
+}
+
+// Attach the submit handler for the meal plan form
+if (mealPlanForm) {
+    mealPlanForm.addEventListener('submit', handleMealPlanSubmit);
 } 
