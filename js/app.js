@@ -914,6 +914,7 @@ function editRecipe(id) {
         const amountInput = ingredientItem.querySelector('.ingredient-amount');
         nameInput.dataset.fdcId = ing.fdcId;
         const ingredientData = {
+            name: ing.name,
             amount: parseFloat(ing.amount),
             nutrition: ing.nutrition
         };
