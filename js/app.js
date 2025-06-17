@@ -53,6 +53,9 @@ let nutritionData = {
 let currentIngredientInput = null;
 let selectedIngredients = new Map(); // Maps ingredient IDs to their nutrition data
 
+// Track the current recipe being edited
+let currentEditRecipeId = null;
+
 // Modal Management
 function openModal() {
     const recipeModal = document.getElementById('recipe-modal');
@@ -417,7 +420,8 @@ function createRecipeCard(recipe) {
     return card;
 }
 
-async function handleRecipeSubmit(e, editId = null) {
+// Update the recipe form submit handler to use the global edit ID
+async function handleRecipeSubmit(e) {
     e.preventDefault();
 
     // Check if we're on the recipe form page
@@ -488,7 +492,7 @@ async function handleRecipeSubmit(e, editId = null) {
     });
 
     const newRecipe = {
-        id: editId || Date.now(),
+        id: currentEditRecipeId || Date.now(),
         name: name,
         category: category,
         servingSize: servingSize,
@@ -502,9 +506,9 @@ async function handleRecipeSubmit(e, editId = null) {
     };
 
     try {
-        if (editId) {
+        if (currentEditRecipeId) {
             // Update existing recipe
-            const index = recipes.findIndex(r => r.id === editId);
+            const index = recipes.findIndex(r => r.id === currentEditRecipeId);
             if (index !== -1) {
                 recipes[index] = newRecipe;
             }
@@ -512,14 +516,11 @@ async function handleRecipeSubmit(e, editId = null) {
             // Add new recipe
             recipes.push(newRecipe);
         }
-        
         updateRecipeList();
         saveToLocalStorage();
         closeModalHandler();
         selectedIngredients.clear();
-        
-        // Reset form handler
-        recipeForm.onsubmit = (e) => handleRecipeSubmit(e);
+        currentEditRecipeId = null;
     } catch (error) {
         console.error('Error saving recipe:', error);
         alert('There was an error saving your recipe. Please try again.');
@@ -883,22 +884,16 @@ function initializeApp() {
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeApp);
 
-// Recipe Management
+// Update editRecipe to set the global edit ID and handler
 function editRecipe(id) {
     const recipe = recipes.find(r => r.id === id);
     if (!recipe) return;
-
-    // Clear existing form
     recipeForm.reset();
     ingredientsList.innerHTML = '';
     selectedIngredients.clear();
-
-    // Fill in basic recipe info
     document.getElementById('recipe-name').value = recipe.name;
     document.getElementById('recipe-category').value = recipe.category;
     document.getElementById('recipe-serving-size').value = recipe.servingSize;
-
-    // Add ingredients
     recipe.ingredients.forEach(ing => {
         const ingredientItem = document.createElement('div');
         ingredientItem.className = 'ingredient-item';
@@ -915,20 +910,14 @@ function editRecipe(id) {
                 <span class="macro-item">F: <span class="fat">0</span>g</span>
             </div>
         `;
-
         const nameInput = ingredientItem.querySelector('.ingredient-name');
         const amountInput = ingredientItem.querySelector('.ingredient-amount');
-        
-        // Store the ingredient data with correct structure
         nameInput.dataset.fdcId = ing.fdcId;
         const ingredientData = {
-            name: ing.name,
             amount: parseFloat(ing.amount),
             nutrition: ing.nutrition
         };
         selectedIngredients.set(ing.fdcId.toString(), ingredientData);
-
-        // Add event listeners
         nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
         amountInput.addEventListener('input', () => {
             const fdcId = nameInput.dataset.fdcId;
@@ -940,7 +929,6 @@ function editRecipe(id) {
                 updateServingSizeDefault();
             }
         });
-
         ingredientItem.querySelector('.remove-ingredient').addEventListener('click', () => {
             if (ingredientsList.children.length > 1) {
                 const fdcId = nameInput.dataset.fdcId;
@@ -951,15 +939,13 @@ function editRecipe(id) {
                 ingredientItem.remove();
             }
         });
-
         ingredientsList.appendChild(ingredientItem);
         updateIngredientMacros(ingredientItem, ingredientData);
     });
-
-    // Update form handler to pass the correct edit ID
-    recipeForm.onsubmit = (e) => handleRecipeSubmit(e, id);
-    
-    // Show modal
+    // Set the global edit ID
+    currentEditRecipeId = id;
+    // Set the form handler
+    recipeForm.onsubmit = handleRecipeSubmit;
     recipeModal.classList.add('active');
     updateTotalNutrition();
 }
