@@ -155,8 +155,17 @@ function openMealPlanModal(slot) {
 
 function updateRecipeList() {
     const recipeList = document.querySelector('.recipe-list');
-    const searchTerm = document.getElementById('recipe-search').value.toLowerCase().trim();
-    const category = document.getElementById('meal-category-filter').value;
+    const searchInput = document.getElementById('recipe-search');
+    const categoryFilter = document.getElementById('meal-category-filter');
+    
+    // Check if required elements exist
+    if (!recipeList || !searchInput || !categoryFilter) {
+        console.log('Recipe list elements not found, skipping update');
+        return;
+    }
+    
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    const category = categoryFilter.value;
     
     // Ensure recipes are available
     if (!window.recipes || !Array.isArray(window.recipes)) {
