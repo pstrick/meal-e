@@ -292,34 +292,31 @@ function closeMealPlanModal() {
 // Make closeMealPlanModal available globally
 window.closeMealPlanModal = closeMealPlanModal;
 
-function createMealItem(recipe, servings) {
+function createMealItem(recipe, servings, mealIndex, slot) {
     const div = document.createElement('div');
     div.className = 'meal-item';
     div.innerHTML = `
-        <span class="remove-meal">&times;</span>
-        <div class="recipe-name">${recipe.name}</div>
-        <div class="servings">${servings} serving${servings === 1 ? '' : 's'}</div>
+        <div class="meal-item-header">
+            <span class="meal-item-name">${recipe.name}</span>
+            <button class="remove-meal" title="Remove Meal">&times;</button>
+        </div>
+        <div class="meal-item-details">
+            <span class="meal-item-servings">${servings} serving${servings === 1 ? '' : 's'}</span>
+        </div>
     `;
-
+    // Remove meal handler
     div.querySelector('.remove-meal').addEventListener('click', (e) => {
         e.stopPropagation();
-        const mealSlot = div.closest('.meal-slot');
-        if (!mealSlot) {
-            console.error('Could not find parent meal slot');
-            return;
+        // Remove this meal from the slot
+        const mealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
+        if (mealPlan[mealKey] && Array.isArray(mealPlan[mealKey])) {
+            mealPlan[mealKey].splice(mealIndex, 1);
+            if (mealPlan[mealKey].length === 0) delete mealPlan[mealKey];
+            saveMealPlan();
+            updateMealPlanDisplay();
+            updateNutritionSummary();
         }
-        
-        // Remove the meal item
-        div.remove();
-        
-        // Add the "Add Meal" button if it doesn't exist
-        addAddMealButton(mealSlot);
-        
-        // Save changes and update nutrition
-        saveMealPlan();
-        updateNutritionSummary();
     });
-
     return div;
 }
 
@@ -550,95 +547,56 @@ async function continueInitialization() {
 function handleMealPlanSubmit(e) {
     console.log('Form submission triggered');
     e.preventDefault();
-    
     if (!selectedSlot || !selectedRecipe) {
         console.error('No slot or recipe selected');
         return;
     }
-    
     const servings = parseInt(document.getElementById('meal-servings').value) || 1;
     const mealKey = getMealKey(selectedSlot.dataset.day, selectedSlot.dataset.meal);
-    
-    // Save the meal as an array of meal objects (for consistency)
-    mealPlan[mealKey] = [{
+    if (!mealPlan[mealKey]) mealPlan[mealKey] = [];
+    mealPlan[mealKey].push({
         recipeId: selectedRecipe.id,
         servings: servings
-    }];
-    
-    // Update storage and display
+    });
     saveMealPlan();
     updateMealPlanDisplay();
     updateNutritionSummary();
-    
-    // Close modal
     closeMealPlanModal();
 }
 
 function addAddMealButton(slot) {
     if (!slot) return;
-    
     // Clear existing content
     slot.innerHTML = '';
-    
-    // Add click handler for the entire slot
-    slot.addEventListener('click', (e) => {
-        // Don't open modal if clicking on meal actions
-        if (e.target.closest('.meal-actions')) return;
-        openMealPlanModal(slot);
-    });
-    
-    // Add meal actions if there's a meal
+    // Add meal items if any
     const mealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
     const meals = mealPlan[mealKey];
-    
     if (meals && Array.isArray(meals) && meals.length > 0) {
-        // Only support one meal per slot for now
-        const mealData = meals[0];
-        const recipe = window.recipes.find(r => r.id === mealData.recipeId);
-        if (recipe) {
-            const mealContent = createMealItem(recipe, mealData.servings);
-            slot.appendChild(mealContent); // Use appendChild instead of innerHTML
-            slot.classList.add('has-meal');
-            
-            // Add meal actions
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'meal-actions';
-            
-            const editBtn = document.createElement('button');
-            editBtn.innerHTML = '<i class="fas fa-edit"></i>';
-            editBtn.title = 'Edit Meal';
-            editBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                openMealPlanModal(slot);
-            });
-            
-            const deleteBtn = document.createElement('button');
-            deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
-            deleteBtn.title = 'Delete Meal';
-            deleteBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                deleteMeal(slot);
-            });
-            
-            actionsDiv.appendChild(editBtn);
-            actionsDiv.appendChild(deleteBtn);
-            slot.appendChild(actionsDiv);
-        }
+        meals.forEach((mealData, idx) => {
+            const recipe = window.recipes.find(r => r.id === mealData.recipeId);
+            if (recipe) {
+                const mealContent = createMealItem(recipe, mealData.servings, idx, slot);
+                slot.appendChild(mealContent);
+            }
+        });
+        slot.classList.add('has-meal');
     } else {
         slot.classList.remove('has-meal');
     }
-}
-
-function deleteMeal(slot) {
-    if (!slot || !slot.dataset) return;
-    
-    const mealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
-    if (mealPlan[mealKey]) {
-        delete mealPlan[mealKey];
-        saveMealPlan();
-        updateMealPlanDisplay();
-        updateNutritionSummary();
-    }
+    // Add the Add Meal button (always visible)
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-meal-btn';
+    addBtn.innerHTML = '<i class="fas fa-plus"></i> Add Meal';
+    addBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openMealPlanModal(slot);
+    });
+    slot.appendChild(addBtn);
+    // Make the whole slot clickable (except for buttons)
+    slot.addEventListener('click', (e) => {
+        if (e.target.closest('button')) return;
+        openMealPlanModal(slot);
+    });
 }
 
 function updateMealPlanDisplay() {
