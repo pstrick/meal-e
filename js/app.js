@@ -461,8 +461,8 @@ async function handleRecipeSubmit(e) {
         .map(item => {
             const fdcId = item.querySelector('.ingredient-name').dataset.fdcId;
             const ingredientData = selectedIngredients.get(fdcId);
-            if (!ingredientData) return null;
-            
+            console.log('Gathering ingredient:', { fdcId, ingredientData });
+            if (!fdcId || !ingredientData || !ingredientData.name || !ingredientData.nutrition) return null;
             return {
                 fdcId: fdcId,
                 name: ingredientData.name,
