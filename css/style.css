@@ -826,7 +826,7 @@ footer {
 /* Meal Plan Grid Table Layout */
 .meal-plan-grid {
     display: grid;
-    grid-template-columns: 120px repeat(7, 1fr);
+    grid-template-columns: 120px repeat(7, minmax(120px, 1fr));
     background: #fafbfc;
     border-radius: 12px;
     overflow: hidden;
@@ -859,39 +859,52 @@ footer {
     font-size: 1rem;
 }
 .meal-slot {
-    min-height: 80px;
+    min-height: 120px;
     background: #fff;
     border-bottom: 1px solid #e9ecef;
     border-right: 1px solid #e9ecef;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     cursor: pointer;
     font-size: 2rem;
     color: #bbb;
     transition: background 0.2s, box-shadow 0.2s;
     position: relative;
+    padding: 0.5rem 0.25rem;
+    box-sizing: border-box;
 }
-.meal-slot:hover {
-    background: #f0f7f4;
-    color: var(--primary-color);
-    box-shadow: 0 2px 8px rgba(76,175,80,0.08);
+.meal-slot .meal-item {
+    width: 100%;
+    margin-bottom: 0.5rem;
+    box-sizing: border-box;
 }
-.meal-slot.has-meal {
-    background: #f8fff8;
-    color: var(--text-color);
-    cursor: default;
+.meal-slot .meal-item:last-child {
+    margin-bottom: 0.75rem;
 }
-.meal-slot .add-meal-btn {
-    font-size: 2rem;
-    color: #bbb;
-    background: none;
+.add-meal-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4em;
+    padding: 0.5em 1.2em;
+    background: var(--primary-color);
     border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 1em;
+    font-weight: 600;
     cursor: pointer;
-    transition: color 0.2s;
+    box-shadow: 0 1px 3px rgba(76,175,80,0.07);
+    margin: 0 auto 0.25rem auto;
+    transition: background 0.2s, box-shadow 0.2s;
+    min-width: 110px;
+    max-width: 90%;
 }
-.meal-slot .add-meal-btn:hover {
-    color: var(--primary-color);
+.add-meal-btn:hover {
+    background: var(--secondary-color);
+    box-shadow: 0 2px 8px rgba(76,175,80,0.13);
 }
 .meal-item {
     background: #f8fff8;
@@ -933,27 +946,6 @@ footer {
 }
 .meal-item .remove-meal:hover {
     color: #b71c1c;
-}
-.add-meal-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4em;
-    width: 100%;
-    margin-top: 0.25rem;
-    padding: 0.4em 0.5em;
-    background: #f5f6fa;
-    border: 1px dashed var(--primary-color);
-    border-radius: 6px;
-    color: var(--primary-color);
-    font-size: 1em;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
-}
-.add-meal-btn:hover {
-    background: #e8f5e9;
-    border-color: #388e3c;
 }
 .meal-actions {
     display: flex;
