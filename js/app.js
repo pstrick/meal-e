@@ -891,13 +891,14 @@ function editRecipe(id) {
         const nameInput = ingredientItem.querySelector('.ingredient-name');
         const amountInput = ingredientItem.querySelector('.ingredient-amount');
         
-        // Store the ingredient data
+        // Store the ingredient data with correct structure
         nameInput.dataset.fdcId = ing.fdcId;
-        selectedIngredients.set(ing.fdcId, {
+        const ingredientData = {
             name: ing.name,
-            amount: ing.amount,
+            amount: parseFloat(ing.amount),
             nutrition: ing.nutrition
-        });
+        };
+        selectedIngredients.set(ing.fdcId.toString(), ingredientData);
 
         // Add event listeners
         nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
@@ -924,10 +925,10 @@ function editRecipe(id) {
         });
 
         ingredientsList.appendChild(ingredientItem);
-        updateIngredientMacros(ingredientItem, ing);
+        updateIngredientMacros(ingredientItem, ingredientData);
     });
 
-    // Update form handler
+    // Update form handler to pass the correct edit ID
     recipeForm.onsubmit = (e) => handleRecipeSubmit(e, id);
     
     // Show modal
