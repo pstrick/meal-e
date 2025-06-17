@@ -823,157 +823,136 @@ footer {
     }
 }
 
-/* Meal Plan Grid */
+/* Meal Plan Grid Table Layout */
 .meal-plan-grid {
     display: grid;
-    grid-template-columns: 100px repeat(7, 1fr);
-    gap: 1px;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
+    grid-template-columns: 120px repeat(7, 1fr);
+    background: #fafbfc;
+    border-radius: 12px;
     overflow: hidden;
-    margin: 2rem 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 8px var(--shadow-color);
+    margin-top: 2rem;
 }
-
 .meal-plan-header {
-    background-color: #f8f9fa;
+    display: contents;
 }
-
 .day-header {
-    padding: 1rem;
+    background: #f5f6fa;
+    font-weight: bold;
     text-align: center;
-    font-weight: 600;
-    color: var(--text-color);
-    background-color: #f8f9fa;
-    border-bottom: 2px solid #dee2e6;
-    min-width: 120px;
+    padding: 1rem 0.5rem;
+    border-bottom: 1px solid #e9ecef;
+    border-right: 1px solid #e9ecef;
+    font-size: 1.1rem;
+    white-space: pre-line;
 }
-
+.meal-row {
+    display: contents;
+}
 .time-slot {
-    padding: 1rem;
+    background: #f5f6fa;
     font-weight: 600;
-    color: var(--text-color);
-    background-color: #f8f9fa;
-    border-right: 1px solid #dee2e6;
     text-align: right;
-    min-width: 100px;
+    padding: 1rem 0.5rem;
+    border-bottom: 1px solid #e9ecef;
+    border-right: 1px solid #e9ecef;
+    font-size: 1rem;
 }
-
 .meal-slot {
-    min-height: 120px;
-    padding: 1rem;
-    background-color: white;
-    border: 1px solid #dee2e6;
-    position: relative;
-    transition: all 0.3s ease;
+    min-height: 80px;
+    background: #fff;
+    border-bottom: 1px solid #e9ecef;
+    border-right: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-}
-
-.meal-slot:hover {
-    background-color: #f8f9fa;
-    border-color: var(--primary-color);
-}
-
-.meal-slot::after {
-    content: '+';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     font-size: 2rem;
-    color: #dee2e6;
-    opacity: 0.5;
-    transition: all 0.3s ease;
+    color: #bbb;
+    transition: background 0.2s, box-shadow 0.2s;
+    position: relative;
 }
-
-.meal-slot:hover::after {
+.meal-slot:hover {
+    background: #f0f7f4;
     color: var(--primary-color);
-    opacity: 0.8;
+    box-shadow: 0 2px 8px rgba(76,175,80,0.08);
 }
-
 .meal-slot.has-meal {
-    background-color: #f8f9fa;
-}
-
-.meal-slot.has-meal:hover::after {
-    display: none;
-}
-
-.meal-slot .meal-content {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.meal-slot .meal-name {
-    font-weight: 600;
+    background: #f8fff8;
     color: var(--text-color);
+    cursor: default;
 }
-
-.meal-slot .meal-servings {
-    font-size: 0.9em;
-    color: #6c757d;
-}
-
-.meal-slot .meal-macros {
-    display: flex;
-    gap: 1rem;
-    font-size: 0.8em;
-    color: #6c757d;
-}
-
-.meal-slot .meal-actions {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    display: flex;
-    gap: 0.5rem;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.meal-slot:hover .meal-actions {
-    opacity: 1;
-}
-
-.meal-slot .meal-actions button {
-    padding: 0.25rem;
+.meal-slot .add-meal-btn {
+    font-size: 2rem;
+    color: #bbb;
     background: none;
     border: none;
-    color: #6c757d;
     cursor: pointer;
-    transition: color 0.3s ease;
+    transition: color 0.2s;
 }
-
-.meal-slot .meal-actions button:hover {
+.meal-slot .add-meal-btn:hover {
     color: var(--primary-color);
 }
-
-@media (max-width: 768px) {
+.meal-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0.5rem 0;
+}
+.meal-item .remove-meal {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    color: #e57373;
+    font-size: 1.2rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 2;
+}
+.meal-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+.meal-actions button {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.meal-actions button:hover {
+    color: var(--primary-color);
+}
+@media (max-width: 900px) {
     .meal-plan-grid {
         grid-template-columns: 80px repeat(7, 1fr);
-        font-size: 0.9em;
     }
-
-    .day-header {
-        padding: 0.75rem 0.5rem;
-        min-width: 80px;
+    .day-header, .time-slot {
+        font-size: 0.95rem;
+        padding: 0.5rem 0.25rem;
     }
-
-    .time-slot {
-        padding: 0.75rem 0.5rem;
-        min-width: 80px;
-    }
-
     .meal-slot {
-        min-height: 100px;
-        padding: 0.75rem;
+        min-height: 60px;
+        font-size: 1.3rem;
     }
-
-    .meal-slot .meal-macros {
-        flex-direction: column;
-        gap: 0.25rem;
+}
+@media (max-width: 600px) {
+    .meal-plan-grid {
+        grid-template-columns: 50px repeat(7, 1fr);
+    }
+    .day-header, .time-slot {
+        font-size: 0.85rem;
+        padding: 0.3rem 0.1rem;
+    }
+    .meal-slot {
+        min-height: 40px;
+        font-size: 1rem;
     }
 }
 
