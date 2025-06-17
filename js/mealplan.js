@@ -347,7 +347,7 @@ function saveMealPlan() {
     console.log('Meal plan saved:', mealPlan);
 }
 
-function loadMealPlan() {
+async function loadMealPlan() {
     try {
         // Check if we're on the meal plan page
         const mealPlanGrid = document.querySelector('.meal-plan-grid');
@@ -368,7 +368,7 @@ function loadMealPlan() {
         }
 
         // Update the display
-        updateMealPlanDisplay();
+        await updateMealPlanDisplay();
     } catch (error) {
         console.error('Error loading meal plan:', error);
         // Initialize empty meal plan on error
@@ -485,7 +485,7 @@ export function initializeMealPlanner() {
             if (savedRecipes) {
                 window.recipes = JSON.parse(savedRecipes);
                 console.log('Recipes loaded from localStorage:', window.recipes);
-                continueInitialization();
+                await continueInitialization();
                 return;
             }
 
@@ -499,20 +499,20 @@ export function initializeMealPlanner() {
                 localStorage.setItem('recipes', JSON.stringify(window.recipes));
                 
                 // Continue initialization after recipes are loaded
-                continueInitialization();
+                await continueInitialization();
             } catch (moduleError) {
                 console.error('Error loading recipes module:', moduleError);
                 // Initialize with empty recipes array
                 window.recipes = [];
                 localStorage.setItem('recipes', JSON.stringify(window.recipes));
-                continueInitialization();
+                await continueInitialization();
             }
         } catch (error) {
             console.error('Error in loadRecipes:', error);
             // Initialize with empty recipes array
             window.recipes = [];
             localStorage.setItem('recipes', JSON.stringify(window.recipes));
-            continueInitialization();
+            await continueInitialization();
         }
     };
 
@@ -521,10 +521,10 @@ export function initializeMealPlanner() {
 }
 
 // Continue initialization after recipes are loaded
-function continueInitialization() {
+async function continueInitialization() {
     try {
         // Load meal plan
-        loadMealPlan();
+        await loadMealPlan();
         
         // Initialize week navigation
         initializeWeekNavigation();
