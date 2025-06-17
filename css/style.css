@@ -1872,4 +1872,60 @@ main {
 .modal .recipe-option .ingredients {
     font-size: 0.92rem;
     color: #888;
+}
+
+/* Style ingredient search box in Add Recipe modal */
+.modal #ingredients-list .ingredient-name {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: #fafbfc;
+    margin-bottom: 0.5rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.modal #ingredients-list .ingredient-name:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+    background: white;
+}
+.modal #ingredients-list .ingredient-amount {
+    width: 100px;
+    padding: 0.75rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: #fafbfc;
+    margin-left: 0.5rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.modal #ingredients-list .ingredient-amount:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+    background: white;
+}
+/* Macros under ingredient input */
+.modal #ingredients-list .ingredient-macros {
+    display: flex;
+    gap: 1.2rem;
+    font-size: 0.97rem;
+    color: var(--text-secondary);
+    background: #f8f9fa;
+    border-radius: 6px;
+    margin: 0.5rem 0 0.5rem 0;
+    padding: 0.5rem 1rem;
+    justify-content: flex-start;
+    box-shadow: 0 1px 2px rgba(76,175,80,0.04);
+}
+.modal #ingredients-list .macro-item {
+    background: white;
+    padding: 0.25rem 0.7rem;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+    font-weight: 500;
+    min-width: 60px;
+    text-align: center;
 } 

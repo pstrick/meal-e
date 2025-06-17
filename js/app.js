@@ -898,10 +898,12 @@ function editRecipe(id) {
         const ingredientItem = document.createElement('div');
         ingredientItem.className = 'ingredient-item';
         ingredientItem.innerHTML = `
-            <div class="ingredient-main">
-                <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${ing.name}">
-                <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="${ing.amount}">
-                <button type="button" class="remove-ingredient">&times;</button>
+            <div class="ingredient-main" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${ing.name}">
+                    <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="${ing.amount}">
+                    <button type="button" class="remove-ingredient">&times;</button>
+                </div>
             </div>
             <div class="ingredient-macros">
                 <span class="macro-item">Cal: <span class="calories">0</span></span>
@@ -1062,17 +1064,14 @@ function addIngredientInput() {
     const ingredientItem = document.createElement('div');
     ingredientItem.className = 'ingredient-item';
     ingredientItem.innerHTML = `
-        <div class="ingredient-main">
-            <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly>
-            <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="0">
-            <button type="button" class="remove-ingredient">&times;</button>
+        <div class="ingredient-main" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly>
+                <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="0">
+                <button type="button" class="remove-ingredient">&times;</button>
+            </div>
         </div>
-        <div class="ingredient-macros">
-            <span class="macro-item">Cal: <span class="calories">0</span></span>
-            <span class="macro-item">P: <span class="protein">0</span>g</span>
-            <span class="macro-item">C: <span class="carbs">0</span>g</span>
-            <span class="macro-item">F: <span class="fat">0</span>g</span>
-        </div>
+        <div class="ingredient-macros"></div>
     `;
 
     const nameInput = ingredientItem.querySelector('.ingredient-name');
