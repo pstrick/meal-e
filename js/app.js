@@ -365,7 +365,7 @@ function updateServingSizeDefault() {
 // Modified Recipe Card Creation
 function createRecipeCard(recipe) {
     const card = document.createElement('div');
-    card.className = 'macro-card recipe-card';
+    card.className = 'recipe-card';
     
     const ingredients = recipe.ingredients
         .map(ing => `${ing.name} (${ing.amount}g)`)
@@ -375,23 +375,43 @@ function createRecipeCard(recipe) {
     const numberOfServings = Math.round((totalWeight / recipe.servingSize) * 10) / 10;
 
     card.innerHTML = `
-        <span class="recipe-category">${recipe.category}</span>
-        <h3>${recipe.name}</h3>
-        <p class="recipe-servings">Serving Size: ${recipe.servingSize}g (Makes ${numberOfServings} servings)</p>
-        <p class="recipe-ingredients">
-            <strong>Ingredients:</strong><br>
-            ${ingredients}
-        </p>
-        <p class="recipe-nutrition">
-            <strong>Per Serving (${recipe.servingSize}g):</strong><br>
-            Calories: ${recipe.nutrition.calories} |
-            Protein: ${recipe.nutrition.protein}g |
-            Carbs: ${recipe.nutrition.carbs}g |
-            Fat: ${recipe.nutrition.fat}g
-        </p>
-        <div class="card-actions">
-            <button class="btn" onclick="editRecipe(${recipe.id})">Edit</button>
-            <button class="btn btn-secondary" onclick="deleteRecipe(${recipe.id})">Delete</button>
+        <div class="recipe-card-content">
+            <span class="recipe-category">${recipe.category}</span>
+            <h3>${recipe.name}</h3>
+            <p class="recipe-servings">Serving Size: ${recipe.servingSize}g (Makes ${numberOfServings} servings)</p>
+            
+            <div class="recipe-nutrition">
+                <div class="nutrition-item">
+                    <span class="nutrition-value">${recipe.nutrition.calories}</span>
+                    <span class="nutrition-label">Calories</span>
+                </div>
+                <div class="nutrition-item">
+                    <span class="nutrition-value">${recipe.nutrition.protein}g</span>
+                    <span class="nutrition-label">Protein</span>
+                </div>
+                <div class="nutrition-item">
+                    <span class="nutrition-value">${recipe.nutrition.carbs}g</span>
+                    <span class="nutrition-label">Carbs</span>
+                </div>
+                <div class="nutrition-item">
+                    <span class="nutrition-value">${recipe.nutrition.fat}g</span>
+                    <span class="nutrition-label">Fat</span>
+                </div>
+            </div>
+            
+            <p class="recipe-ingredients">
+                <strong>Ingredients:</strong><br>
+                ${ingredients}
+            </p>
+            
+            <div class="recipe-actions">
+                <button class="btn btn-edit" onclick="editRecipe(${recipe.id})">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn btn-delete" onclick="deleteRecipe(${recipe.id})">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
         </div>
     `;
     return card;
