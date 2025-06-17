@@ -1644,4 +1644,173 @@ main {
     .settings-container {
         padding: 1rem;
     }
+}
+
+/* Ingredients Table Styles */
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.card-header h2 {
+    margin: 0;
+}
+
+.ingredients-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.ingredients-table th,
+.ingredients-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.ingredients-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.ingredients-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.ingredients-table .macro-info {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.ingredients-table .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.ingredients-table .btn {
+    padding: 0.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.ingredients-table .btn i {
+    font-size: 1rem;
+}
+
+.ingredients-table .btn-edit {
+    color: #2196f3;
+}
+
+.ingredients-table .btn-edit:hover {
+    color: #1976d2;
+}
+
+.ingredients-table .btn-delete {
+    color: #f44336;
+}
+
+.ingredients-table .btn-delete:hover {
+    color: #d32f2f;
+}
+
+.ingredients-table .no-items {
+    text-align: center;
+    color: #6c757d;
+    padding: 2rem;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal.active {
+    opacity: 1;
+}
+
+.modal-content {
+    position: relative;
+    background-color: white;
+    margin: 2rem auto;
+    padding: 2rem;
+    width: 90%;
+    max-width: 600px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    transform: translateY(-20px);
+    transition: transform 0.3s ease;
+}
+
+.modal.active .modal-content {
+    transform: translateY(0);
+}
+
+.modal .close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.5rem;
+    color: #6c757d;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.modal .close:hover {
+    color: #343a40;
+}
+
+.modal h2 {
+    margin-bottom: 1.5rem;
+    color: var(--text-color);
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.modal .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+    .ingredients-table {
+        font-size: 0.9em;
+    }
+
+    .ingredients-table th,
+    .ingredients-table td {
+        padding: 0.75rem;
+    }
+
+    .ingredients-table .macro-info {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .modal-content {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
 } 

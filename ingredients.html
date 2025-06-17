@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingredients - Meal-E</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <a href="index.html" class="logo">Meal-E</a>
+                <div class="nav-links">
+                    <a href="index.html">Home</a>
+                    <a href="recipes.html">Recipes</a>
+                    <a href="mealplan.html">Meal Plan</a>
+                    <a href="ingredients.html" class="active">Ingredients</a>
+                    <a href="settings.html">Settings</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="container">
+            <h1>Ingredients</h1>
+            
+            <!-- Custom Ingredients List -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Custom Ingredients</h2>
+                    <button id="add-ingredient-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add New Ingredient
+                    </button>
+                </div>
+                <div class="search-bar">
+                    <input type="text" id="ingredient-search" placeholder="Search ingredients...">
+                </div>
+                <div class="table-container">
+                    <table id="custom-ingredients-list" class="ingredients-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Price</th>
+                                <th>Calories</th>
+                                <th>Macros</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Ingredients will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2024 Meal-E. All rights reserved.</p>
+            <p>Version: <span id="version"></span></p>
+        </div>
+    </footer>
+
+    <!-- Add/Edit Ingredient Modal -->
+    <div id="ingredient-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add New Ingredient</h2>
+            <form id="custom-ingredient-form">
+                <div class="form-group">
+                    <label for="ingredient-name">Ingredient Name</label>
+                    <input type="text" id="ingredient-name" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="total-price">Total Price ($)</label>
+                        <input type="number" id="total-price" step="0.01" min="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="total-weight">Total Weight (g)</label>
+                        <input type="number" id="total-weight" step="1" min="0" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="serving-size">Serving Size (g)</label>
+                    <input type="number" id="serving-size" step="1" min="0" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="calories">Calories per Serving</label>
+                        <input type="number" id="calories" step="1" min="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fat">Fat per Serving (g)</label>
+                        <input type="number" id="fat" step="0.1" min="0" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="carbs">Carbs per Serving (g)</label>
+                        <input type="number" id="carbs" step="0.1" min="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="protein">Protein per Serving (g)</label>
+                        <input type="number" id="protein" step="0.1" min="0" required>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-ingredient">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Ingredient</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/custom-ingredients.js" type="module"></script>
+</body>
+</html> 

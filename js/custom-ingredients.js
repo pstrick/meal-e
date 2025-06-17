@@ -5,11 +5,16 @@ document.getElementById('version').textContent = version;
 
 // Custom ingredients data structure
 let customIngredients = [];
+let editingIngredientId = null;
 
 // DOM Elements
 const form = document.getElementById('custom-ingredient-form');
 const ingredientsList = document.getElementById('custom-ingredients-list');
 const searchInput = document.getElementById('ingredient-search');
+const addIngredientBtn = document.getElementById('add-ingredient-btn');
+const ingredientModal = document.getElementById('ingredient-modal');
+const cancelIngredientBtn = document.getElementById('cancel-ingredient');
+const closeModalBtn = ingredientModal.querySelector('.close');
 
 // Load custom ingredients from localStorage
 function loadCustomIngredients() {
@@ -41,14 +46,50 @@ function saveCustomIngredients() {
     }
 }
 
-// Add new custom ingredient
-function addCustomIngredient(event) {
+// Open modal for adding/editing ingredient
+function openIngredientModal(ingredient = null) {
+    editingIngredientId = ingredient ? ingredient.id : null;
+    
+    // Reset form
+    form.reset();
+    
+    // Set form title
+    const modalTitle = ingredientModal.querySelector('h2');
+    modalTitle.textContent = ingredient ? 'Edit Ingredient' : 'Add New Ingredient';
+    
+    // Fill form if editing
+    if (ingredient) {
+        document.getElementById('ingredient-name').value = ingredient.name;
+        document.getElementById('total-price').value = ingredient.totalPrice;
+        document.getElementById('total-weight').value = ingredient.totalWeight;
+        document.getElementById('serving-size').value = ingredient.servingSize;
+        document.getElementById('calories').value = ingredient.nutrition.calories;
+        document.getElementById('fat').value = ingredient.nutrition.fat;
+        document.getElementById('carbs').value = ingredient.nutrition.carbs;
+        document.getElementById('protein').value = ingredient.nutrition.protein;
+    }
+    
+    // Show modal
+    ingredientModal.style.display = 'block';
+    ingredientModal.classList.add('active');
+}
+
+// Close ingredient modal
+function closeIngredientModal() {
+    ingredientModal.style.display = 'none';
+    ingredientModal.classList.remove('active');
+    editingIngredientId = null;
+    form.reset();
+}
+
+// Add or update custom ingredient
+function saveCustomIngredient(event) {
     try {
         event.preventDefault();
-        console.log('Adding new custom ingredient...');
+        console.log('Saving custom ingredient...');
         
         const ingredient = {
-            id: Date.now().toString(),
+            id: editingIngredientId || Date.now().toString(),
             name: document.getElementById('ingredient-name').value,
             totalPrice: parseFloat(document.getElementById('total-price').value),
             totalWeight: parseFloat(document.getElementById('total-weight').value),
@@ -65,14 +106,24 @@ function addCustomIngredient(event) {
         // Calculate price per gram
         ingredient.pricePerGram = ingredient.totalPrice / ingredient.totalWeight;
         
-        customIngredients.push(ingredient);
+        if (editingIngredientId) {
+            // Update existing ingredient
+            const index = customIngredients.findIndex(ing => ing.id === editingIngredientId);
+            if (index !== -1) {
+                customIngredients[index] = ingredient;
+            }
+        } else {
+            // Add new ingredient
+            customIngredients.push(ingredient);
+        }
+        
         saveCustomIngredients();
         renderIngredientsList();
-        form.reset();
+        closeIngredientModal();
         
-        console.log('Added new ingredient:', ingredient);
+        console.log('Saved ingredient:', ingredient);
     } catch (error) {
-        console.error('Error adding custom ingredient:', error);
+        console.error('Error saving custom ingredient:', error);
     }
 }
 
@@ -93,37 +144,53 @@ function renderIngredientsList(filteredIngredients = null) {
     try {
         console.log('Rendering ingredients list...');
         const ingredients = filteredIngredients || customIngredients;
-        ingredientsList.innerHTML = '';
+        const tbody = ingredientsList.querySelector('tbody');
+        tbody.innerHTML = '';
         
         if (ingredients.length === 0) {
-            ingredientsList.innerHTML = '<p class="no-items">No custom ingredients found</p>';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="no-items">No custom ingredients found</td>
+                </tr>`;
             return;
         }
         
         ingredients.forEach(ingredient => {
-            const ingredientElement = document.createElement('div');
-            ingredientElement.className = 'ingredient-item';
-            ingredientElement.innerHTML = `
-                <div class="ingredient-info">
-                    <h3>${ingredient.name}</h3>
-                    <p>Price: $${ingredient.totalPrice.toFixed(2)} (${ingredient.totalWeight}g)</p>
-                    <p>Serving: ${ingredient.servingSize}g</p>
-                    <p>Nutrition per serving:</p>
-                    <ul>
-                        <li>Calories: ${ingredient.nutrition.calories}</li>
-                        <li>Fat: ${ingredient.nutrition.fat}g</li>
-                        <li>Carbs: ${ingredient.nutrition.carbs}g</li>
-                        <li>Protein: ${ingredient.nutrition.protein}g</li>
-                    </ul>
-                </div>
-                <button class="btn btn-danger" onclick="deleteCustomIngredient('${ingredient.id}')">
-                    <i class="fas fa-trash"></i>
-                </button>
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${ingredient.name}</td>
+                <td>$${ingredient.totalPrice.toFixed(2)} (${ingredient.totalWeight}g)</td>
+                <td>${ingredient.nutrition.calories}</td>
+                <td>
+                    <div class="macro-info">
+                        <span>F: ${ingredient.nutrition.fat}g</span>
+                        <span>C: ${ingredient.nutrition.carbs}g</span>
+                        <span>P: ${ingredient.nutrition.protein}g</span>
+                    </div>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-edit" onclick="editCustomIngredient('${ingredient.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-delete" onclick="deleteCustomIngredient('${ingredient.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
             `;
-            ingredientsList.appendChild(ingredientElement);
+            tbody.appendChild(row);
         });
     } catch (error) {
         console.error('Error rendering ingredients list:', error);
+    }
+}
+
+// Edit custom ingredient
+function editCustomIngredient(id) {
+    const ingredient = customIngredients.find(ing => ing.id === id);
+    if (ingredient) {
+        openIngredientModal(ingredient);
     }
 }
 
@@ -144,11 +211,22 @@ function searchIngredients(event) {
 }
 
 // Event Listeners
-form.addEventListener('submit', addCustomIngredient);
+form.addEventListener('submit', saveCustomIngredient);
 searchInput.addEventListener('input', searchIngredients);
+addIngredientBtn.addEventListener('click', () => openIngredientModal());
+cancelIngredientBtn.addEventListener('click', closeIngredientModal);
+closeModalBtn.addEventListener('click', closeIngredientModal);
 
-// Make delete function available globally
+// Close modal when clicking outside
+window.addEventListener('click', (event) => {
+    if (event.target === ingredientModal) {
+        closeIngredientModal();
+    }
+});
+
+// Make functions available globally
 window.deleteCustomIngredient = deleteCustomIngredient;
+window.editCustomIngredient = editCustomIngredient;
 
 // Initialize
 loadCustomIngredients(); 
