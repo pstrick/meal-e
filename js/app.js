@@ -2,7 +2,7 @@ import config from './config.js';
 import { version } from './version.js';
 import './mealplan.js';
 import { initializeMealPlanner } from './mealplan.js';
-import { settings, saveToLocalStorage } from './settings.js';
+import { settings } from './settings.js';
 
 // Update version in footer
 document.querySelector('footer p').innerHTML = `&copy; ${version.year} Meal-E <span class="version">v${version.toString()}</span>`;
@@ -570,6 +570,31 @@ function loadFromLocalStorage() {
         }
     } catch (error) {
         console.error('Error loading from localStorage:', error);
+    }
+}
+
+// Save data to localStorage
+function saveToLocalStorage() {
+    try {
+        console.log('Saving data to localStorage...');
+        
+        // Save recipes
+        localStorage.setItem('recipes', JSON.stringify(recipes));
+        console.log('Saved recipes:', recipes.length);
+        
+        // Save meal plan
+        localStorage.setItem('mealPlan', JSON.stringify(mealPlan));
+        console.log('Saved meal plan');
+        
+        // Save nutrition data
+        localStorage.setItem('meale-nutrition', JSON.stringify(nutritionData));
+        console.log('Saved nutrition data');
+        
+        // Update global recipes for other modules
+        window.recipes = recipes;
+        
+    } catch (error) {
+        console.error('Error saving to localStorage:', error);
     }
 }
 
