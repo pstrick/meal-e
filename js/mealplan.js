@@ -198,18 +198,20 @@ function updateRecipeList() {
     }
     
     // Add filtered recipes to the list
-    filteredRecipes.forEach(recipe => {
+    filteredRecipes.forEach((recipe, idx) => {
         const div = document.createElement('div');
         div.className = 'recipe-option';
         if (selectedRecipe && selectedRecipe.id === recipe.id) {
             div.classList.add('selected');
         }
-        
+        // Add a separator class except for the last item
+        if (idx < filteredRecipes.length - 1) {
+            div.classList.add('with-separator');
+        }
         const ingredients = recipe.ingredients
             .map(ing => ing.name)
             .slice(0, 3)
             .join(', ') + (recipe.ingredients.length > 3 ? '...' : '');
-        
         div.innerHTML = `
             <h4>${recipe.name}</h4>
             <div class="recipe-meta">
@@ -221,7 +223,6 @@ function updateRecipeList() {
                 <small>${ingredients}</small>
             </div>
         `;
-        
         div.addEventListener('click', () => selectRecipe(recipe));
         recipeList.appendChild(div);
     });
