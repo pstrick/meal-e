@@ -922,12 +922,10 @@ function editRecipe(id) {
         const ingredientItem = document.createElement('div');
         ingredientItem.className = 'ingredient-item';
         ingredientItem.innerHTML = `
-            <div class="ingredient-main" style="display: flex; flex-direction: column; gap: 0.5rem;">
-                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                    <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${ing.name}">
-                    <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="${ing.amount}">
-                    <button type="button" class="remove-ingredient">&times;</button>
-                </div>
+            <div class="ingredient-main">
+                <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${ing.name}">
+                <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="${ing.amount}">
+                <button type="button" class="remove-ingredient">&times;</button>
             </div>
             <div class="ingredient-macros">
                 <span class="macro-item">Calories: <span class="calories">0</span></span>
@@ -1094,12 +1092,10 @@ function addIngredientInput() {
     const ingredientItem = document.createElement('div');
     ingredientItem.className = 'ingredient-item';
     ingredientItem.innerHTML = `
-        <div class="ingredient-main" style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-                <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly>
-                <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="0">
-                <button type="button" class="remove-ingredient">&times;</button>
-            </div>
+        <div class="ingredient-main">
+            <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly>
+            <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="0">
+            <button type="button" class="remove-ingredient">&times;</button>
         </div>
         <div class="ingredient-macros">
             <span class="macro-item">Calories: <span class="calories">0</span></span>
@@ -1154,34 +1150,6 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     ingredientItem.querySelector('.carbs').textContent = macros.carbs;
     ingredientItem.querySelector('.fat').textContent = macros.fat;
 }
-
-// Add styles for the macro display
-const macroStyles = document.createElement('style');
-macroStyles.textContent = `
-    .ingredient-item {
-        margin-bottom: 1rem;
-    }
-    .ingredient-main {
-        display: grid;
-        grid-template-columns: 2fr 1fr auto;
-        gap: 0.5rem;
-        margin-bottom: 0.25rem;
-    }
-    .ingredient-macros {
-        display: flex;
-        gap: 1rem;
-        font-size: 0.9em;
-        color: #666;
-        padding-left: 0.5rem;
-        margin-top: 0.25rem;
-    }
-    .macro-item {
-        background: #f5f5f5;
-        padding: 0.2rem 0.5rem;
-        border-radius: 4px;
-    }
-`;
-document.head.appendChild(macroStyles);
 
 // Close buttons for all modals
 document.querySelectorAll('.modal .close').forEach(closeBtn => {
