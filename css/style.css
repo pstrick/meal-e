@@ -332,8 +332,9 @@ h2 {
     padding: 0.5rem 1rem;
     box-shadow: 0 1px 2px rgba(76,175,80,0.04);
     border: 1px solid #e9ecef;
-    width: 100%;
-    clear: both;
+    width: fit-content;
+    max-width: 100%;
+    align-self: flex-start;
 }
 
 .modal .macro-item {
@@ -1930,8 +1931,9 @@ main {
     padding: 0.5rem 1rem;
     box-shadow: 0 1px 2px rgba(76,175,80,0.04);
     border: 1px solid #e9ecef;
-    width: 100%;
-    clear: both;
+    width: fit-content;
+    max-width: 100%;
+    align-self: flex-start;
 }
 .modal #ingredients-list .macro-item {
     background: white;
@@ -2001,8 +2003,9 @@ main {
     padding: 0.5rem 1rem;
     box-shadow: 0 1px 2px rgba(76,175,80,0.04);
     border: 1px solid #e9ecef;
-    width: 100%;
-    clear: both;
+    width: fit-content;
+    max-width: 100%;
+    align-self: flex-start;
 }
 .modal #ingredients-list .macro-item {
     background: white;
