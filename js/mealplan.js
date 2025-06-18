@@ -2,12 +2,12 @@
 let currentWeekOffset = 0;  // Track week offset instead of modifying date directly
 let selectedSlot = null;
 let selectedRecipe = null;
-let mealPlanForm = document.getElementById('meal-plan-form');
-const mealPlanModal = document.getElementById('meal-plan-modal');
-const cancelMeal = document.getElementById('cancel-meal');
-const weekDisplay = document.getElementById('week-display');
-const prevWeekBtn = document.getElementById('prev-week');
-const nextWeekBtn = document.getElementById('next-week');
+let mealPlanForm = null;
+let mealPlanModal = null;
+let cancelMeal = null;
+let weekDisplay = null;
+let prevWeekBtn = null;
+let nextWeekBtn = null;
 
 // Initialize meal plan data
 let mealPlan = {};
@@ -543,6 +543,22 @@ async function continueInitialization() {
         // Reset to current week
         currentWeekOffset = 0;
         console.log('Reset currentWeekOffset to 0');
+        
+        // Initialize DOM elements
+        mealPlanForm = document.getElementById('meal-plan-form');
+        mealPlanModal = document.getElementById('meal-plan-modal');
+        cancelMeal = document.getElementById('cancel-meal');
+        weekDisplay = document.getElementById('week-display');
+        prevWeekBtn = document.getElementById('prev-week');
+        nextWeekBtn = document.getElementById('next-week');
+        
+        console.log('DOM elements initialized:', {
+            mealPlanForm: !!mealPlanForm,
+            mealPlanModal: !!mealPlanModal,
+            weekDisplay: !!weekDisplay,
+            prevWeekBtn: !!prevWeekBtn,
+            nextWeekBtn: !!nextWeekBtn
+        });
         
         // Load meal plan
         await loadMealPlan();
