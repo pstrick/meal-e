@@ -198,44 +198,33 @@ function updateRecipeList() {
     // Clear the current list
     recipeList.innerHTML = '';
     
-    if (filteredRecipes.length === 0) {
-        recipeList.innerHTML = `
-            <div class="recipe-option no-results">
-                ${searchTerm ? 'No recipes found matching "' + searchTerm + '"' : 'No recipes found'}
-                ${category !== 'all' ? ' in category "' + category + '"' : ''}
-            </div>`;
-        return;
-    }
-    
     // Add filtered recipes to the list
-    filteredRecipes.forEach((recipe, idx) => {
-        const div = document.createElement('div');
-        div.className = 'recipe-option';
-        if (selectedRecipe && selectedRecipe.id === recipe.id) {
-            div.classList.add('selected');
-        }
-        // Add a separator class except for the last item
-        if (idx < filteredRecipes.length - 1) {
-            div.classList.add('with-separator');
-        }
-        const ingredients = recipe.ingredients
-            .map(ing => ing.name)
-            .slice(0, 3)
-            .join(', ') + (recipe.ingredients.length > 3 ? '...' : '');
-        div.innerHTML = `
+    filteredRecipes.forEach(recipe => {
+        const option = document.createElement('div');
+        option.className = 'recipe-option';
+        option.innerHTML = `
             <h4>${recipe.name}</h4>
             <div class="recipe-meta">
-                <span class="category">${recipe.category}</span> • 
-                <span class="calories">${recipe.nutrition.calories} cal</span> • 
-                <span class="protein">${recipe.nutrition.protein}g protein</span>
+                <span>${recipe.category}</span>
+                <span>${recipe.nutrition.calories} cal</span>
             </div>
             <div class="ingredients">
-                <small>${ingredients}</small>
+                ${recipe.ingredients.map(ing => ing.name).join(', ')}
             </div>
         `;
-        div.addEventListener('click', () => selectRecipe(recipe));
-        recipeList.appendChild(div);
+        
+        // Add click handler to select the recipe
+        option.addEventListener('click', () => {
+            selectRecipe(recipe);
+        });
+        
+        recipeList.appendChild(option);
     });
+    
+    // Show message if no recipes found
+    if (filteredRecipes.length === 0) {
+        recipeList.innerHTML = '<div class="recipe-option">No recipes found</div>';
+    }
 }
 
 function selectRecipe(recipe) {
@@ -577,6 +566,11 @@ async function continueInitialization() {
             cancelMeal.addEventListener('click', closeMealPlanModal);
         }
         
+        // Attach the submit handler for the meal plan form
+        if (mealPlanForm) {
+            mealPlanForm.addEventListener('submit', handleMealPlanSubmit);
+        }
+        
         console.log('Meal planner initialized successfully');
     } catch (error) {
         console.error('Error continuing initialization:', error);
@@ -748,9 +742,4 @@ function initializeSearchHandlers() {
     if (categoryFilter) {
         categoryFilter.addEventListener('change', updateRecipeList);
     }
-}
-
-// Attach the submit handler for the meal plan form
-if (mealPlanForm) {
-    mealPlanForm.addEventListener('submit', handleMealPlanSubmit);
 } 
