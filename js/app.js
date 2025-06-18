@@ -21,7 +21,7 @@ document.head.appendChild(versionStyle);
 // DOM Elements
 const navLinks = document.querySelectorAll('nav a');
 const sections = document.querySelectorAll('.section');
-const addRecipeBtn = document.getElementById('add-recipe');
+const addRecipeBtn = document.getElementById('add-recipe-btn');
 const recipeList = document.getElementById('recipe-list');
 const recipeModal = document.getElementById('recipe-modal');
 const recipeForm = document.getElementById('recipe-form');
@@ -29,7 +29,7 @@ const closeModal = document.querySelector('.close');
 const cancelRecipe = document.getElementById('cancel-recipe');
 const addIngredientBtn = document.getElementById('add-ingredient');
 const ingredientsList = document.getElementById('ingredients-list');
-const categoryFilter = document.getElementById('recipe-category-filter');
+const categoryFilter = document.getElementById('category-filter');
 const ingredientSearchModal = document.getElementById('ingredient-search-modal');
 const ingredientSearchInput = document.getElementById('ingredient-search-input');
 const searchBtn = document.getElementById('search-btn');
@@ -875,6 +875,44 @@ function initializeApp() {
             });
         }
 
+        // Initialize search button and search input for ingredient search modal
+        const searchBtn = document.getElementById('search-btn');
+        const ingredientSearchInput = document.getElementById('ingredient-search-input');
+        
+        if (searchBtn) {
+            searchBtn.addEventListener('click', async () => {
+                const query = ingredientSearchInput ? ingredientSearchInput.value.trim() : '';
+                if (query) {
+                    const searchResults = document.getElementById('search-results');
+                    if (searchResults) {
+                        searchResults.innerHTML = '<div class="loading">Searching...</div>';
+                        try {
+                            const results = await searchIngredients(query);
+                            displaySearchResults(results);
+                        } catch (error) {
+                            console.error('Error searching ingredients:', error);
+                            searchResults.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
+                        }
+                    }
+                }
+            });
+        }
+
+        if (ingredientSearchInput) {
+            ingredientSearchInput.addEventListener('keypress', async (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (searchBtn) searchBtn.click();
+                }
+            });
+        }
+
+        // Initialize category filter
+        const categoryFilter = document.getElementById('category-filter');
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', updateRecipeList);
+        }
+
         console.log('App initialized successfully');
     } catch (error) {
         console.error('Error initializing app:', error);
@@ -1158,56 +1196,6 @@ macroStyles.textContent = `
     }
 `;
 document.head.appendChild(macroStyles);
-
-// Event Listeners
-if (addRecipeBtn) {
-    addRecipeBtn.addEventListener('click', openModal);
-}
-
-if (closeModal) {
-    closeModal.addEventListener('click', closeModalHandler);
-}
-
-if (cancelRecipe) {
-    cancelRecipe.addEventListener('click', closeModalHandler);
-}
-
-if (addIngredientBtn) {
-    addIngredientBtn.addEventListener('click', addIngredientInput);
-}
-
-if (recipeForm) {
-    recipeForm.addEventListener('submit', handleRecipeSubmit);
-}
-
-if (categoryFilter) {
-    categoryFilter.addEventListener('change', updateRecipeList);
-}
-
-if (searchBtn) {
-    searchBtn.addEventListener('click', async () => {
-        const query = ingredientSearchInput.value.trim();
-        if (query) {
-            searchResults.innerHTML = '<div class="loading">Searching...</div>';
-            try {
-                const results = await searchIngredients(query);
-                displaySearchResults(results);
-            } catch (error) {
-                console.error('Error searching ingredients:', error);
-                searchResults.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
-            }
-        }
-    });
-}
-
-if (ingredientSearchInput) {
-    ingredientSearchInput.addEventListener('keypress', async (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            searchBtn.click();
-        }
-    });
-}
 
 // Close buttons for all modals
 document.querySelectorAll('.modal .close').forEach(closeBtn => {
