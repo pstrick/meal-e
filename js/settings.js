@@ -30,45 +30,23 @@ function saveToLocalStorage() {
     window.settings = settings;
 }
 
-// Handle form submission
-function handleSettingsSubmit(event) {
-    event.preventDefault();
-    
-    try {
-        // Get the selected start day
-        const startDay = parseInt(document.getElementById('start-day').value);
-        
-        // Update settings
-        settings.mealPlanStartDay = startDay;
-        
-        // Save to localStorage
-        saveToLocalStorage();
-        
-        // Show success message
-        alert('Settings saved successfully!');
-        
-        console.log('Settings updated:', settings);
-    } catch (error) {
-        console.error('Error saving settings:', error);
-        alert('Error saving settings. Please try again.');
-    }
-}
-
 // Initialize form with current settings
 function initializeForm() {
     const startDaySelect = document.getElementById('start-day');
     if (startDaySelect) {
         startDaySelect.value = settings.mealPlanStartDay.toString();
+        startDaySelect.addEventListener('change', (event) => {
+            const startDay = parseInt(event.target.value);
+            settings.mealPlanStartDay = startDay;
+            saveToLocalStorage();
+            // No alert needed
+            console.log('Settings updated:', settings);
+        });
     }
 }
 
 // Add event listeners
 document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('settings-form');
-    if (form) {
-        form.addEventListener('submit', handleSettingsSubmit);
-    }
-    
     initializeForm();
 });
 
