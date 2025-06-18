@@ -14,6 +14,8 @@ let mealPlan = {};
 
 // Get week dates based on current week and start day setting
 function getWeekDates(weekOffset = 0) {
+    console.log('getWeekDates called with weekOffset:', weekOffset);
+    
     // Get settings from localStorage if not available globally
     if (!window.settings) {
         const savedSettings = localStorage.getItem('meale-settings');
@@ -21,10 +23,12 @@ function getWeekDates(weekOffset = 0) {
         console.log('Loaded settings in getWeekDates:', window.settings);
     }
     
-    const startDay = parseInt(window.settings.mealPlanStartDay);
+    const startDay = parseInt(window.settings.mealPlanStartDay) || 0;
     console.log('Using start day from settings:', startDay);
     
     const today = new Date();
+    console.log('Today:', today.toISOString());
+    
     const currentDay = today.getDay();
     console.log('Current day of week:', currentDay);
     
@@ -33,16 +37,15 @@ function getWeekDates(weekOffset = 0) {
     console.log('Days to start of week:', daysToStart);
     
     // Calculate start date of the week
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - daysToStart + (weekOffset * 7));
-    console.log('Start date:', startDate);
+    const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    startDate.setDate(startDate.getDate() - daysToStart + (weekOffset * 7));
+    console.log('Calculated start date:', startDate.toISOString());
     
     // Generate dates for the week
     const dates = [];
     const dayNames = [];
     for (let i = 0; i < 7; i++) {
-        const date = new Date(startDate);
-        date.setDate(startDate.getDate() + i);
+        const date = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
         dates.push(date.toISOString().split('T')[0]);
         dayNames.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
     }
@@ -88,6 +91,13 @@ function formatDate(dateStr) {
 
 function updateWeekDisplay() {
     console.log('Updating week display with offset:', currentWeekOffset);
+    
+    // Make sure weekDisplay element exists
+    if (!weekDisplay) {
+        console.error('weekDisplay element not found');
+        return;
+    }
+    
     try {
         const week = getWeekDates(currentWeekOffset);
         console.log('Week data:', week);
@@ -530,6 +540,10 @@ export function initializeMealPlanner() {
 // Continue initialization after recipes are loaded
 async function continueInitialization() {
     try {
+        // Reset to current week
+        currentWeekOffset = 0;
+        console.log('Reset currentWeekOffset to 0');
+        
         // Load meal plan
         await loadMealPlan();
         
