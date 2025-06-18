@@ -533,6 +533,9 @@ async function continueInitialization() {
         // Load meal plan
         await loadMealPlan();
         
+        // Update week display to show current week
+        updateWeekDisplay();
+        
         // Initialize week navigation
         initializeWeekNavigation();
         
