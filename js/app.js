@@ -604,7 +604,7 @@ function initializeSettings() {
     try {
         // Get settings from localStorage if not already loaded
         if (!window.settings) {
-            const savedSettings = localStorage.getItem('settings');
+            const savedSettings = localStorage.getItem('meale-settings');
             window.settings = savedSettings ? JSON.parse(savedSettings) : {
                 mealPlanStartDay: 0, // Default to Sunday
                 theme: 'light'
@@ -617,7 +617,7 @@ function initializeSettings() {
             startDaySelect.value = window.settings.mealPlanStartDay;
             startDaySelect.addEventListener('change', (e) => {
                 window.settings.mealPlanStartDay = parseInt(e.target.value);
-                localStorage.setItem('settings', JSON.stringify(window.settings));
+                localStorage.setItem('meale-settings', JSON.stringify(window.settings));
                 // Reset week offset when start day changes
                 if (window.currentWeekOffset !== undefined) {
                     window.currentWeekOffset = 0;
@@ -635,7 +635,7 @@ function initializeSettings() {
             themeToggle.checked = window.settings.theme === 'dark';
             themeToggle.addEventListener('change', (e) => {
                 window.settings.theme = e.target.checked ? 'dark' : 'light';
-                localStorage.setItem('settings', JSON.stringify(window.settings));
+                localStorage.setItem('meale-settings', JSON.stringify(window.settings));
                 document.body.classList.toggle('dark-theme', e.target.checked);
             });
             document.body.classList.toggle('dark-theme', window.settings.theme === 'dark');
