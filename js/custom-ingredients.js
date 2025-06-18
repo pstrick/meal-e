@@ -1,7 +1,8 @@
 import { version } from './version.js';
 
 // Update version in footer
-document.getElementById('version').textContent = version;
+const versionEl = document.getElementById('version');
+if (versionEl) versionEl.textContent = version;
 
 // Custom ingredients data structure
 let customIngredients = [];
