@@ -314,11 +314,10 @@ h2 {
 }
 
 .modal .ingredient-main {
-    display: grid;
-    grid-template-columns: 2fr 1fr auto;
+    display: flex;
     gap: 0.75rem;
-    margin-bottom: 0.5rem;
     align-items: center;
+    margin-bottom: 0.2rem;
 }
 
 .modal .ingredient-macros {
@@ -329,7 +328,9 @@ h2 {
     padding: 0.5rem;
     background: #f8f9fa;
     border-radius: 6px;
-    justify-content: space-around;
+    justify-content: flex-start;
+    margin: 0.3rem 0 0.7rem 0;
+    width: 100%;
 }
 
 .modal .macro-item {
@@ -499,13 +500,15 @@ h2 {
     }
     
     .modal .ingredient-main {
-        grid-template-columns: 1fr;
+        flex-direction: column;
         gap: 0.5rem;
+        align-items: stretch;
     }
     
     .modal .ingredient-macros {
         flex-wrap: wrap;
         gap: 0.5rem;
+        justify-content: center;
     }
     
     .modal .form-actions {
