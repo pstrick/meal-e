@@ -1,8 +1,5 @@
 import { version } from './version.js';
 
-// Update version in footer
-document.querySelector('footer .version').textContent = `v${version.toString()}`;
-
 // Initialize settings immediately
 let settings = {
     mealPlanStartDay: 0  // Default to Sunday
