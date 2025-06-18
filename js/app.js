@@ -906,10 +906,10 @@ function editRecipe(id) {
                 </div>
             </div>
             <div class="ingredient-macros">
-                <span class="macro-item">Cal: <span class="calories">0</span></span>
-                <span class="macro-item">P: <span class="protein">0</span>g</span>
-                <span class="macro-item">C: <span class="carbs">0</span>g</span>
-                <span class="macro-item">F: <span class="fat">0</span>g</span>
+                <span class="macro-item">Calories: <span class="calories">0</span></span>
+                <span class="macro-item">Protein: <span class="protein">0</span>g</span>
+                <span class="macro-item">Carbs: <span class="carbs">0</span>g</span>
+                <span class="macro-item">Fat: <span class="fat">0</span>g</span>
             </div>
         `;
         const nameInput = ingredientItem.querySelector('.ingredient-name');
@@ -1025,6 +1025,10 @@ async function displaySearchResults(results) {
         
         div.addEventListener('click', async () => {
             try {
+                if (!currentIngredientInput) {
+                    alert('No ingredient input is currently selected. Please click an ingredient input field first.');
+                    return;
+                }
                 const details = await getFoodDetails(food.fdcId);
                 if (details) {
                     const nutrition = calculateNutritionPerGram(details);
@@ -1071,7 +1075,12 @@ function addIngredientInput() {
                 <button type="button" class="remove-ingredient">&times;</button>
             </div>
         </div>
-        <div class="ingredient-macros"></div>
+        <div class="ingredient-macros">
+            <span class="macro-item">Calories: <span class="calories">0</span></span>
+            <span class="macro-item">Protein: <span class="protein">0</span>g</span>
+            <span class="macro-item">Carbs: <span class="carbs">0</span>g</span>
+            <span class="macro-item">Fat: <span class="fat">0</span>g</span>
+        </div>
     `;
 
     const nameInput = ingredientItem.querySelector('.ingredient-name');
@@ -1203,11 +1212,11 @@ document.querySelectorAll('.modal .close').forEach(closeBtn => {
     if (closeBtn) {
         closeBtn.addEventListener('click', (event) => {
             const modal = event.target.closest('.modal');
-            if (modal.id === 'recipe-modal') {
+            if (modal && modal.id === 'recipe-modal') {
                 closeModalHandler();
-            } else if (modal.id === 'ingredient-search-modal') {
+            } else if (modal && modal.id === 'ingredient-search-modal') {
                 closeIngredientSearch();
-            } else if (modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
+            } else if (modal && modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
                 window.closeMealPlanModal();
             }
         });
