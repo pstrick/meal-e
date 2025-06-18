@@ -899,6 +899,12 @@ function initializeApp() {
             categoryFilter.addEventListener('change', updateRecipeList);
         }
 
+        // Initialize cancel recipe button
+        const cancelRecipeBtn = document.getElementById('cancel-recipe');
+        if (cancelRecipeBtn) {
+            cancelRecipeBtn.addEventListener('click', closeModalHandler);
+        }
+
         console.log('App initialized successfully');
     } catch (error) {
         console.error('Error initializing app:', error);
@@ -1151,37 +1157,40 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     ingredientItem.querySelector('.fat').textContent = macros.fat;
 }
 
-// Close buttons for all modals
-document.querySelectorAll('.modal .close').forEach(closeBtn => {
-    if (closeBtn) {
-        closeBtn.addEventListener('click', (event) => {
-            const modal = event.target.closest('.modal');
-            if (modal && modal.id === 'recipe-modal') {
-                closeModalHandler();
-            } else if (modal && modal.id === 'ingredient-search-modal') {
-                closeIngredientSearch();
-            } else if (modal && modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
-                window.closeMealPlanModal();
-            }
-        });
-    }
-});
-
-// Close modal when clicking outside
-document.querySelectorAll('.modal').forEach(modal => {
-    if (modal) {
-        modal.addEventListener('click', (event) => {
-            if (event.target === modal) {
-                if (modal.id === 'recipe-modal') {
+// Initialize modal close handlers when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Close buttons for all modals
+    document.querySelectorAll('.modal .close').forEach(closeBtn => {
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (event) => {
+                const modal = event.target.closest('.modal');
+                if (modal && modal.id === 'recipe-modal') {
                     closeModalHandler();
-                } else if (modal.id === 'ingredient-search-modal') {
+                } else if (modal && modal.id === 'ingredient-search-modal') {
                     closeIngredientSearch();
-                } else if (modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
+                } else if (modal && modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
                     window.closeMealPlanModal();
                 }
-            }
-        });
-    }
+            });
+        }
+    });
+
+    // Close modal when clicking outside
+    document.querySelectorAll('.modal').forEach(modal => {
+        if (modal) {
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    if (modal.id === 'recipe-modal') {
+                        closeModalHandler();
+                    } else if (modal.id === 'ingredient-search-modal') {
+                        closeIngredientSearch();
+                    } else if (modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
+                        window.closeMealPlanModal();
+                    }
+                }
+            });
+        }
+    });
 });
 
 // Modified Recipe Management

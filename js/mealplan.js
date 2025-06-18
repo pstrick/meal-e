@@ -572,6 +572,11 @@ async function continueInitialization() {
         // Initialize search handlers
         initializeSearchHandlers();
         
+        // Initialize cancel meal button
+        if (cancelMeal) {
+            cancelMeal.addEventListener('click', closeMealPlanModal);
+        }
+        
         console.log('Meal planner initialized successfully');
     } catch (error) {
         console.error('Error continuing initialization:', error);
