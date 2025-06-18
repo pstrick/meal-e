@@ -914,13 +914,15 @@ function editRecipe(id) {
         `;
         const nameInput = ingredientItem.querySelector('.ingredient-name');
         const amountInput = ingredientItem.querySelector('.ingredient-amount');
-        nameInput.dataset.fdcId = ing.fdcId;
+        // Ensure fdcId is present, fallback to a unique id if missing
+        let fdcId = ing.fdcId ? ing.fdcId.toString() : `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        nameInput.dataset.fdcId = fdcId;
         const ingredientData = {
             name: ing.name,
             amount: parseFloat(ing.amount),
             nutrition: ing.nutrition
         };
-        selectedIngredients.set(ing.fdcId.toString(), ingredientData);
+        selectedIngredients.set(fdcId, ingredientData);
         nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
         amountInput.addEventListener('input', () => {
             const fdcId = nameInput.dataset.fdcId;
