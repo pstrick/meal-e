@@ -969,8 +969,13 @@ footer {
 
 .meal-item-name {
     font-weight: 600;
-    font-size: 1.05em;
+    font-size: 0.9em;
     color: var(--text-color);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
 }
 
 .meal-item-details {

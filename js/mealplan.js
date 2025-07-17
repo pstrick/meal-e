@@ -390,6 +390,9 @@ function createMealItem(item, amount, itemIndex, slot) {
     const icon = item.type === 'meal' ? '🍽️' : '🥩';
     const label = item.type === 'meal' ? 'Meal' : 'Ingredient';
     
+    // Truncate item name to 200 characters
+    const truncatedName = item.name.length > 200 ? item.name.substring(0, 200) + '...' : item.name;
+    
     // Calculate nutrition for this item
     let itemNutrition = { calories: 0, protein: 0, carbs: 0, fat: 0 };
     if (item.type === 'meal') {
@@ -450,7 +453,7 @@ function createMealItem(item, amount, itemIndex, slot) {
     div.innerHTML = `
         <div class="meal-item-header">
             <span class="meal-item-icon">${icon}</span>
-            <span class="meal-item-name">${item.name}</span>
+            <span class="meal-item-name" title="${item.name}">${truncatedName}</span>
             <button class="remove-meal" title="Remove Item">&times;</button>
         </div>
         <div class="meal-item-details">
