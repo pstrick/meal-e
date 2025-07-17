@@ -2328,25 +2328,27 @@ main {
 /* Daily Nutrition Row Styles */
 .daily-nutrition-row {
     display: table-row;
+    background-color: #f8f9fa;
 }
 
 .daily-nutrition-cell {
-    background-color: var(--card-bg);
+    background-color: #f8f9fa;
     padding: 0.75rem;
     text-align: center;
     font-size: 0.85rem;
     font-weight: 600;
     display: table-cell;
     vertical-align: middle;
-    border-bottom: 1px solid #e9ecef;
+    border-top: 2px solid #e9ecef;
     border-right: 1px solid #e9ecef;
 }
 
 .daily-nutrition-cell:first-child {
-    background-color: var(--background-color);
+    background-color: #f8f9fa;
     font-weight: 700;
     color: var(--text-secondary);
     width: 120px;
+    border-left: 1px solid #e9ecef;
 }
 
 .daily-totals {

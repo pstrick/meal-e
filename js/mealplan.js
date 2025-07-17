@@ -882,14 +882,40 @@ async function updateMealPlanDisplay() {
     
     mealPlanGrid.appendChild(headerRow);
     
-    // Calculate daily nutrition data
+    // Add meal slots
+    const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+    for (const mealType of mealTypes) {
+        const row = document.createElement('div');
+        row.className = 'meal-row';
+        
+        // Add time slot
+        const timeSlot = document.createElement('div');
+        timeSlot.className = 'time-slot';
+        timeSlot.textContent = mealType;
+        row.appendChild(timeSlot);
+        
+        // Add meal slots for each day
+        for (const date of week.dates) {
+            const mealSlot = document.createElement('div');
+            mealSlot.className = 'meal-slot';
+            mealSlot.dataset.day = date;
+            mealSlot.dataset.meal = mealType.toLowerCase();
+            
+            await addAddMealButton(mealSlot);
+            row.appendChild(mealSlot);
+        }
+        
+        mealPlanGrid.appendChild(row);
+    }
+    
+    // Calculate daily nutrition data and add at the bottom
     const dayNutritionData = [];
     for (const date of week.dates) {
         const dayNutrition = await calculateDayNutrition(date);
         dayNutritionData.push({ date, nutrition: dayNutrition });
     }
     
-    // Add daily nutrition row
+    // Add daily nutrition row at the bottom
     const dailyNutritionRow = document.createElement('div');
     dailyNutritionRow.className = 'daily-nutrition-row';
     
@@ -916,32 +942,6 @@ async function updateMealPlanDisplay() {
     });
     
     mealPlanGrid.appendChild(dailyNutritionRow);
-    
-    // Add meal slots
-    const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
-    for (const mealType of mealTypes) {
-        const row = document.createElement('div');
-        row.className = 'meal-row';
-        
-        // Add time slot
-        const timeSlot = document.createElement('div');
-        timeSlot.className = 'time-slot';
-        timeSlot.textContent = mealType;
-        row.appendChild(timeSlot);
-        
-        // Add meal slots for each day
-        for (const date of week.dates) {
-            const mealSlot = document.createElement('div');
-            mealSlot.className = 'meal-slot';
-            mealSlot.dataset.day = date;
-            mealSlot.dataset.meal = mealType.toLowerCase();
-            
-            await addAddMealButton(mealSlot);
-            row.appendChild(mealSlot);
-        }
-        
-        mealPlanGrid.appendChild(row);
-    }
     
     // Update weekly nutrition summary
     await updateNutritionSummary();
