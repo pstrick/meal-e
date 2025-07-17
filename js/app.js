@@ -1017,10 +1017,17 @@ function openIngredientSearch(ingredientInput) {
     // Show modal
     searchModal.classList.add('active');
     
-    // Focus search input
+    // Clear and focus search input
     const searchInput = document.getElementById('ingredient-search-input');
     if (searchInput) {
+        searchInput.value = '';
         searchInput.focus();
+    }
+    
+    // Clear previous search results
+    const searchResults = document.getElementById('search-results');
+    if (searchResults) {
+        searchResults.innerHTML = '';
     }
 }
 
