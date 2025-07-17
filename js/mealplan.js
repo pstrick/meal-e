@@ -586,68 +586,6 @@ async function calculateDayNutrition(date) {
     return nutrition;
 }
 
-async function calculateMealNutrition(date, mealType) {
-    const key = getMealKey(date, mealType);
-    const items = mealPlan[key] || [];
-    const nutrition = {
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0
-    };
-
-    for (const itemData of items) {
-        if (itemData.type === 'meal') {
-            const recipe = window.recipes.find(r => r.id === itemData.id);
-            if (recipe && recipe.nutrition) {
-                const servingSize = recipe.servingSize || 100;
-                const nutritionPerGram = {
-                    calories: recipe.nutrition.calories / servingSize,
-                    protein: recipe.nutrition.protein / servingSize,
-                    carbs: recipe.nutrition.carbs / servingSize,
-                    fat: recipe.nutrition.fat / servingSize
-                };
-                
-                nutrition.calories += nutritionPerGram.calories * itemData.amount;
-                nutrition.protein += nutritionPerGram.protein * itemData.amount;
-                nutrition.carbs += nutritionPerGram.carbs * itemData.amount;
-                nutrition.fat += nutritionPerGram.fat * itemData.amount;
-            }
-        } else if (itemData.type === 'ingredient') {
-            try {
-                let ingredientNutrition;
-                if (itemData.id.startsWith('custom-')) {
-                    const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
-                    const customId = itemData.id.replace('custom-', '');
-                    const customIngredient = customIngredients.find(ing => ing.id === customId);
-                    if (customIngredient) {
-                        const servingSize = customIngredient.servingSize || 100;
-                        ingredientNutrition = {
-                            calories: customIngredient.nutrition.calories / servingSize,
-                            protein: customIngredient.nutrition.protein / servingSize,
-                            carbs: customIngredient.nutrition.carbs / servingSize,
-                            fat: customIngredient.nutrition.fat / servingSize
-                        };
-                    }
-                } else {
-                    ingredientNutrition = itemData.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
-                }
-                
-                if (ingredientNutrition) {
-                    nutrition.calories += ingredientNutrition.calories * itemData.amount;
-                    nutrition.protein += ingredientNutrition.protein * itemData.amount;
-                    nutrition.carbs += ingredientNutrition.carbs * itemData.amount;
-                    nutrition.fat += ingredientNutrition.fat * itemData.amount;
-                }
-            } catch (error) {
-                console.error('Error calculating ingredient nutrition:', error);
-            }
-        }
-    }
-
-    return nutrition;
-}
-
 async function updateNutritionSummary() {
     try {
         // Check if we're on the meal plan page
@@ -682,24 +620,10 @@ async function updateNutritionSummary() {
             totalFat += dayNutrition.fat;
         }
 
-        // Update the summary display with daily breakdown and weekly totals
+        // Update the summary display with weekly totals only
         nutritionSummary.innerHTML = `
             <h3>Weekly Nutrition Summary</h3>
-            <div class="daily-nutrition-grid">
-                ${dayNutritionData.map(({ date, nutrition }) => `
-                    <div class="daily-nutrition-item">
-                        <h4>${formatDate(date)}</h4>
-                        <div class="nutrition-values">
-                            <span>${Math.round(nutrition.calories)} cal</span>
-                            <span>${Math.round(nutrition.protein)}g P</span>
-                            <span>${Math.round(nutrition.carbs)}g C</span>
-                            <span>${Math.round(nutrition.fat)}g F</span>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
             <div class="weekly-totals">
-                <h4>Weekly Totals</h4>
                 <div class="nutrition-grid">
                     <div class="nutrition-item">
                         <span class="label">Total Calories:</span>
@@ -720,6 +644,45 @@ async function updateNutritionSummary() {
                 </div>
             </div>
         `;
+
+        // Add daily nutrition totals under each day column
+        const headerRow = mealPlanGrid.querySelector('.meal-plan-header');
+        if (headerRow) {
+            // Remove any existing daily nutrition row
+            const existingDailyRow = mealPlanGrid.querySelector('.daily-nutrition-row');
+            if (existingDailyRow) {
+                existingDailyRow.remove();
+            }
+
+            // Create new daily nutrition row
+            const dailyNutritionRow = document.createElement('div');
+            dailyNutritionRow.className = 'daily-nutrition-row';
+            
+            // Add empty cell for time column
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'daily-nutrition-cell';
+            dailyNutritionRow.appendChild(emptyCell);
+            
+            // Add daily nutrition for each day
+            dayNutritionData.forEach(({ date, nutrition }) => {
+                const dayNutritionCell = document.createElement('div');
+                dayNutritionCell.className = 'daily-nutrition-cell';
+                dayNutritionCell.innerHTML = `
+                    <div class="daily-totals">
+                        <div class="daily-calories">${Math.round(nutrition.calories)} cal</div>
+                        <div class="daily-macros">
+                            <span class="daily-protein">${Math.round(nutrition.protein)}g P</span>
+                            <span class="daily-carbs">${Math.round(nutrition.carbs)}g C</span>
+                            <span class="daily-fat">${Math.round(nutrition.fat)}g F</span>
+                        </div>
+                    </div>
+                `;
+                dailyNutritionRow.appendChild(dayNutritionCell);
+            });
+            
+            // Insert the daily nutrition row after the header
+            headerRow.parentNode.insertBefore(dailyNutritionRow, headerRow.nextSibling);
+        }
     } catch (error) {
         console.error('Error updating nutrition summary:', error);
     }
@@ -876,23 +839,6 @@ async function addAddMealButton(slot) {
             if (item) {
                 const itemContent = createMealItem(item, itemData.amount, idx, slot);
                 slot.appendChild(itemContent);
-            }
-        });
-        
-        // Add meal-level nutrition summary
-        calculateMealNutrition(slot.dataset.day, slot.dataset.meal).then(mealNutrition => {
-            if (mealNutrition.calories > 0 || mealNutrition.protein > 0 || mealNutrition.carbs > 0 || mealNutrition.fat > 0) {
-                const mealNutritionDiv = document.createElement('div');
-                mealNutritionDiv.className = 'meal-nutrition-summary';
-                mealNutritionDiv.innerHTML = `
-                    <div class="meal-totals">
-                        <span class="total-calories">${Math.round(mealNutrition.calories)} cal</span>
-                        <span class="total-protein">${Math.round(mealNutrition.protein)}g P</span>
-                        <span class="total-carbs">${Math.round(mealNutrition.carbs)}g C</span>
-                        <span class="total-fat">${Math.round(mealNutrition.fat)}g F</span>
-                    </div>
-                `;
-                slot.appendChild(mealNutritionDiv);
             }
         });
         
