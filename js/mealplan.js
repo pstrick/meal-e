@@ -379,6 +379,8 @@ function closeMealPlanModal() {
 window.closeMealPlanModal = closeMealPlanModal;
 
 function createMealItem(item, amount, itemIndex, slot) {
+    console.log('Creating meal item:', item, 'amount:', amount);
+    
     const div = document.createElement('div');
     div.className = 'meal-item';
     div.dataset.itemType = item.type;
@@ -391,14 +393,17 @@ function createMealItem(item, amount, itemIndex, slot) {
     // Calculate nutrition for this item
     let itemNutrition = { calories: 0, protein: 0, carbs: 0, fat: 0 };
     if (item.type === 'meal') {
-        const recipe = window.recipes.find(r => r.id === item.id);
-        if (recipe && recipe.nutrition) {
-            const servingSize = recipe.servingSize || 100;
+        console.log('Processing meal nutrition for:', item.name);
+        console.log('Recipe nutrition:', item.nutrition);
+        console.log('Serving size:', item.servingSize);
+        
+        if (item.nutrition) {
+            const servingSize = item.servingSize || 100;
             const nutritionPerGram = {
-                calories: recipe.nutrition.calories / servingSize,
-                protein: recipe.nutrition.protein / servingSize,
-                carbs: recipe.nutrition.carbs / servingSize,
-                fat: recipe.nutrition.fat / servingSize
+                calories: item.nutrition.calories / servingSize,
+                protein: item.nutrition.protein / servingSize,
+                carbs: item.nutrition.carbs / servingSize,
+                fat: item.nutrition.fat / servingSize
             };
             itemNutrition = {
                 calories: nutritionPerGram.calories * amount,
@@ -406,6 +411,9 @@ function createMealItem(item, amount, itemIndex, slot) {
                 carbs: nutritionPerGram.carbs * amount,
                 fat: nutritionPerGram.fat * amount
             };
+            console.log('Calculated meal nutrition:', itemNutrition);
+        } else {
+            console.log('No nutrition data found for meal:', item.name);
         }
     } else if (item.type === 'ingredient') {
         if (item.id.startsWith('custom-')) {
@@ -436,6 +444,8 @@ function createMealItem(item, amount, itemIndex, slot) {
             };
         }
     }
+    
+    console.log('Final item nutrition:', itemNutrition);
     
     div.innerHTML = `
         <div class="meal-item-header">
@@ -788,7 +798,25 @@ async function addAddMealButton(slot) {
         items.forEach((itemData, idx) => {
             let item;
             if (itemData.type === 'meal') {
-                item = window.recipes.find(r => r.id === itemData.id);
+                const recipe = window.recipes.find(r => r.id === itemData.id);
+                if (recipe) {
+                    item = {
+                        type: 'meal',
+                        id: recipe.id,
+                        name: recipe.name,
+                        nutrition: recipe.nutrition,
+                        servingSize: recipe.servingSize
+                    };
+                } else {
+                    console.error('Recipe not found for ID:', itemData.id);
+                    item = {
+                        type: 'meal',
+                        id: itemData.id,
+                        name: itemData.name || 'Unknown Meal',
+                        nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+                        servingSize: 100
+                    };
+                }
             } else if (itemData.type === 'ingredient') {
                 // For ingredients, we need to get the nutrition data
                 // This will be handled in the display function
