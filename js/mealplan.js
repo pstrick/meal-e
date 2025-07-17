@@ -9,6 +9,183 @@ let weekDisplay = null;
 let prevWeekBtn = null;
 let nextWeekBtn = null;
 
+// Unified Ingredient Search Functions (copied from app.js)
+async function searchAllIngredients(query) {
+    const results = [];
+    
+    // Search custom ingredients
+    const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
+    const customMatches = customIngredients.filter(ingredient => 
+        ingredient.name.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    // Add custom ingredients to results
+    customMatches.forEach(ingredient => {
+        // Convert nutrition from total serving size to per-gram values
+        const servingSize = ingredient.servingSize || 100; // Default to 100g if not specified
+        results.push({
+            id: ingredient.id,
+            name: ingredient.name,
+            source: 'custom',
+            nutrition: {
+                calories: ingredient.nutrition.calories / servingSize,
+                protein: ingredient.nutrition.protein / servingSize,
+                carbs: ingredient.nutrition.carbs / servingSize,
+                fat: ingredient.nutrition.fat / servingSize
+            },
+            servingSize: ingredient.servingSize,
+            brandOwner: 'Custom Ingredient'
+        });
+    });
+    
+    // Search USDA ingredients
+    try {
+        const usdaResults = await searchIngredients(query);
+        usdaResults.forEach(food => {
+            results.push({
+                id: food.fdcId.toString(),
+                name: food.description,
+                source: 'usda',
+                fdcId: food.fdcId,
+                brandOwner: food.brandOwner || 'Generic'
+            });
+        });
+    } catch (error) {
+        console.error('Error searching USDA ingredients:', error);
+    }
+    
+    // Sort results: custom ingredients first, then by name
+    results.sort((a, b) => {
+        if (a.source === 'custom' && b.source !== 'custom') return -1;
+        if (a.source !== 'custom' && b.source === 'custom') return 1;
+        return a.name.localeCompare(b.name);
+    });
+    
+    return results;
+}
+
+// USDA API Functions (copied from app.js)
+async function searchIngredients(query) {
+    const params = new URLSearchParams({
+        api_key: 'c1p1VUluPSfUCh7qssNJfnvfoZoNaV8uNOE3BaB7',
+        query: query,
+        dataType: ['Survey (FNDDS)', 'Foundation', 'SR Legacy'].join(','),
+        pageSize: 25,
+        nutrients: [208, 203, 204, 205].join(',') // Request specific nutrients
+    });
+
+    try {
+        const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?${params}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        if (!data || !data.foods) {
+            console.error('Invalid response format:', data);
+            return [];
+        }
+
+        console.log('Search results with nutrition:', data.foods);
+        return data.foods;
+    } catch (error) {
+        console.error('Error searching ingredients:', error);
+        throw error;
+    }
+}
+
+async function getFoodDetails(fdcId) {
+    const params = new URLSearchParams({
+        api_key: 'c1p1VUluPSfUCh7qssNJfnvfoZoNaV8uNOE3BaB7',
+        nutrients: [208, 203, 204, 205].join(',') // Request specific nutrients
+    });
+
+    try {
+        const response = await fetch(`https://api.nal.usda.gov/fdc/v1/food/${fdcId}?${params}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log('Raw API Response:', JSON.stringify(data, null, 2));
+        return data;
+    } catch (error) {
+        console.error('Error getting food details:', error);
+        return null;
+    }
+}
+
+function calculateNutritionPerGram(foodData) {
+    console.log('Calculating nutrition for food:', foodData.description);
+    
+    // First try foodNutrients array
+    let nutrients = foodData.foodNutrients;
+    
+    // If no nutrients found, try looking in the nutrientData object
+    if (!nutrients || nutrients.length === 0) {
+        nutrients = [];
+        if (foodData.nutrientData) {
+            for (let nutrientId in foodData.nutrientData) {
+                nutrients.push({
+                    nutrientId: parseInt(nutrientId),
+                    amount: foodData.nutrientData[nutrientId].amount,
+                    unitName: foodData.nutrientData[nutrientId].unit
+                });
+            }
+        }
+    }
+
+    console.log('Found nutrients:', nutrients);
+
+    const nutrition = {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0
+    };
+
+    if (!nutrients || nutrients.length === 0) {
+        console.error('No nutrients found in food data');
+        return nutrition;
+    }
+
+    nutrients.forEach(nutrient => {
+        // Handle different API response formats
+        const id = nutrient.nutrientId || nutrient.nutrient?.id || nutrient.number;
+        const amount = nutrient.amount || nutrient.value || 0;
+
+        console.log('Processing nutrient:', {
+            id: id,
+            amount: amount,
+            unit: nutrient.unitName || nutrient.unit
+        });
+
+        // Convert to number if it's a string
+        const numericId = typeof id === 'string' ? parseInt(id) : id;
+
+        switch (numericId) {
+            case 208:   // Energy (kcal)
+            case 1008:  // Energy (kcal)
+                nutrition.calories = amount / 100; // Convert to per gram
+                break;
+            case 203:   // Protein
+            case 1003:  // Protein
+                nutrition.protein = amount / 100;
+                break;
+            case 204:   // Total Fat
+            case 1004:  // Total Fat
+                nutrition.fat = amount / 100;
+                break;
+            case 205:   // Carbohydrates
+            case 1005:  // Carbohydrates
+                nutrition.carbs = amount / 100;
+                break;
+        }
+    });
+
+    console.log('Final calculated nutrition (per gram):', nutrition);
+    return nutrition;
+}
+
 // Initialize meal plan data
 let mealPlan = {};
 
@@ -209,21 +386,35 @@ async function updateUnifiedList() {
     // Search ingredients
     try {
         const ingredientResults = await searchAllIngredients(searchTerm);
-        ingredientResults.forEach(ingredient => {
+        for (const ingredient of ingredientResults) {
             // Only add if category matches or is 'all'
             if (category === 'all' || ingredient.category === category) {
+                let nutrition = ingredient.nutrition;
+                
+                // For USDA ingredients, we need to get nutrition data
+                if (ingredient.source === 'usda' && ingredient.fdcId) {
+                    try {
+                        const details = await getFoodDetails(ingredient.fdcId);
+                        if (details) {
+                            nutrition = calculateNutritionPerGram(details);
+                        }
+                    } catch (error) {
+                        console.error('Error getting USDA ingredient details:', error);
+                    }
+                }
+                
                 results.push({
                     type: 'ingredient',
-                    id: ingredient.id,
+                    id: ingredient.source === 'custom' ? `custom-${ingredient.id}` : ingredient.id,
                     name: ingredient.name,
                     category: ingredient.category || 'ingredient',
-                    nutrition: ingredient.nutrition,
+                    nutrition: nutrition,
                     source: ingredient.source,
                     icon: '🥩',
                     label: 'Ingredient'
                 });
             }
-        });
+        }
     } catch (error) {
         console.error('Error searching ingredients:', error);
     }
