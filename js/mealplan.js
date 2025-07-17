@@ -609,11 +609,8 @@ async function updateNutritionSummary() {
         let totalFat = 0;
 
         // Calculate nutrition for each day
-        const dayNutritionData = [];
         for (const date of week.dates) {
             const dayNutrition = await calculateDayNutrition(date);
-            dayNutritionData.push({ date, nutrition: dayNutrition });
-            
             totalCalories += dayNutrition.calories;
             totalProtein += dayNutrition.protein;
             totalCarbs += dayNutrition.carbs;
@@ -644,45 +641,6 @@ async function updateNutritionSummary() {
                 </div>
             </div>
         `;
-
-        // Add daily nutrition totals under each day column
-        const headerRow = mealPlanGrid.querySelector('.meal-plan-header');
-        if (headerRow) {
-            // Remove any existing daily nutrition row
-            const existingDailyRow = mealPlanGrid.querySelector('.daily-nutrition-row');
-            if (existingDailyRow) {
-                existingDailyRow.remove();
-            }
-
-            // Create new daily nutrition row
-            const dailyNutritionRow = document.createElement('div');
-            dailyNutritionRow.className = 'daily-nutrition-row';
-            
-            // Add empty cell for time column
-            const emptyCell = document.createElement('div');
-            emptyCell.className = 'daily-nutrition-cell';
-            dailyNutritionRow.appendChild(emptyCell);
-            
-            // Add daily nutrition for each day
-            dayNutritionData.forEach(({ date, nutrition }) => {
-                const dayNutritionCell = document.createElement('div');
-                dayNutritionCell.className = 'daily-nutrition-cell';
-                dayNutritionCell.innerHTML = `
-                    <div class="daily-totals">
-                        <div class="daily-calories">${Math.round(nutrition.calories)} cal</div>
-                        <div class="daily-macros">
-                            <span class="daily-protein">${Math.round(nutrition.protein)}g P</span>
-                            <span class="daily-carbs">${Math.round(nutrition.carbs)}g C</span>
-                            <span class="daily-fat">${Math.round(nutrition.fat)}g F</span>
-                        </div>
-                    </div>
-                `;
-                dailyNutritionRow.appendChild(dayNutritionCell);
-            });
-            
-            // Insert the daily nutrition row after the header
-            headerRow.parentNode.insertBefore(dailyNutritionRow, headerRow.nextSibling);
-        }
     } catch (error) {
         console.error('Error updating nutrition summary:', error);
     }
@@ -896,6 +854,41 @@ async function updateMealPlanDisplay() {
     
     mealPlanGrid.appendChild(headerRow);
     
+    // Calculate daily nutrition data
+    const dayNutritionData = [];
+    for (const date of week.dates) {
+        const dayNutrition = await calculateDayNutrition(date);
+        dayNutritionData.push({ date, nutrition: dayNutrition });
+    }
+    
+    // Add daily nutrition row
+    const dailyNutritionRow = document.createElement('div');
+    dailyNutritionRow.className = 'daily-nutrition-row';
+    
+    // Add empty cell for time column
+    const dailyEmptyCell = document.createElement('div');
+    dailyEmptyCell.className = 'daily-nutrition-cell';
+    dailyNutritionRow.appendChild(dailyEmptyCell);
+    
+    // Add daily nutrition for each day
+    dayNutritionData.forEach(({ date, nutrition }) => {
+        const dayNutritionCell = document.createElement('div');
+        dayNutritionCell.className = 'daily-nutrition-cell';
+        dayNutritionCell.innerHTML = `
+            <div class="daily-totals">
+                <div class="daily-calories">${Math.round(nutrition.calories)} cal</div>
+                <div class="daily-macros">
+                    <span class="daily-protein">${Math.round(nutrition.protein)}g P</span>
+                    <span class="daily-carbs">${Math.round(nutrition.carbs)}g C</span>
+                    <span class="daily-fat">${Math.round(nutrition.fat)}g F</span>
+                </div>
+            </div>
+        `;
+        dailyNutritionRow.appendChild(dayNutritionCell);
+    });
+    
+    mealPlanGrid.appendChild(dailyNutritionRow);
+    
     // Add meal slots
     const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
     for (const mealType of mealTypes) {
@@ -922,7 +915,7 @@ async function updateMealPlanDisplay() {
         mealPlanGrid.appendChild(row);
     }
     
-    // Update nutrition summary after display is complete
+    // Update weekly nutrition summary
     await updateNutritionSummary();
 }
 

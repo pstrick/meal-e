@@ -2327,11 +2327,7 @@ main {
 
 /* Daily Nutrition Row Styles */
 .daily-nutrition-row {
-    display: grid;
-    grid-template-columns: 100px repeat(7, 1fr);
-    gap: 1px;
-    background-color: var(--border-color);
-    margin-bottom: 1px;
+    display: table-row;
 }
 
 .daily-nutrition-cell {
@@ -2340,12 +2336,17 @@ main {
     text-align: center;
     font-size: 0.85rem;
     font-weight: 600;
+    display: table-cell;
+    vertical-align: middle;
+    border-bottom: 1px solid #e9ecef;
+    border-right: 1px solid #e9ecef;
 }
 
 .daily-nutrition-cell:first-child {
     background-color: var(--background-color);
     font-weight: 700;
     color: var(--text-secondary);
+    width: 120px;
 }
 
 .daily-totals {
@@ -2381,8 +2382,8 @@ main {
 
 /* Responsive Design for Daily Nutrition */
 @media (max-width: 768px) {
-    .daily-nutrition-row {
-        grid-template-columns: 80px repeat(7, 1fr);
+    .daily-nutrition-cell:first-child {
+        width: 80px;
     }
     
     .daily-nutrition-cell {
@@ -2401,8 +2402,8 @@ main {
 }
 
 @media (max-width: 480px) {
-    .daily-nutrition-row {
-        grid-template-columns: 60px repeat(7, 1fr);
+    .daily-nutrition-cell:first-child {
+        width: 50px;
     }
     
     .daily-nutrition-cell {
