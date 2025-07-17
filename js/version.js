@@ -9,7 +9,7 @@ const getLastBuildInfo = () => {
     if (lastInfo) {
         return JSON.parse(lastInfo);
     }
-    return { year: currentYear, month: currentMonth, build: 3 };
+    return { year: currentYear, month: currentMonth, build: 1 };
 };
 
 const lastInfo = getLastBuildInfo();
