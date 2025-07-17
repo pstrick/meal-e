@@ -836,17 +836,20 @@ footer {
 
 /* Meal Plan Grid Table Layout */
 .meal-plan-grid {
-    display: grid;
-    grid-template-columns: 120px repeat(7, minmax(120px, 1fr));
+    display: table;
+    width: 100%;
     background: #fafbfc;
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 2px 8px var(--shadow-color);
     margin-top: 2rem;
+    border-collapse: collapse;
 }
+
 .meal-plan-header {
-    display: contents;
+    display: table-row;
 }
+
 .day-header {
     background: #f5f6fa;
     font-weight: bold;
@@ -856,10 +859,15 @@ footer {
     border-right: 1px solid #e9ecef;
     font-size: 1.1rem;
     white-space: pre-line;
+    display: table-cell;
+    vertical-align: middle;
+    width: 120px;
 }
+
 .meal-row {
-    display: contents;
+    display: table-row;
 }
+
 .time-slot {
     background: #f5f6fa;
     font-weight: 600;
@@ -868,16 +876,18 @@ footer {
     border-bottom: 1px solid #e9ecef;
     border-right: 1px solid #e9ecef;
     font-size: 1rem;
+    display: table-cell;
+    vertical-align: middle;
+    width: 120px;
 }
+
 .meal-slot {
     min-height: 120px;
     background: #fff;
     border-bottom: 1px solid #e9ecef;
     border-right: 1px solid #e9ecef;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
+    display: table-cell;
+    vertical-align: top;
     cursor: pointer;
     font-size: 2rem;
     color: #bbb;
@@ -885,15 +895,29 @@ footer {
     position: relative;
     padding: 0.5rem 0.25rem;
     box-sizing: border-box;
+    width: calc((100% - 120px) / 7);
 }
+
+.meal-slot-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100px;
+    width: 100%;
+}
+
 .meal-slot .meal-item {
     width: 100%;
     margin-bottom: 0.5rem;
     box-sizing: border-box;
+    flex-shrink: 0;
 }
+
 .meal-slot .meal-item:last-child {
     margin-bottom: 0.75rem;
 }
+
 .add-meal-btn {
     display: inline-flex;
     align-items: center;
@@ -914,11 +938,14 @@ footer {
     max-width: 100%;
     width: auto;
     height: auto;
+    flex-shrink: 0;
 }
+
 .add-meal-btn:hover {
     background: var(--secondary-color);
     box-shadow: 0 2px 8px rgba(76,175,80,0.13);
 }
+
 .meal-item {
     background: #f8fff8;
     border-radius: 6px;
@@ -932,22 +959,26 @@ footer {
     position: relative;
     transition: box-shadow 0.2s;
 }
+
 .meal-item-header {
     display: flex;
     align-items: center;
     width: 100%;
     justify-content: space-between;
 }
+
 .meal-item-name {
     font-weight: 600;
     font-size: 1.05em;
     color: var(--text-color);
 }
+
 .meal-item-details {
     font-size: 0.95em;
     color: var(--text-secondary);
     margin-top: 0.2rem;
 }
+
 .meal-item .remove-meal {
     background: none;
     border: none;
@@ -957,15 +988,18 @@ footer {
     margin-left: 0.5rem;
     transition: color 0.2s;
 }
+
 .meal-item .remove-meal:hover {
     color: #b71c1c;
 }
+
 .meal-actions {
     display: flex;
     gap: 0.5rem;
     justify-content: center;
     margin-top: 0.5rem;
 }
+
 .meal-actions button {
     background: none;
     border: none;
@@ -974,31 +1008,32 @@ footer {
     cursor: pointer;
     transition: color 0.2s;
 }
+
 .meal-actions button:hover {
     color: var(--primary-color);
 }
+
 @media (max-width: 900px) {
-    .meal-plan-grid {
-        grid-template-columns: 80px repeat(7, 1fr);
-    }
     .day-header, .time-slot {
+        width: 80px;
         font-size: 0.95rem;
         padding: 0.5rem 0.25rem;
     }
     .meal-slot {
+        width: calc((100% - 80px) / 7);
         min-height: 60px;
         font-size: 1.3rem;
     }
 }
+
 @media (max-width: 600px) {
-    .meal-plan-grid {
-        grid-template-columns: 50px repeat(7, 1fr);
-    }
     .day-header, .time-slot {
+        width: 50px;
         font-size: 0.85rem;
         padding: 0.3rem 0.1rem;
     }
     .meal-slot {
+        width: calc((100% - 50px) / 7);
         min-height: 40px;
         font-size: 1rem;
     }

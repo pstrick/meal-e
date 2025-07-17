@@ -818,6 +818,11 @@ async function addAddMealButton(slot) {
     // Clear existing content
     slot.innerHTML = '';
     
+    // Create content container
+    const contentContainer = document.createElement('div');
+    contentContainer.className = 'meal-slot-content';
+    slot.appendChild(contentContainer);
+    
     // Add meal items if any
     const mealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
     const items = mealPlan[mealKey];
@@ -838,7 +843,7 @@ async function addAddMealButton(slot) {
             }
             if (item) {
                 const itemContent = createMealItem(item, itemData.amount, idx, slot);
-                slot.appendChild(itemContent);
+                contentContainer.appendChild(itemContent);
             }
         });
         
@@ -855,7 +860,7 @@ async function addAddMealButton(slot) {
         e.stopPropagation();
         openMealPlanModal(slot);
     });
-    slot.appendChild(addBtn);
+    contentContainer.appendChild(addBtn);
     
     // Make the whole slot clickable (except for buttons)
     slot.addEventListener('click', (e) => {
