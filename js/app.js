@@ -1055,15 +1055,17 @@ async function searchAllIngredients(query) {
     
     // Add custom ingredients to results
     customMatches.forEach(ingredient => {
+        // Convert nutrition from total serving size to per-gram values
+        const servingSize = ingredient.servingSize || 100; // Default to 100g if not specified
         results.push({
             id: ingredient.id,
             name: ingredient.name,
             source: 'custom',
             nutrition: {
-                calories: ingredient.nutrition.calories,
-                protein: ingredient.nutrition.protein,
-                carbs: ingredient.nutrition.carbs,
-                fat: ingredient.nutrition.fat
+                calories: ingredient.nutrition.calories / servingSize,
+                protein: ingredient.nutrition.protein / servingSize,
+                carbs: ingredient.nutrition.carbs / servingSize,
+                fat: ingredient.nutrition.fat / servingSize
             },
             servingSize: ingredient.servingSize,
             brandOwner: 'Custom Ingredient'
