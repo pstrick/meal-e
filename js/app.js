@@ -453,7 +453,8 @@ async function handleRecipeSubmit(e) {
                 fdcId: fdcId,
                 name: ingredientData.name,
                 amount: parseFloat(item.querySelector('.ingredient-amount').value) || 0,
-                nutrition: ingredientData.nutrition
+                nutrition: ingredientData.nutrition,
+                source: ingredientData.source || 'usda' // Default to usda for backward compatibility
             };
         })
         .filter(ing => ing !== null && ing.amount > 0);
@@ -873,7 +874,7 @@ function initializeApp() {
                     if (searchResults) {
                         searchResults.innerHTML = '<div class="loading">Searching...</div>';
                         try {
-                            const results = await searchIngredients(query);
+                            const results = await searchAllIngredients(query);
                             displaySearchResults(results);
                         } catch (error) {
                             console.error('Error searching ingredients:', error);
@@ -948,7 +949,8 @@ function editRecipe(id) {
         const ingredientData = {
             name: ing.name,
             amount: parseFloat(ing.amount),
-            nutrition: ing.nutrition
+            nutrition: ing.nutrition,
+            source: ing.source || 'usda' // Default to usda for backward compatibility
         };
         selectedIngredients.set(fdcId, ingredientData);
         nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
@@ -1041,6 +1043,59 @@ function closeIngredientSearch() {
     currentIngredientInput = null;
 }
 
+// Unified Ingredient Search Functions
+async function searchAllIngredients(query) {
+    const results = [];
+    
+    // Search custom ingredients
+    const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
+    const customMatches = customIngredients.filter(ingredient => 
+        ingredient.name.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    // Add custom ingredients to results
+    customMatches.forEach(ingredient => {
+        results.push({
+            id: ingredient.id,
+            name: ingredient.name,
+            source: 'custom',
+            nutrition: {
+                calories: ingredient.nutrition.calories,
+                protein: ingredient.nutrition.protein,
+                carbs: ingredient.nutrition.carbs,
+                fat: ingredient.nutrition.fat
+            },
+            servingSize: ingredient.servingSize,
+            brandOwner: 'Custom Ingredient'
+        });
+    });
+    
+    // Search USDA ingredients
+    try {
+        const usdaResults = await searchIngredients(query);
+        usdaResults.forEach(food => {
+            results.push({
+                id: food.fdcId.toString(),
+                name: food.description,
+                source: 'usda',
+                fdcId: food.fdcId,
+                brandOwner: food.brandOwner || 'Generic'
+            });
+        });
+    } catch (error) {
+        console.error('Error searching USDA ingredients:', error);
+    }
+    
+    // Sort results: custom ingredients first, then by name
+    results.sort((a, b) => {
+        if (a.source === 'custom' && b.source !== 'custom') return -1;
+        if (a.source !== 'custom' && b.source === 'custom') return 1;
+        return a.name.localeCompare(b.name);
+    });
+    
+    return results;
+}
+
 // Modified Ingredient Search Result Handler
 async function displaySearchResults(results) {
     searchResults.innerHTML = '';
@@ -1050,14 +1105,23 @@ async function displaySearchResults(results) {
         return;
     }
     
-    for (const food of results) {
+    for (const ingredient of results) {
         const div = document.createElement('div');
         div.className = 'search-result-item';
         
-        const [mainName, ...details] = food.description.split(',');
+        // Create visual indicator for ingredient source
+        const sourceIcon = ingredient.source === 'custom' ? '🏠' : '🔍';
+        const sourceLabel = ingredient.source === 'custom' ? 'Custom' : 'USDA';
+        
+        const [mainName, ...details] = ingredient.name.split(',');
         div.innerHTML = `
-            <h4>${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
-            <p>${food.brandOwner || 'Generic'}</p>
+            <div class="search-result-header">
+                <span class="source-indicator ${ingredient.source}">
+                    ${sourceIcon} ${sourceLabel}
+                </span>
+                <h4>${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
+            </div>
+            <p>${ingredient.brandOwner}</p>
         `;
         
         div.addEventListener('click', async () => {
@@ -1066,23 +1130,51 @@ async function displaySearchResults(results) {
                     alert('No ingredient input is currently selected. Please click an ingredient input field first.');
                     return;
                 }
-                const details = await getFoodDetails(food.fdcId);
-                if (details) {
-                    const nutrition = calculateNutritionPerGram(details);
-                    const amount = parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0;
-                    
-                    // Store nutrition data with the ingredient
-                    const ingredientData = {
-                        name: food.description,
-                        amount: amount,
-                        nutrition: nutrition
+                
+                let ingredientData;
+                
+                if (ingredient.source === 'custom') {
+                    // Handle custom ingredient
+                    ingredientData = {
+                        name: ingredient.name,
+                        amount: parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0,
+                        nutrition: ingredient.nutrition,
+                        source: 'custom',
+                        id: ingredient.id
                     };
-                    selectedIngredients.set(food.fdcId.toString(), ingredientData);
+                    
+                    // Store in selectedIngredients with custom ID
+                    selectedIngredients.set(`custom-${ingredient.id}`, ingredientData);
                     
                     // Update the input field
-                    currentIngredientInput.querySelector('.ingredient-name').value = food.description;
-                    currentIngredientInput.querySelector('.ingredient-name').dataset.fdcId = food.fdcId.toString();
+                    currentIngredientInput.querySelector('.ingredient-name').value = ingredient.name;
+                    currentIngredientInput.querySelector('.ingredient-name').dataset.fdcId = `custom-${ingredient.id}`;
                     
+                } else {
+                    // Handle USDA ingredient
+                    const details = await getFoodDetails(ingredient.fdcId);
+                    if (details) {
+                        const nutrition = calculateNutritionPerGram(details);
+                        const amount = parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0;
+                        
+                        ingredientData = {
+                            name: ingredient.name,
+                            amount: amount,
+                            nutrition: nutrition,
+                            source: 'usda',
+                            fdcId: ingredient.fdcId
+                        };
+                        
+                        // Store in selectedIngredients with USDA fdcId
+                        selectedIngredients.set(ingredient.fdcId.toString(), ingredientData);
+                        
+                        // Update the input field
+                        currentIngredientInput.querySelector('.ingredient-name').value = ingredient.name;
+                        currentIngredientInput.querySelector('.ingredient-name').dataset.fdcId = ingredient.fdcId.toString();
+                    }
+                }
+                
+                if (ingredientData) {
                     // Update ingredient macros
                     updateIngredientMacros(currentIngredientInput, ingredientData);
                     
@@ -1091,8 +1183,8 @@ async function displaySearchResults(results) {
                     closeIngredientSearch();
                 }
             } catch (error) {
-                console.error('Error getting food details:', error);
-                alert('Error getting food details. Please try again.');
+                console.error('Error selecting ingredient:', error);
+                alert('Error selecting ingredient. Please try again.');
             }
         });
         
