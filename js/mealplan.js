@@ -482,10 +482,13 @@ function selectItem(item) {
     // Update selected item display
     selectedItemDiv.style.display = 'block';
     selectedItemDiv.querySelector('.item-name').textContent = item.name;
-    selectedItemDiv.querySelector('.calories').textContent = Math.round(item.nutrition.calories * 100);
-    selectedItemDiv.querySelector('.protein').textContent = Math.round(item.nutrition.protein * 100);
-    selectedItemDiv.querySelector('.carbs').textContent = Math.round(item.nutrition.carbs * 100);
-    selectedItemDiv.querySelector('.fat').textContent = Math.round(item.nutrition.fat * 100);
+    
+    // Handle nutrition display - ensure we have nutrition data
+    const nutrition = item.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    selectedItemDiv.querySelector('.calories').textContent = Math.round(nutrition.calories * 100);
+    selectedItemDiv.querySelector('.protein').textContent = Math.round(nutrition.protein * 100);
+    selectedItemDiv.querySelector('.carbs').textContent = Math.round(nutrition.carbs * 100);
+    selectedItemDiv.querySelector('.fat').textContent = Math.round(nutrition.fat * 100);
     
     // Enable submit button and ensure it's visible
     submitButton.disabled = false;
@@ -541,6 +544,55 @@ function createMealItem(item, amount, itemIndex, slot) {
     const icon = item.type === 'meal' ? '🍽️' : '🥩';
     const label = item.type === 'meal' ? 'Meal' : 'Ingredient';
     
+    // Calculate nutrition for this item
+    let itemNutrition = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    if (item.type === 'meal') {
+        const recipe = window.recipes.find(r => r.id === item.id);
+        if (recipe && recipe.nutrition) {
+            const servingSize = recipe.servingSize || 100;
+            const nutritionPerGram = {
+                calories: recipe.nutrition.calories / servingSize,
+                protein: recipe.nutrition.protein / servingSize,
+                carbs: recipe.nutrition.carbs / servingSize,
+                fat: recipe.nutrition.fat / servingSize
+            };
+            itemNutrition = {
+                calories: nutritionPerGram.calories * amount,
+                protein: nutritionPerGram.protein * amount,
+                carbs: nutritionPerGram.carbs * amount,
+                fat: nutritionPerGram.fat * amount
+            };
+        }
+    } else if (item.type === 'ingredient') {
+        if (item.id.startsWith('custom-')) {
+            const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
+            const customId = item.id.replace('custom-', '');
+            const customIngredient = customIngredients.find(ing => ing.id === customId);
+            if (customIngredient) {
+                const servingSize = customIngredient.servingSize || 100;
+                const nutritionPerGram = {
+                    calories: customIngredient.nutrition.calories / servingSize,
+                    protein: customIngredient.nutrition.protein / servingSize,
+                    carbs: customIngredient.nutrition.carbs / servingSize,
+                    fat: customIngredient.nutrition.fat / servingSize
+                };
+                itemNutrition = {
+                    calories: nutritionPerGram.calories * amount,
+                    protein: nutritionPerGram.protein * amount,
+                    carbs: nutritionPerGram.carbs * amount,
+                    fat: nutritionPerGram.fat * amount
+                };
+            }
+        } else if (item.nutrition) {
+            itemNutrition = {
+                calories: item.nutrition.calories * amount,
+                protein: item.nutrition.protein * amount,
+                carbs: item.nutrition.carbs * amount,
+                fat: item.nutrition.fat * amount
+            };
+        }
+    }
+    
     div.innerHTML = `
         <div class="meal-item-header">
             <span class="meal-item-icon">${icon}</span>
@@ -550,6 +602,12 @@ function createMealItem(item, amount, itemIndex, slot) {
         <div class="meal-item-details">
             <span class="meal-item-amount">${amount}g</span>
             <span class="meal-item-type">${label}</span>
+        </div>
+        <div class="meal-item-nutrition">
+            <span class="nutrition-calories">${Math.round(itemNutrition.calories)} cal</span>
+            <span class="nutrition-protein">${Math.round(itemNutrition.protein)}g P</span>
+            <span class="nutrition-carbs">${Math.round(itemNutrition.carbs)}g C</span>
+            <span class="nutrition-fat">${Math.round(itemNutrition.fat)}g F</span>
         </div>
     `;
     
@@ -575,30 +633,8 @@ function getMealKey(date, mealType) {
 
 function saveMealPlan() {
     console.log('Saving meal plan...');
-    const mealSlots = document.querySelectorAll('.meal-slot');
     
-    mealSlots.forEach(slot => {
-        const date = slot.dataset.date;
-        const meal = slot.dataset.meal;
-        const key = `${date}-${meal}`;
-        
-        const items = [];
-        slot.querySelectorAll('.meal-item').forEach(item => {
-            const itemType = item.dataset.itemType;
-            const itemId = item.dataset.itemId;
-            const amount = parseFloat(item.dataset.itemAmount);
-            if (itemType && itemId && amount) {
-                items.push({ type: itemType, id: itemId, amount });
-            }
-        });
-        
-        if (items.length > 0) {
-            mealPlan[key] = items;
-        } else {
-            delete mealPlan[key];
-        }
-    });
-
+    // Save the current mealPlan object directly
     localStorage.setItem('mealPlan', JSON.stringify(mealPlan));
     console.log('Meal plan saved:', mealPlan);
 }
@@ -641,12 +677,14 @@ async function calculateDayNutrition(date) {
         fat: 0
     };
 
-    ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
+    const mealTypes = ['breakfast', 'lunch', 'dinner', 'snacks'];
+    
+    for (const mealType of mealTypes) {
         const key = getMealKey(date, mealType);
         const items = mealPlan[key] || [];
         console.log(`Items for ${mealType}:`, items);
         
-        items.forEach(async (itemData) => {
+        for (const itemData of items) {
             if (itemData.type === 'meal') {
                 const recipe = window.recipes.find(r => r.id === itemData.id);
                 if (recipe && recipe.nutrition) {
@@ -683,8 +721,7 @@ async function calculateDayNutrition(date) {
                             };
                         }
                     } else {
-                        // USDA ingredient - we'd need to fetch this or store it
-                        // For now, we'll use stored nutrition if available
+                        // USDA ingredient - use stored nutrition if available
                         ingredientNutrition = itemData.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
                     }
                     
@@ -698,14 +735,76 @@ async function calculateDayNutrition(date) {
                     console.error('Error calculating ingredient nutrition:', error);
                 }
             }
-        });
-    });
+        }
+    }
 
-    console.log('Calculated nutrition:', nutrition);
+    console.log('Calculated nutrition for', date, ':', nutrition);
     return nutrition;
 }
 
-function updateNutritionSummary() {
+async function calculateMealNutrition(date, mealType) {
+    const key = getMealKey(date, mealType);
+    const items = mealPlan[key] || [];
+    const nutrition = {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0
+    };
+
+    for (const itemData of items) {
+        if (itemData.type === 'meal') {
+            const recipe = window.recipes.find(r => r.id === itemData.id);
+            if (recipe && recipe.nutrition) {
+                const servingSize = recipe.servingSize || 100;
+                const nutritionPerGram = {
+                    calories: recipe.nutrition.calories / servingSize,
+                    protein: recipe.nutrition.protein / servingSize,
+                    carbs: recipe.nutrition.carbs / servingSize,
+                    fat: recipe.nutrition.fat / servingSize
+                };
+                
+                nutrition.calories += nutritionPerGram.calories * itemData.amount;
+                nutrition.protein += nutritionPerGram.protein * itemData.amount;
+                nutrition.carbs += nutritionPerGram.carbs * itemData.amount;
+                nutrition.fat += nutritionPerGram.fat * itemData.amount;
+            }
+        } else if (itemData.type === 'ingredient') {
+            try {
+                let ingredientNutrition;
+                if (itemData.id.startsWith('custom-')) {
+                    const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
+                    const customId = itemData.id.replace('custom-', '');
+                    const customIngredient = customIngredients.find(ing => ing.id === customId);
+                    if (customIngredient) {
+                        const servingSize = customIngredient.servingSize || 100;
+                        ingredientNutrition = {
+                            calories: customIngredient.nutrition.calories / servingSize,
+                            protein: customIngredient.nutrition.protein / servingSize,
+                            carbs: customIngredient.nutrition.carbs / servingSize,
+                            fat: customIngredient.nutrition.fat / servingSize
+                        };
+                    }
+                } else {
+                    ingredientNutrition = itemData.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+                }
+                
+                if (ingredientNutrition) {
+                    nutrition.calories += ingredientNutrition.calories * itemData.amount;
+                    nutrition.protein += ingredientNutrition.protein * itemData.amount;
+                    nutrition.carbs += ingredientNutrition.carbs * itemData.amount;
+                    nutrition.fat += ingredientNutrition.fat * itemData.amount;
+                }
+            } catch (error) {
+                console.error('Error calculating ingredient nutrition:', error);
+            }
+        }
+    }
+
+    return nutrition;
+}
+
+async function updateNutritionSummary() {
     try {
         // Check if we're on the meal plan page
         const mealPlanGrid = document.querySelector('.meal-plan-grid');
@@ -726,40 +825,54 @@ function updateNutritionSummary() {
         let totalProtein = 0;
         let totalCarbs = 0;
         let totalFat = 0;
-        let totalCost = 0;
 
-        week.dates.forEach(date => {
-            const dayNutrition = calculateDayNutrition(date);
+        // Calculate nutrition for each day
+        const dayNutritionData = [];
+        for (const date of week.dates) {
+            const dayNutrition = await calculateDayNutrition(date);
+            dayNutritionData.push({ date, nutrition: dayNutrition });
+            
             totalCalories += dayNutrition.calories;
             totalProtein += dayNutrition.protein;
             totalCarbs += dayNutrition.carbs;
             totalFat += dayNutrition.fat;
-            totalCost += dayNutrition.cost;
-        });
+        }
 
-        // Update the summary display
+        // Update the summary display with daily breakdown and weekly totals
         nutritionSummary.innerHTML = `
-            <h3>Weekly Summary</h3>
-            <div class="nutrition-grid">
-                <div class="nutrition-item">
-                    <span class="label">Total Calories:</span>
-                    <span class="value">${Math.round(totalCalories)}</span>
-                </div>
-                <div class="nutrition-item">
-                    <span class="label">Protein:</span>
-                    <span class="value">${Math.round(totalProtein)}g</span>
-                </div>
-                <div class="nutrition-item">
-                    <span class="label">Carbs:</span>
-                    <span class="value">${Math.round(totalCarbs)}g</span>
-                </div>
-                <div class="nutrition-item">
-                    <span class="label">Fat:</span>
-                    <span class="value">${Math.round(totalFat)}g</span>
-                </div>
-                <div class="nutrition-item">
-                    <span class="label">Total Cost:</span>
-                    <span class="value">$${totalCost.toFixed(2)}</span>
+            <h3>Weekly Nutrition Summary</h3>
+            <div class="daily-nutrition-grid">
+                ${dayNutritionData.map(({ date, nutrition }) => `
+                    <div class="daily-nutrition-item">
+                        <h4>${formatDate(date)}</h4>
+                        <div class="nutrition-values">
+                            <span>${Math.round(nutrition.calories)} cal</span>
+                            <span>${Math.round(nutrition.protein)}g P</span>
+                            <span>${Math.round(nutrition.carbs)}g C</span>
+                            <span>${Math.round(nutrition.fat)}g F</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="weekly-totals">
+                <h4>Weekly Totals</h4>
+                <div class="nutrition-grid">
+                    <div class="nutrition-item">
+                        <span class="label">Total Calories:</span>
+                        <span class="value">${Math.round(totalCalories)}</span>
+                    </div>
+                    <div class="nutrition-item">
+                        <span class="label">Protein:</span>
+                        <span class="value">${Math.round(totalProtein)}g</span>
+                    </div>
+                    <div class="nutrition-item">
+                        <span class="label">Carbs:</span>
+                        <span class="value">${Math.round(totalCarbs)}g</span>
+                    </div>
+                    <div class="nutrition-item">
+                        <span class="label">Fat:</span>
+                        <span class="value">${Math.round(totalFat)}g</span>
+                    </div>
                 </div>
             </div>
         `;
@@ -871,7 +984,7 @@ async function continueInitialization() {
     }
 }
 
-function handleMealPlanSubmit(e) {
+async function handleMealPlanSubmit(e) {
     console.log('Form submission triggered');
     e.preventDefault();
     if (!selectedSlot || !selectedItem) {
@@ -884,18 +997,20 @@ function handleMealPlanSubmit(e) {
     mealPlan[mealKey].push({
         type: selectedItem.type,
         id: selectedItem.id,
-        amount: amount
+        amount: amount,
+        name: selectedItem.name,
+        nutrition: selectedItem.nutrition
     });
     saveMealPlan();
-    updateMealPlanDisplay();
-    updateNutritionSummary();
+    await updateMealPlanDisplay();
     closeMealPlanModal();
 }
 
-function addAddMealButton(slot) {
+async function addAddMealButton(slot) {
     if (!slot) return;
     // Clear existing content
     slot.innerHTML = '';
+    
     // Add meal items if any
     const mealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
     const items = mealPlan[mealKey];
@@ -919,10 +1034,29 @@ function addAddMealButton(slot) {
                 slot.appendChild(itemContent);
             }
         });
+        
+        // Add meal-level nutrition summary
+        calculateMealNutrition(slot.dataset.day, slot.dataset.meal).then(mealNutrition => {
+            if (mealNutrition.calories > 0 || mealNutrition.protein > 0 || mealNutrition.carbs > 0 || mealNutrition.fat > 0) {
+                const mealNutritionDiv = document.createElement('div');
+                mealNutritionDiv.className = 'meal-nutrition-summary';
+                mealNutritionDiv.innerHTML = `
+                    <div class="meal-totals">
+                        <span class="total-calories">${Math.round(mealNutrition.calories)} cal</span>
+                        <span class="total-protein">${Math.round(mealNutrition.protein)}g P</span>
+                        <span class="total-carbs">${Math.round(mealNutrition.carbs)}g C</span>
+                        <span class="total-fat">${Math.round(mealNutrition.fat)}g F</span>
+                    </div>
+                `;
+                slot.appendChild(mealNutritionDiv);
+            }
+        });
+        
         slot.classList.add('has-meal');
     } else {
         slot.classList.remove('has-meal');
     }
+    
     // Add the Add Item button (always visible)
     const addBtn = document.createElement('button');
     addBtn.className = 'add-meal-btn';
@@ -932,6 +1066,7 @@ function addAddMealButton(slot) {
         openMealPlanModal(slot);
     });
     slot.appendChild(addBtn);
+    
     // Make the whole slot clickable (except for buttons)
     slot.addEventListener('click', (e) => {
         if (e.target.closest('button')) return;
@@ -939,7 +1074,7 @@ function addAddMealButton(slot) {
     });
 }
 
-function updateMealPlanDisplay() {
+async function updateMealPlanDisplay() {
     const mealPlanGrid = document.querySelector('.meal-plan-grid');
     if (!mealPlanGrid) return;
     
@@ -968,7 +1103,7 @@ function updateMealPlanDisplay() {
     
     // Add meal slots
     const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
-    mealTypes.forEach(mealType => {
+    for (const mealType of mealTypes) {
         const row = document.createElement('div');
         row.className = 'meal-row';
         
@@ -979,18 +1114,21 @@ function updateMealPlanDisplay() {
         row.appendChild(timeSlot);
         
         // Add meal slots for each day
-        week.dates.forEach(date => {
+        for (const date of week.dates) {
             const mealSlot = document.createElement('div');
             mealSlot.className = 'meal-slot';
             mealSlot.dataset.day = date;
             mealSlot.dataset.meal = mealType.toLowerCase();
             
-            addAddMealButton(mealSlot);
+            await addAddMealButton(mealSlot);
             row.appendChild(mealSlot);
-        });
+        }
         
         mealPlanGrid.appendChild(row);
-    });
+    }
+    
+    // Update nutrition summary after display is complete
+    await updateNutritionSummary();
 }
 
 // Add window resize handler to reload meal plan when switching between mobile and desktop
@@ -1009,18 +1147,18 @@ function initializeWeekNavigation() {
     const nextWeekBtn = document.getElementById('next-week');
     
     if (prevWeekBtn) {
-        prevWeekBtn.addEventListener('click', () => {
+        prevWeekBtn.addEventListener('click', async () => {
             currentWeekOffset--;
             updateWeekDisplay();
-            updateNutritionSummary();
+            await updateMealPlanDisplay();
         });
     }
     
     if (nextWeekBtn) {
-        nextWeekBtn.addEventListener('click', () => {
+        nextWeekBtn.addEventListener('click', async () => {
             currentWeekOffset++;
             updateWeekDisplay();
-            updateNutritionSummary();
+            await updateMealPlanDisplay();
         });
     }
 }
