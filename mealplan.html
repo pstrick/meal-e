@@ -51,16 +51,16 @@
     <div id="meal-plan-modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h2>Add Meal</h2>
+            <h2>Add to Meal Plan</h2>
             <form id="meal-plan-form">
                 <div class="form-group">
-                                    <label for="recipe-search">Search Meals</label>
-                <input type="text" id="recipe-search" placeholder="Search meals...">
+                    <label for="unified-search">Search Meals & Ingredients</label>
+                    <input type="text" id="unified-search" placeholder="Search meals or ingredients...">
                 </div>
                 
                 <div class="form-group">
-                    <label for="meal-category-filter">Category</label>
-                    <select id="meal-category-filter">
+                    <label for="item-category-filter">Category</label>
+                    <select id="item-category-filter">
                         <option value="all">All Categories</option>
                         <option value="breakfast">Breakfast</option>
                         <option value="lunch">Lunch</option>
@@ -69,16 +69,16 @@
                     </select>
                 </div>
 
-                <div class="recipe-list">
-                    <!-- Recipe options will be populated here -->
+                <div class="unified-list">
+                    <!-- Meal and ingredient options will be populated here -->
                 </div>
 
-                <div class="selected-recipe" style="display: none;">
-                    <h3>Selected Meal</h3>
-                    <div class="recipe-details">
-                        <p class="recipe-name"></p>
-                        <div class="recipe-nutrition">
-                            <span>Per serving:</span>
+                <div class="selected-item" style="display: none;">
+                    <h3>Selected Item</h3>
+                    <div class="item-details">
+                        <p class="item-name"></p>
+                        <div class="item-nutrition">
+                            <span>Per 100g:</span>
                             <span class="nutrition-value">Cal: <span class="calories">0</span></span>
                             <span class="nutrition-value">P: <span class="protein">0</span>g</span>
                             <span class="nutrition-value">C: <span class="carbs">0</span>g</span>
@@ -86,14 +86,14 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="meal-servings">Number of Servings:</label>
-                        <input type="number" id="meal-servings" min="0.5" step="0.5" value="1" required>
+                        <label for="item-amount">Amount (g):</label>
+                        <input type="number" id="item-amount" min="1" step="1" value="100" required>
                     </div>
                 </div>
                 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" id="cancel-meal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Meal</button>
+                    <button type="submit" class="btn btn-primary">Add Item</button>
                 </div>
             </form>
         </div>

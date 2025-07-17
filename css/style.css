@@ -1874,8 +1874,8 @@ main {
     }
 }
 
-/* Modern list styling for Add Meal modal recipe list */
-.modal .recipe-list {
+/* Modern list styling for Add Item modal unified list */
+.modal .unified-list {
     background: #fafbfc;
     border-radius: 10px;
     border: 1px solid #e9ecef;
@@ -1884,40 +1884,63 @@ main {
     max-height: 320px;
     overflow-y: auto;
 }
-.modal .recipe-option {
+.modal .unified-option {
     padding: 1.1rem 1.5rem;
     cursor: pointer;
     transition: background 0.2s;
     background: transparent;
     border: none;
 }
-.modal .recipe-option.with-separator {
+.modal .unified-option.with-separator {
     border-bottom: 1px solid #e9ecef;
 }
-.modal .recipe-option.selected {
+.modal .unified-option.selected {
     background: #e8f5e9;
     border-left: 4px solid var(--primary-color);
 }
-.modal .recipe-option:hover:not(.selected) {
+.modal .unified-option:hover:not(.selected) {
     background: #f1f3f4;
 }
-.modal .recipe-option h4 {
+.modal .unified-option h4 {
     margin: 0 0 0.25rem 0;
     font-size: 1.08rem;
     color: var(--text-color);
     font-weight: 600;
 }
-.modal .recipe-option .recipe-meta {
-    font-size: 0.97rem;
+.modal .unified-option .item-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.modal .unified-option .item-icon {
+    font-size: 1.2rem;
+}
+
+.modal .unified-option .item-type {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.modal .unified-option .item-nutrition {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9rem;
     color: var(--text-secondary);
-    margin-bottom: 0.15rem;
+    margin-top: 0.5rem;
 }
 .modal .recipe-option .ingredients {
     font-size: 0.92rem;
     color: #888;
 }
 
-/* Style ingredient search box in Add Meal modal */
+/* Style unified search box in Add Item modal */
 .modal #ingredients-list .ingredient-name {
     width: 100%;
     padding: 0.75rem;

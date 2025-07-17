@@ -1,7 +1,7 @@
 // Meal Planning functionality
 let currentWeekOffset = 0;  // Track week offset instead of modifying date directly
 let selectedSlot = null;
-let selectedRecipe = null;
+let selectedItem = null;
 let mealPlanForm = null;
 let mealPlanModal = null;
 let cancelMeal = null;
@@ -126,7 +126,7 @@ function openMealPlanModal(slot) {
     }
     
     selectedSlot = slot;
-    selectedRecipe = null;
+    selectedItem = null;
     
     // Reset the form and filters
     if (!mealPlanForm) {
@@ -134,24 +134,24 @@ function openMealPlanModal(slot) {
         return;
     }
     
-    const recipeSearch = mealPlanForm.querySelector('#recipe-search');
-    const categoryFilter = mealPlanForm.querySelector('#meal-category-filter');
-    const servingsInput = mealPlanForm.querySelector('#meal-servings');
-    const selectedRecipeDiv = mealPlanForm.querySelector('.selected-recipe');
+    const unifiedSearch = mealPlanForm.querySelector('#unified-search');
+    const categoryFilter = mealPlanForm.querySelector('#item-category-filter');
+    const amountInput = mealPlanForm.querySelector('#item-amount');
+    const selectedItemDiv = mealPlanForm.querySelector('.selected-item');
     const submitButton = mealPlanForm.querySelector('button[type="submit"]');
     
-    if (recipeSearch) recipeSearch.value = '';
+    if (unifiedSearch) unifiedSearch.value = '';
     if (categoryFilter) categoryFilter.value = 'all';
-    if (servingsInput) servingsInput.value = '1';
-    if (selectedRecipeDiv) selectedRecipeDiv.style.display = 'none';
+    if (amountInput) amountInput.value = '100';
+    if (selectedItemDiv) selectedItemDiv.style.display = 'none';
     if (submitButton) submitButton.disabled = true;
     
     // Store the slot reference in a data attribute
     mealPlanForm.dataset.currentSlot = `${slot.dataset.day}-${slot.dataset.meal}`;
     console.log('Stored slot reference:', mealPlanForm.dataset.currentSlot);
     
-    // Clear any selected recipes in the list
-    mealPlanForm.querySelectorAll('.recipe-option.selected').forEach(option => {
+    // Clear any selected items in the list
+    mealPlanForm.querySelectorAll('.unified-option.selected').forEach(option => {
         option.classList.remove('selected');
     });
     
@@ -159,106 +159,154 @@ function openMealPlanModal(slot) {
     mealPlanModal.style.display = 'block';
     mealPlanModal.classList.add('active');
 
-    // Load all recipes immediately
-    updateRecipeList();
+    // Load all items immediately
+    updateUnifiedList();
 }
 
-function updateRecipeList() {
-    const recipeList = document.querySelector('.recipe-list');
-    const searchInput = document.getElementById('recipe-search');
-    const categoryFilter = document.getElementById('meal-category-filter');
+async function updateUnifiedList() {
+    const unifiedList = document.querySelector('.unified-list');
+    const searchInput = document.getElementById('unified-search');
+    const categoryFilter = document.getElementById('item-category-filter');
     
     // Check if required elements exist
-    if (!recipeList || !searchInput || !categoryFilter) {
-        console.log('Recipe list elements not found, skipping update');
+    if (!unifiedList || !searchInput || !categoryFilter) {
+        console.log('Unified list elements not found, skipping update');
         return;
     }
     
     const searchTerm = searchInput.value.toLowerCase().trim();
     const category = categoryFilter.value;
     
-    // Ensure recipes are available
-    if (!window.recipes || !Array.isArray(window.recipes)) {
-        console.error('Recipes not available:', window.recipes);
-        recipeList.innerHTML = '<div class="recipe-option">No recipes available</div>';
-        return;
-    }
-
-    console.log('Available recipes:', window.recipes);
+    // Clear the current list
+    unifiedList.innerHTML = '';
     
-    // Filter recipes based on search term and category
-    const filteredRecipes = window.recipes.filter(recipe => {
-        const matchesSearch = searchTerm === '' || 
-            recipe.name.toLowerCase().includes(searchTerm) ||
-            recipe.ingredients.some(ing => ing.name.toLowerCase().includes(searchTerm));
-        const matchesCategory = category === 'all' || recipe.category === category;
-        return matchesSearch && matchesCategory;
+    const results = [];
+    
+    // Search meals (recipes)
+    if (window.recipes && Array.isArray(window.recipes)) {
+        const filteredMeals = window.recipes.filter(recipe => {
+            const matchesSearch = searchTerm === '' || 
+                recipe.name.toLowerCase().includes(searchTerm) ||
+                recipe.ingredients.some(ing => ing.name.toLowerCase().includes(searchTerm));
+            const matchesCategory = category === 'all' || recipe.category === category;
+            return matchesSearch && matchesCategory;
+        });
+        
+        filteredMeals.forEach(recipe => {
+            results.push({
+                type: 'meal',
+                id: recipe.id,
+                name: recipe.name,
+                category: recipe.category,
+                servingSize: recipe.servingSize,
+                nutrition: recipe.nutrition,
+                icon: '🍽️',
+                label: 'Meal'
+            });
+        });
+    }
+    
+    // Search ingredients
+    try {
+        const ingredientResults = await searchAllIngredients(searchTerm);
+        ingredientResults.forEach(ingredient => {
+            // Only add if category matches or is 'all'
+            if (category === 'all' || ingredient.category === category) {
+                results.push({
+                    type: 'ingredient',
+                    id: ingredient.id,
+                    name: ingredient.name,
+                    category: ingredient.category || 'ingredient',
+                    nutrition: ingredient.nutrition,
+                    source: ingredient.source,
+                    icon: '🥩',
+                    label: 'Ingredient'
+                });
+            }
+        });
+    } catch (error) {
+        console.error('Error searching ingredients:', error);
+    }
+    
+    // Sort results: meals first, then ingredients, then alphabetically
+    results.sort((a, b) => {
+        if (a.type === 'meal' && b.type !== 'meal') return -1;
+        if (a.type !== 'meal' && b.type === 'meal') return 1;
+        return a.name.localeCompare(b.name);
     });
     
-    // Clear the current list
-    recipeList.innerHTML = '';
-    
-    // Add filtered recipes to the list
-    filteredRecipes.forEach(recipe => {
-        const option = document.createElement('div');
-        option.className = 'recipe-option';
-        option.innerHTML = `
-            <h4>${recipe.name}</h4>
-            <div class="recipe-meta">
-                <span>${recipe.category}</span>
-                <span>${recipe.nutrition.calories} cal</span>
+    // Add results to the list
+    results.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'unified-option';
+        div.innerHTML = `
+            <div class="item-header">
+                <span class="item-icon">${item.icon}</span>
+                <span class="item-type">${item.label}</span>
+                <h4>${item.name}</h4>
             </div>
-            <div class="ingredients">
-                ${recipe.ingredients.map(ing => ing.name).join(', ')}
+            <p>Category: ${item.category}</p>
+            ${item.type === 'meal' ? `<p>Serving Size: ${item.servingSize}g</p>` : ''}
+            <div class="item-nutrition">
+                <span>Cal: ${Math.round(item.nutrition.calories * 100)}</span>
+                <span>P: ${Math.round(item.nutrition.protein * 100)}g</span>
+                <span>C: ${Math.round(item.nutrition.carbs * 100)}g</span>
+                <span>F: ${Math.round(item.nutrition.fat * 100)}g</span>
             </div>
         `;
         
-        // Add click handler to select the recipe
-        option.addEventListener('click', () => {
-            selectRecipe(recipe);
+        div.addEventListener('click', () => {
+            // Remove selection from other options
+            unifiedList.querySelectorAll('.unified-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Select this option
+            div.classList.add('selected');
+            selectItem(item);
         });
         
-        recipeList.appendChild(option);
+        unifiedList.appendChild(div);
     });
     
-    // Show message if no recipes found
-    if (filteredRecipes.length === 0) {
-        recipeList.innerHTML = '<div class="recipe-option">No recipes found</div>';
+    // Show message if no items found
+    if (results.length === 0) {
+        unifiedList.innerHTML = '<div class="unified-option">No items found</div>';
     }
 }
 
-function selectRecipe(recipe) {
-    console.log('Selecting recipe:', recipe);
-    selectedRecipe = recipe;
+function selectItem(item) {
+    console.log('Selecting item:', item);
+    selectedItem = item;
     
     // Get elements from the form
-    const selectedRecipeDiv = mealPlanForm.querySelector('.selected-recipe');
+    const selectedItemDiv = mealPlanForm.querySelector('.selected-item');
     const submitButton = mealPlanForm.querySelector('button[type="submit"]');
     
-    if (!selectedRecipeDiv || !submitButton) {
+    if (!selectedItemDiv || !submitButton) {
         console.error('Required elements not found in the form');
         return;
     }
     
-    // Update selected recipe display
-    selectedRecipeDiv.style.display = 'block';
-    selectedRecipeDiv.querySelector('.recipe-name').textContent = recipe.name;
-    selectedRecipeDiv.querySelector('.calories').textContent = recipe.nutrition.calories;
-    selectedRecipeDiv.querySelector('.protein').textContent = recipe.nutrition.protein;
-    selectedRecipeDiv.querySelector('.carbs').textContent = recipe.nutrition.carbs;
-    selectedRecipeDiv.querySelector('.fat').textContent = recipe.nutrition.fat;
+    // Update selected item display
+    selectedItemDiv.style.display = 'block';
+    selectedItemDiv.querySelector('.item-name').textContent = item.name;
+    selectedItemDiv.querySelector('.calories').textContent = Math.round(item.nutrition.calories * 100);
+    selectedItemDiv.querySelector('.protein').textContent = Math.round(item.nutrition.protein * 100);
+    selectedItemDiv.querySelector('.carbs').textContent = Math.round(item.nutrition.carbs * 100);
+    selectedItemDiv.querySelector('.fat').textContent = Math.round(item.nutrition.fat * 100);
     
     // Enable submit button and ensure it's visible
     submitButton.disabled = false;
     submitButton.style.display = 'block';
     console.log('Submit button enabled:', submitButton);
     
-    // Update recipe list selection
-    const recipeList = mealPlanForm.querySelector('.recipe-list');
-    if (recipeList) {
-        recipeList.querySelectorAll('.recipe-option').forEach(option => {
+    // Update unified list selection
+    const unifiedList = mealPlanForm.querySelector('.unified-list');
+    if (unifiedList) {
+        unifiedList.querySelectorAll('.unified-option').forEach(option => {
             option.classList.remove('selected');
-            if (option.querySelector('h4').textContent === recipe.name) {
+            if (option.querySelector('h4').textContent === item.name) {
                 option.classList.add('selected');
             }
         });
@@ -277,14 +325,14 @@ function closeMealPlanModal() {
     }
     
     selectedSlot = null;
-    selectedRecipe = null;
+    selectedItem = null;
     
     // Reset form if it exists
     if (mealPlanForm) {
         mealPlanForm.reset();
-        const selectedRecipeDiv = mealPlanForm.querySelector('.selected-recipe');
+        const selectedItemDiv = mealPlanForm.querySelector('.selected-item');
         const submitButton = mealPlanForm.querySelector('button[type="submit"]');
-        if (selectedRecipeDiv) selectedRecipeDiv.style.display = 'none';
+        if (selectedItemDiv) selectedItemDiv.style.display = 'none';
         if (submitButton) submitButton.disabled = true;
     }
 }
@@ -292,25 +340,35 @@ function closeMealPlanModal() {
 // Make closeMealPlanModal available globally
 window.closeMealPlanModal = closeMealPlanModal;
 
-function createMealItem(recipe, servings, mealIndex, slot) {
+function createMealItem(item, amount, itemIndex, slot) {
     const div = document.createElement('div');
     div.className = 'meal-item';
+    div.dataset.itemType = item.type;
+    div.dataset.itemId = item.id;
+    div.dataset.itemAmount = amount;
+    
+    const icon = item.type === 'meal' ? '🍽️' : '🥩';
+    const label = item.type === 'meal' ? 'Meal' : 'Ingredient';
+    
     div.innerHTML = `
         <div class="meal-item-header">
-            <span class="meal-item-name">${recipe.name}</span>
-            <button class="remove-meal" title="Remove Meal">&times;</button>
+            <span class="meal-item-icon">${icon}</span>
+            <span class="meal-item-name">${item.name}</span>
+            <button class="remove-meal" title="Remove Item">&times;</button>
         </div>
         <div class="meal-item-details">
-            <span class="meal-item-servings">${servings} serving${servings === 1 ? '' : 's'}</span>
+            <span class="meal-item-amount">${amount}g</span>
+            <span class="meal-item-type">${label}</span>
         </div>
     `;
-    // Remove meal handler
+    
+    // Remove item handler
     div.querySelector('.remove-meal').addEventListener('click', (e) => {
         e.stopPropagation();
-        // Remove this meal from the slot
+        // Remove this item from the slot
         const mealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
         if (mealPlan[mealKey] && Array.isArray(mealPlan[mealKey])) {
-            mealPlan[mealKey].splice(mealIndex, 1);
+            mealPlan[mealKey].splice(itemIndex, 1);
             if (mealPlan[mealKey].length === 0) delete mealPlan[mealKey];
             saveMealPlan();
             updateMealPlanDisplay();
@@ -333,17 +391,18 @@ function saveMealPlan() {
         const meal = slot.dataset.meal;
         const key = `${date}-${meal}`;
         
-        const meals = [];
+        const items = [];
         slot.querySelectorAll('.meal-item').forEach(item => {
-            const recipeId = parseInt(item.dataset.recipeId);
-            const servings = parseFloat(item.dataset.servings);
-            if (recipeId && servings) {
-                meals.push({ recipeId, servings });
+            const itemType = item.dataset.itemType;
+            const itemId = item.dataset.itemId;
+            const amount = parseFloat(item.dataset.itemAmount);
+            if (itemType && itemId && amount) {
+                items.push({ type: itemType, id: itemId, amount });
             }
         });
         
-        if (meals.length > 0) {
-            mealPlan[key] = meals;
+        if (items.length > 0) {
+            mealPlan[key] = items;
         } else {
             delete mealPlan[key];
         }
@@ -382,7 +441,7 @@ async function loadMealPlan() {
     }
 }
 
-function calculateDayNutrition(date) {
+async function calculateDayNutrition(date) {
     console.log('Calculating nutrition for date:', date);
     const nutrition = {
         calories: 0,
@@ -393,16 +452,60 @@ function calculateDayNutrition(date) {
 
     ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(mealType => {
         const key = getMealKey(date, mealType);
-        const meals = mealPlan[key] || [];
-        console.log(`Meals for ${mealType}:`, meals);
+        const items = mealPlan[key] || [];
+        console.log(`Items for ${mealType}:`, items);
         
-        meals.forEach(mealData => {
-            const recipe = window.recipes.find(r => r.id === mealData.recipeId);
-            if (recipe && recipe.nutrition) {
-                nutrition.calories += recipe.nutrition.calories * mealData.servings;
-                nutrition.protein += recipe.nutrition.protein * mealData.servings;
-                nutrition.carbs += recipe.nutrition.carbs * mealData.servings;
-                nutrition.fat += recipe.nutrition.fat * mealData.servings;
+        items.forEach(async (itemData) => {
+            if (itemData.type === 'meal') {
+                const recipe = window.recipes.find(r => r.id === itemData.id);
+                if (recipe && recipe.nutrition) {
+                    // Convert recipe nutrition to per-gram values
+                    const servingSize = recipe.servingSize || 100;
+                    const nutritionPerGram = {
+                        calories: recipe.nutrition.calories / servingSize,
+                        protein: recipe.nutrition.protein / servingSize,
+                        carbs: recipe.nutrition.carbs / servingSize,
+                        fat: recipe.nutrition.fat / servingSize
+                    };
+                    
+                    nutrition.calories += nutritionPerGram.calories * itemData.amount;
+                    nutrition.protein += nutritionPerGram.protein * itemData.amount;
+                    nutrition.carbs += nutritionPerGram.carbs * itemData.amount;
+                    nutrition.fat += nutritionPerGram.fat * itemData.amount;
+                }
+            } else if (itemData.type === 'ingredient') {
+                // For ingredients, we need to get nutrition data
+                try {
+                    let ingredientNutrition;
+                    if (itemData.id.startsWith('custom-')) {
+                        // Custom ingredient
+                        const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
+                        const customId = itemData.id.replace('custom-', '');
+                        const customIngredient = customIngredients.find(ing => ing.id === customId);
+                        if (customIngredient) {
+                            const servingSize = customIngredient.servingSize || 100;
+                            ingredientNutrition = {
+                                calories: customIngredient.nutrition.calories / servingSize,
+                                protein: customIngredient.nutrition.protein / servingSize,
+                                carbs: customIngredient.nutrition.carbs / servingSize,
+                                fat: customIngredient.nutrition.fat / servingSize
+                            };
+                        }
+                    } else {
+                        // USDA ingredient - we'd need to fetch this or store it
+                        // For now, we'll use stored nutrition if available
+                        ingredientNutrition = itemData.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+                    }
+                    
+                    if (ingredientNutrition) {
+                        nutrition.calories += ingredientNutrition.calories * itemData.amount;
+                        nutrition.protein += ingredientNutrition.protein * itemData.amount;
+                        nutrition.carbs += ingredientNutrition.carbs * itemData.amount;
+                        nutrition.fat += ingredientNutrition.fat * itemData.amount;
+                    }
+                } catch (error) {
+                    console.error('Error calculating ingredient nutrition:', error);
+                }
             }
         });
     });
@@ -580,16 +683,17 @@ async function continueInitialization() {
 function handleMealPlanSubmit(e) {
     console.log('Form submission triggered');
     e.preventDefault();
-    if (!selectedSlot || !selectedRecipe) {
-        console.error('No slot or recipe selected');
+    if (!selectedSlot || !selectedItem) {
+        console.error('No slot or item selected');
         return;
     }
-    const servings = parseInt(document.getElementById('meal-servings').value) || 1;
+    const amount = parseInt(document.getElementById('item-amount').value) || 100;
     const mealKey = getMealKey(selectedSlot.dataset.day, selectedSlot.dataset.meal);
     if (!mealPlan[mealKey]) mealPlan[mealKey] = [];
     mealPlan[mealKey].push({
-        recipeId: selectedRecipe.id,
-        servings: servings
+        type: selectedItem.type,
+        id: selectedItem.id,
+        amount: amount
     });
     saveMealPlan();
     updateMealPlanDisplay();
@@ -603,23 +707,35 @@ function addAddMealButton(slot) {
     slot.innerHTML = '';
     // Add meal items if any
     const mealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
-    const meals = mealPlan[mealKey];
-    if (meals && Array.isArray(meals) && meals.length > 0) {
-        meals.forEach((mealData, idx) => {
-            const recipe = window.recipes.find(r => r.id === mealData.recipeId);
-            if (recipe) {
-                const mealContent = createMealItem(recipe, mealData.servings, idx, slot);
-                slot.appendChild(mealContent);
+    const items = mealPlan[mealKey];
+    if (items && Array.isArray(items) && items.length > 0) {
+        items.forEach((itemData, idx) => {
+            let item;
+            if (itemData.type === 'meal') {
+                item = window.recipes.find(r => r.id === itemData.id);
+            } else if (itemData.type === 'ingredient') {
+                // For ingredients, we need to get the nutrition data
+                // This will be handled in the display function
+                item = {
+                    type: 'ingredient',
+                    id: itemData.id,
+                    name: itemData.name || 'Ingredient', // We'll need to store name
+                    nutrition: itemData.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 }
+                };
+            }
+            if (item) {
+                const itemContent = createMealItem(item, itemData.amount, idx, slot);
+                slot.appendChild(itemContent);
             }
         });
         slot.classList.add('has-meal');
     } else {
         slot.classList.remove('has-meal');
     }
-    // Add the Add Meal button (always visible)
+    // Add the Add Item button (always visible)
     const addBtn = document.createElement('button');
     addBtn.className = 'add-meal-btn';
-    addBtn.innerHTML = '<i class="fas fa-plus"></i> Add Meal';
+    addBtn.innerHTML = '<i class="fas fa-plus"></i> Add Item';
     addBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         openMealPlanModal(slot);
@@ -727,19 +843,19 @@ document.addEventListener('DOMContentLoaded', () => {
 // Add debounced search
 let searchTimeout;
 function initializeSearchHandlers() {
-    const searchInput = document.getElementById('recipe-search');
-    const categoryFilter = document.getElementById('meal-category-filter');
+    const searchInput = document.getElementById('unified-search');
+    const categoryFilter = document.getElementById('item-category-filter');
     
     if (searchInput) {
         searchInput.addEventListener('input', () => {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
-                updateRecipeList();
+                updateUnifiedList();
             }, 300); // Debounce for 300ms
         });
     }
     
     if (categoryFilter) {
-        categoryFilter.addEventListener('change', updateRecipeList);
+        categoryFilter.addEventListener('change', updateUnifiedList);
     }
 } 
