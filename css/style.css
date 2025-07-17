@@ -755,7 +755,7 @@ footer {
     line-height: 1.5;
 }
 
-/* Enhanced Add Recipe Button */
+/* Enhanced Add Meal Button */
 #add-recipe-btn {
     background: linear-gradient(135deg, var(--primary-color), #66bb6a);
     color: white;
@@ -783,7 +783,7 @@ footer {
 
 /* Empty State */
 .recipe-grid:empty::after {
-    content: "No recipes found. Click 'Add Recipe' to create your first recipe!";
+    content: "No meals found. Click 'Add Meal' to create your first meal!";
     grid-column: 1 / -1;
     text-align: center;
     padding: 3rem;
@@ -1412,7 +1412,7 @@ footer {
     box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
-/* Enhanced Add Recipe Button for Home Page */
+/* Enhanced Add Meal Button for Home Page */
 #add-recipe {
     background: linear-gradient(135deg, var(--primary-color), #66bb6a);
     color: white;
@@ -1626,7 +1626,7 @@ main {
 
 /* Empty State Improvements */
 .card-grid:empty::after {
-    content: "No recipes found. Click 'Add New Recipe' to create your first recipe!";
+    content: "No meals found. Click 'Add New Meal' to create your first meal!";
     grid-column: 1 / -1;
     text-align: center;
     padding: 3rem;
@@ -1917,7 +1917,7 @@ main {
     color: #888;
 }
 
-/* Style ingredient search box in Add Recipe modal */
+/* Style ingredient search box in Add Meal modal */
 .modal #ingredients-list .ingredient-name {
     width: 100%;
     padding: 0.75rem;

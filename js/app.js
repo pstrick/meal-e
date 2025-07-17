@@ -777,7 +777,7 @@ function initializeApp() {
             elements.recipeForm.addEventListener('submit', handleRecipeSubmit);
         }
 
-        // Initialize add recipe button if available
+        // Initialize add meal button if available
         if (elements.addRecipeBtn) {
             elements.addRecipeBtn.addEventListener('click', openModal);
         }

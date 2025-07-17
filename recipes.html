@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recipes - Meal-E</title>
+    <title>Meals - Meal-E</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -14,7 +14,7 @@
             <div class="nav-container">
                 <a href="mealplan.html" class="logo">Meal-E</a>
                 <div class="nav-links">
-                    <a href="recipes.html" class="active">Recipes</a>
+                    <a href="recipes.html" class="active">Meals</a>
                     <a href="mealplan.html">Meal Plan</a>
                     <a href="ingredients.html">Ingredients</a>
                     <a href="settings.html">Settings</a>
@@ -25,11 +25,11 @@
 
     <main>
         <div class="container">
-            <h1>Recipes</h1>
+            <h1>Meals</h1>
             
             <div class="recipe-controls">
                 <button id="add-recipe-btn" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Add Recipe
+                    <i class="fas fa-plus"></i> Add Meal
                 </button>
                 <div class="filter-group">
                     <label for="category-filter">Category:</label>
@@ -53,10 +53,10 @@
     <div id="recipe-modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h2>Add Recipe</h2>
+                            <h2>Add Meal</h2>
             <form id="recipe-form">
                 <div class="form-group">
-                    <label for="recipe-name">Recipe Name</label>
+                    <label for="recipe-name">Meal Name</label>
                     <input type="text" id="recipe-name" required>
                 </div>
                 
@@ -85,7 +85,7 @@
                 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" id="cancel-recipe">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Recipe</button>
+                    <button type="submit" class="btn btn-primary">Save Meal</button>
                 </div>
             </form>
         </div>
