@@ -984,6 +984,7 @@ function initializeWeekNavigation() {
 document.addEventListener('DOMContentLoaded', () => {
     initializeSearchHandlers();
     initializeWeekNavigation();
+    initializePrintButton();
 });
 
 // Add debounced search
@@ -1004,4 +1005,293 @@ function initializeSearchHandlers() {
     if (categoryFilter) {
         categoryFilter.addEventListener('change', updateUnifiedList);
     }
+}
+
+// Initialize print button functionality
+function initializePrintButton() {
+    const printButton = document.getElementById('print-meal-plan');
+    
+    if (printButton) {
+        printButton.addEventListener('click', () => {
+            printMealPlan();
+        });
+    }
+}
+
+// Print meal plan function
+function printMealPlan() {
+    console.log('Printing meal plan...');
+    
+    // Create a print-friendly version of the page
+    const printWindow = window.open('', '_blank');
+    const week = getWeekDates(currentWeekOffset);
+    const startDate = formatDate(week.startDate);
+    const endDate = formatDate(week.endDate);
+    
+    // Get the meal plan grid content
+    const mealPlanGrid = document.querySelector('.meal-plan-grid');
+    if (!mealPlanGrid) {
+        console.error('Meal plan grid not found');
+        return;
+    }
+    
+    // Create print HTML
+    const printHTML = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Meal Plan - Week of ${startDate} - ${endDate}</title>
+            <style>
+                @media print {
+                    @page {
+                        margin: 0.5in;
+                        size: letter;
+                    }
+                }
+                
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    background: white;
+                    font-size: 12pt;
+                    line-height: 1.4;
+                }
+                
+                .print-header {
+                    text-align: center;
+                    margin-bottom: 20px;
+                    page-break-after: avoid;
+                }
+                
+                .print-header h1 {
+                    font-size: 18pt;
+                    margin: 0 0 10px 0;
+                    color: #000;
+                }
+                
+                .print-header h2 {
+                    font-size: 14pt;
+                    margin: 0;
+                    color: #000;
+                }
+                
+                .meal-plan-grid {
+                    display: table;
+                    width: 100%;
+                    background: white;
+                    border-collapse: collapse;
+                    table-layout: fixed;
+                    page-break-inside: avoid;
+                }
+                
+                .meal-plan-header {
+                    display: table-row;
+                    page-break-inside: avoid;
+                }
+                
+                .day-header {
+                    background: #f5f6fa;
+                    font-weight: bold;
+                    text-align: center;
+                    padding: 8px 4px;
+                    border: 1px solid #000;
+                    font-size: 10pt;
+                    white-space: pre-line;
+                    display: table-cell;
+                    vertical-align: middle;
+                    width: 120px;
+                    page-break-inside: avoid;
+                }
+                
+                .meal-row {
+                    display: table-row;
+                    page-break-inside: avoid;
+                }
+                
+                .time-slot {
+                    background: #f5f6fa;
+                    font-weight: 600;
+                    text-align: right;
+                    padding: 8px 4px;
+                    border: 1px solid #000;
+                    font-size: 10pt;
+                    display: table-cell;
+                    vertical-align: middle;
+                    width: 120px;
+                    page-break-inside: avoid;
+                }
+                
+                .meal-slot {
+                    background: white;
+                    border: 1px solid #000;
+                    display: table-cell;
+                    vertical-align: top;
+                    padding: 4px;
+                    box-sizing: border-box;
+                    width: calc((100% - 120px) / 7);
+                    max-width: calc((100% - 120px) / 7);
+                    overflow: visible;
+                    page-break-inside: avoid;
+                    min-height: 60px;
+                }
+                
+                .meal-item {
+                    background: #f8fff8;
+                    border: 1px solid #ccc;
+                    border-radius: 3px;
+                    margin-bottom: 4px;
+                    padding: 4px;
+                    display: block;
+                    font-size: 9pt;
+                    position: relative;
+                    max-width: 100%;
+                    overflow: visible;
+                    page-break-inside: avoid;
+                }
+                
+                .meal-item-header {
+                    display: flex;
+                    align-items: flex-start;
+                    width: 100%;
+                    justify-content: space-between;
+                    flex-direction: column;
+                }
+                
+                .meal-item-name {
+                    font-weight: 600;
+                    font-size: 9pt;
+                    color: #000;
+                    max-width: 100%;
+                    overflow: visible;
+                    text-overflow: clip;
+                    white-space: normal;
+                    word-wrap: break-word;
+                    word-break: break-word;
+                    display: block;
+                    line-height: 1.2;
+                    margin-bottom: 2px;
+                }
+                
+                .meal-item-details {
+                    font-size: 8pt;
+                    color: #666;
+                    margin-top: 2px;
+                }
+                
+                .meal-item-nutrition {
+                    font-size: 8pt;
+                    margin-top: 2px;
+                }
+                
+                .meal-item-nutrition span {
+                    display: inline-block;
+                    margin-right: 8px;
+                    font-size: 8pt;
+                }
+                
+                .daily-nutrition-row {
+                    display: table-row;
+                    page-break-inside: avoid;
+                }
+                
+                .daily-nutrition-cell {
+                    background: #f0f0f0;
+                    border: 1px solid #000;
+                    padding: 4px;
+                    text-align: center;
+                    font-size: 9pt;
+                    display: table-cell;
+                    vertical-align: middle;
+                    page-break-inside: avoid;
+                }
+                
+                .daily-nutrition-cell:first-child {
+                    width: 120px;
+                    font-weight: bold;
+                    background: #e0e0e0;
+                }
+                
+                .daily-totals {
+                    display: block;
+                }
+                
+                .daily-calories {
+                    font-weight: bold;
+                    font-size: 9pt;
+                    display: block;
+                    margin-bottom: 2px;
+                }
+                
+                .daily-macros {
+                    font-size: 8pt;
+                    display: block;
+                }
+                
+                .daily-macros span {
+                    display: inline-block;
+                    margin-right: 6px;
+                }
+                
+                .empty-slot {
+                    background: #f9f9f9;
+                    min-height: 40px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 8pt;
+                    color: #999;
+                    font-style: italic;
+                }
+                
+                @media print {
+                    body {
+                        margin: 0;
+                        padding: 0;
+                    }
+                    
+                    .print-header {
+                        margin-bottom: 15px;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="print-header">
+                <h1>Meal Plan</h1>
+                <h2>Week of ${startDate} - ${endDate}</h2>
+            </div>
+            ${mealPlanGrid.outerHTML}
+        </body>
+        </html>
+    `;
+    
+    // Write the HTML to the new window
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
+    
+    // Wait for content to load, then print
+    printWindow.onload = function() {
+        // Remove any add buttons and replace empty slots with placeholder text
+        const addButtons = printWindow.document.querySelectorAll('.add-meal-btn');
+        addButtons.forEach(btn => {
+            btn.remove();
+        });
+        
+        // Replace empty meal slots with placeholder text
+        const mealSlots = printWindow.document.querySelectorAll('.meal-slot');
+        mealSlots.forEach(slot => {
+            if (slot.children.length === 0 || (slot.children.length === 1 && slot.querySelector('.add-meal-btn'))) {
+                slot.innerHTML = '<div class="empty-slot">Empty</div>';
+            }
+        });
+        
+        // Trigger print
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 500);
+    };
 } 

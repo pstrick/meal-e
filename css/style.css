@@ -2438,4 +2438,249 @@ main {
         font-size: 0.65rem;
         gap: 0.2rem;
     }
+}
+
+/* Print Styles */
+@media print {
+    /* Hide non-essential elements */
+    header,
+    .week-navigation button,
+    .add-meal-btn,
+    .remove-meal,
+    .meal-actions,
+    .nutrition-summary,
+    .modal,
+    footer {
+        display: none !important;
+    }
+    
+    /* Reset page margins and background */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+    
+    body {
+        margin: 0;
+        padding: 0;
+        background: white !important;
+        font-size: 12pt;
+        line-height: 1.4;
+    }
+    
+    .container {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+        background: white;
+    }
+    
+    /* Meal plan grid print styling */
+    .meal-plan-grid {
+        display: table !important;
+        width: 100% !important;
+        background: white !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        border-collapse: collapse !important;
+        table-layout: fixed !important;
+        page-break-inside: avoid;
+    }
+    
+    .meal-plan-header {
+        display: table-row !important;
+        page-break-inside: avoid;
+    }
+    
+    .day-header {
+        background: #f5f6fa !important;
+        font-weight: bold !important;
+        text-align: center !important;
+        padding: 0.5rem 0.25rem !important;
+        border: 1px solid #000 !important;
+        font-size: 10pt !important;
+        white-space: pre-line !important;
+        display: table-cell !important;
+        vertical-align: middle !important;
+        width: 120px !important;
+        page-break-inside: avoid;
+    }
+    
+    .meal-row {
+        display: table-row !important;
+        page-break-inside: avoid;
+    }
+    
+    .time-slot {
+        background: #f5f6fa !important;
+        font-weight: 600 !important;
+        text-align: right !important;
+        padding: 0.5rem 0.25rem !important;
+        border: 1px solid #000 !important;
+        font-size: 10pt !important;
+        display: table-cell !important;
+        vertical-align: middle !important;
+        width: 120px !important;
+        page-break-inside: avoid;
+    }
+    
+    .meal-slot {
+        min-height: auto !important;
+        background: white !important;
+        border: 1px solid #000 !important;
+        display: table-cell !important;
+        vertical-align: top !important;
+        padding: 0.25rem !important;
+        box-sizing: border-box !important;
+        width: calc((100% - 120px) / 7) !important;
+        max-width: calc((100% - 120px) / 7) !important;
+        overflow: visible !important;
+        page-break-inside: avoid;
+    }
+    
+    .meal-slot-content {
+        display: block !important;
+        min-height: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow: visible !important;
+    }
+    
+    .meal-item {
+        background: #f8fff8 !important;
+        border: 1px solid #ccc !important;
+        border-radius: 3px !important;
+        box-shadow: none !important;
+        margin-bottom: 0.25rem !important;
+        padding: 0.25rem !important;
+        display: block !important;
+        font-size: 9pt !important;
+        position: relative !important;
+        max-width: 100% !important;
+        overflow: visible !important;
+        page-break-inside: avoid;
+    }
+    
+    .meal-item-header {
+        display: flex !important;
+        align-items: flex-start !important;
+        width: 100% !important;
+        justify-content: space-between !important;
+        flex-direction: column !important;
+    }
+    
+    .meal-item-name {
+        font-weight: 600 !important;
+        font-size: 9pt !important;
+        color: #000 !important;
+        max-width: 100% !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        word-break: break-word !important;
+        display: block !important;
+        line-height: 1.2 !important;
+        margin-bottom: 0.1rem !important;
+    }
+    
+    .meal-item-details {
+        font-size: 8pt !important;
+        color: #666 !important;
+        margin-top: 0.1rem !important;
+    }
+    
+    .meal-item-nutrition {
+        font-size: 8pt !important;
+        margin-top: 0.1rem !important;
+    }
+    
+    .meal-item-nutrition span {
+        display: inline-block !important;
+        margin-right: 0.5rem !important;
+        font-size: 8pt !important;
+    }
+    
+    /* Daily nutrition row */
+    .daily-nutrition-row {
+        display: table-row !important;
+        page-break-inside: avoid;
+    }
+    
+    .daily-nutrition-cell {
+        background: #f0f0f0 !important;
+        border: 1px solid #000 !important;
+        padding: 0.25rem !important;
+        text-align: center !important;
+        font-size: 9pt !important;
+        display: table-cell !important;
+        vertical-align: middle !important;
+        page-break-inside: avoid;
+    }
+    
+    .daily-nutrition-cell:first-child {
+        width: 120px !important;
+        font-weight: bold !important;
+        background: #e0e0e0 !important;
+    }
+    
+    .daily-totals {
+        display: block !important;
+    }
+    
+    .daily-calories {
+        font-weight: bold !important;
+        font-size: 9pt !important;
+        display: block !important;
+        margin-bottom: 0.1rem !important;
+    }
+    
+    .daily-macros {
+        font-size: 8pt !important;
+        display: block !important;
+    }
+    
+    .daily-macros span {
+        display: inline-block !important;
+        margin-right: 0.3rem !important;
+    }
+    
+    /* Page title */
+    h1 {
+        text-align: center !important;
+        font-size: 18pt !important;
+        margin: 0 0 1rem 0 !important;
+        color: #000 !important;
+    }
+    
+    /* Week display */
+    #week-display {
+        text-align: center !important;
+        font-size: 14pt !important;
+        margin: 0 0 1rem 0 !important;
+        color: #000 !important;
+    }
+    
+    /* Ensure proper page breaks */
+    .meal-plan-grid {
+        page-break-before: auto;
+        page-break-after: auto;
+    }
+    
+    /* Hide empty meal slots */
+    .meal-slot:empty,
+    .meal-slot:has(.add-meal-btn:only-child) {
+        background: #f9f9f9 !important;
+    }
+    
+    .meal-slot:has(.add-meal-btn:only-child) .add-meal-btn {
+        display: none !important;
+    }
+    
+    /* Add some spacing for better readability */
+    .meal-plan-grid {
+        margin-top: 1rem !important;
+    }
 } 
