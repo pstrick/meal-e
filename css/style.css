@@ -844,6 +844,7 @@ footer {
     box-shadow: 0 2px 8px var(--shadow-color);
     margin-top: 2rem;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 
 .meal-plan-header {
@@ -896,6 +897,8 @@ footer {
     padding: 0.5rem 0.25rem;
     box-sizing: border-box;
     width: calc((100% - 120px) / 7);
+    max-width: calc((100% - 120px) / 7);
+    overflow: hidden;
 }
 
 .meal-slot-content {
@@ -905,6 +908,8 @@ footer {
     justify-content: flex-start;
     min-height: 100px;
     width: 100%;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .meal-slot .meal-item {
@@ -958,6 +963,8 @@ footer {
     font-size: 1rem;
     position: relative;
     transition: box-shadow 0.2s;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .meal-item-header {
@@ -974,8 +981,11 @@ footer {
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    word-wrap: break-word;
+    word-break: break-word;
     display: block;
+    line-height: 1.2;
 }
 
 .meal-item-details {
@@ -1026,6 +1036,7 @@ footer {
     }
     .meal-slot {
         width: calc((100% - 80px) / 7);
+        max-width: calc((100% - 80px) / 7);
         min-height: 60px;
         font-size: 1.3rem;
     }
@@ -1039,6 +1050,7 @@ footer {
     }
     .meal-slot {
         width: calc((100% - 50px) / 7);
+        max-width: calc((100% - 50px) / 7);
         min-height: 40px;
         font-size: 1rem;
     }
