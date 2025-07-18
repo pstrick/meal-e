@@ -969,7 +969,6 @@ function initializeWeekNavigation() {
         prevWeekBtn.addEventListener('click', async () => {
             currentWeekOffset--;
             updateWeekDisplay();
-            await updateMealPlanDisplay();
         });
     }
     
@@ -977,7 +976,6 @@ function initializeWeekNavigation() {
         nextWeekBtn.addEventListener('click', async () => {
             currentWeekOffset++;
             updateWeekDisplay();
-            await updateMealPlanDisplay();
         });
     }
 }
