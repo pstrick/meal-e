@@ -71,14 +71,12 @@ function getWeekDates(weekOffset = 0) {
     const daysToStart = (currentDay - startDay + 7) % 7;
     console.log('Days to start of week:', daysToStart);
     
-    // Calculate start date of the week
-    // OLD (buggy):
-    // const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    // startDate.setDate(startDate.getDate() - daysToStart + (weekOffset * 7));
-    // NEW (fixed):
-    const startOfWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysToStart);
-    startOfWeek.setDate(startOfWeek.getDate() + (weekOffset * 7));
-    const startDate = startOfWeek;
+    // Calculate start date of the week robustly
+    // Get the start of the current week as a timestamp
+    const startOfWeekTimestamp = today.getTime() - (daysToStart * 24 * 60 * 60 * 1000);
+    // Add weekOffset in milliseconds
+    const targetWeekTimestamp = startOfWeekTimestamp + (weekOffset * 7 * 24 * 60 * 60 * 1000);
+    const startDate = new Date(targetWeekTimestamp);
     console.log('Calculated start date:', startDate.toISOString());
     
     // Generate dates for the week
