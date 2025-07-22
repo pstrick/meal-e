@@ -64,6 +64,9 @@ function getWeekDates(weekOffset = 0) {
     }
     const MS_PER_DAY = 24 * 60 * 60 * 1000;
     const startOfWeek = new Date(baseStartOfWeekTimestamp + (weekOffset * 7 * MS_PER_DAY));
+    console.log('DEBUG: baseStartOfWeekTimestamp:', new Date(baseStartOfWeekTimestamp).toISOString());
+    console.log('DEBUG: currentWeekOffset:', weekOffset);
+    console.log('DEBUG: startOfWeek:', startOfWeek.toISOString());
     const dates = [];
     const dayNames = [];
     for (let i = 0; i < 7; i++) {
@@ -71,6 +74,7 @@ function getWeekDates(weekOffset = 0) {
         dates.push(date.toISOString().split('T')[0]);
         dayNames.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
     }
+    console.log('DEBUG: week dates:', dates);
     return {
         startDate: dates[0],
         endDate: dates[6],
@@ -951,6 +955,7 @@ function initializeWeekNavigation() {
     if (prevWeekBtn) {
         prevWeekBtn.addEventListener('click', async () => {
             currentWeekOffset--;
+            console.log('DEBUG: prevWeekBtn clicked, new currentWeekOffset:', currentWeekOffset);
             updateWeekDisplay();
         });
     }
@@ -958,6 +963,7 @@ function initializeWeekNavigation() {
     if (nextWeekBtn) {
         nextWeekBtn.addEventListener('click', async () => {
             currentWeekOffset++;
+            console.log('DEBUG: nextWeekBtn clicked, new currentWeekOffset:', currentWeekOffset);
             updateWeekDisplay();
         });
     }
