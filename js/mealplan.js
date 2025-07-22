@@ -9,6 +9,7 @@ let cancelMeal = null;
 let weekDisplay = null;
 let prevWeekBtn = null;
 let nextWeekBtn = null;
+let weekNavInitialized = false;
 
 // Initialize meal plan data
 let mealPlan = {};
@@ -949,6 +950,8 @@ window.addEventListener('resize', () => {
 
 // Initialize week navigation buttons
 function initializeWeekNavigation() {
+    if (weekNavInitialized) return;
+    weekNavInitialized = true;
     const prevWeekBtn = document.getElementById('prev-week');
     const nextWeekBtn = document.getElementById('next-week');
     
