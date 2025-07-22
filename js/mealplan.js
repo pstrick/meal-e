@@ -1,6 +1,6 @@
 // Meal Planning functionality
 let currentWeekOffset = 0;  // Track week offset instead of modifying date directly
-let baseStartOfWeek = null; // Anchor for week navigation
+let baseStartOfWeekTimestamp = null; // Anchor for week navigation as timestamp
 let selectedSlot = null;
 let selectedItem = null;
 let mealPlanForm = null;
@@ -48,27 +48,26 @@ async function searchAllIngredients(query) {
     return results;
 }
 
-function getBaseStartOfWeek() {
+function getBaseStartOfWeekTimestamp() {
     const today = new Date();
     const startDay = parseInt(window.settings?.mealPlanStartDay) || 0;
     const currentDay = today.getDay();
     const daysToStart = (currentDay - startDay + 7) % 7;
     const base = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysToStart);
     base.setHours(0,0,0,0);
-    return base;
+    return base.getTime();
 }
 
 function getWeekDates(weekOffset = 0) {
-    if (!baseStartOfWeek) {
-        baseStartOfWeek = getBaseStartOfWeek();
+    if (!baseStartOfWeekTimestamp) {
+        baseStartOfWeekTimestamp = getBaseStartOfWeekTimestamp();
     }
-    const startDate = new Date(baseStartOfWeek);
-    startDate.setDate(startDate.getDate() + (weekOffset * 7));
-    // Generate dates for the week
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
+    const startOfWeek = new Date(baseStartOfWeekTimestamp + (weekOffset * 7 * MS_PER_DAY));
     const dates = [];
     const dayNames = [];
     for (let i = 0; i < 7; i++) {
-        const date = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
+        const date = new Date(startOfWeek.getTime() + (i * MS_PER_DAY));
         dates.push(date.toISOString().split('T')[0]);
         dayNames.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
     }
@@ -699,8 +698,8 @@ export function initializeMealPlanner() {
 async function continueInitialization() {
     try {
         currentWeekOffset = 0;
-        baseStartOfWeek = getBaseStartOfWeek();
-        console.log('Reset currentWeekOffset to 0 and set baseStartOfWeek');
+        baseStartOfWeekTimestamp = getBaseStartOfWeekTimestamp();
+        console.log('Reset currentWeekOffset to 0 and set baseStartOfWeekTimestamp');
         
         // Initialize DOM elements
         mealPlanForm = document.getElementById('meal-plan-form');
