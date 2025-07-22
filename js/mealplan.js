@@ -1,5 +1,6 @@
 // Meal Planning functionality
 let currentWeekOffset = 0;  // Track week offset instead of modifying date directly
+let baseStartOfWeek = null; // Anchor for week navigation
 let selectedSlot = null;
 let selectedItem = null;
 let mealPlanForm = null;
@@ -47,38 +48,22 @@ async function searchAllIngredients(query) {
     return results;
 }
 
-// Get week dates based on current week and start day setting
-function getWeekDates(weekOffset = 0) {
-    console.log('getWeekDates called with weekOffset:', weekOffset);
-    
-    // Get settings from localStorage if not available globally
-    if (!window.settings) {
-        const savedSettings = localStorage.getItem('meale-settings');
-        window.settings = savedSettings ? JSON.parse(savedSettings) : { mealPlanStartDay: 0 };
-        console.log('Loaded settings in getWeekDates:', window.settings);
-    }
-    
-    const startDay = parseInt(window.settings.mealPlanStartDay) || 0;
-    console.log('Using start day from settings:', startDay);
-    
+function getBaseStartOfWeek() {
     const today = new Date();
-    console.log('Today:', today.toISOString());
-    
+    const startDay = parseInt(window.settings?.mealPlanStartDay) || 0;
     const currentDay = today.getDay();
-    console.log('Current day of week:', currentDay);
-    
-    // Calculate days to start of week
     const daysToStart = (currentDay - startDay + 7) % 7;
-    console.log('Days to start of week:', daysToStart);
-    
-    // Calculate start date of the week robustly
-    // Get the start of the current week as a timestamp
-    const startOfWeekTimestamp = today.getTime() - (daysToStart * 24 * 60 * 60 * 1000);
-    // Add weekOffset in milliseconds
-    const targetWeekTimestamp = startOfWeekTimestamp + (weekOffset * 7 * 24 * 60 * 60 * 1000);
-    const startDate = new Date(targetWeekTimestamp);
-    console.log('Calculated start date:', startDate.toISOString());
-    
+    const base = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysToStart);
+    base.setHours(0,0,0,0);
+    return base;
+}
+
+function getWeekDates(weekOffset = 0) {
+    if (!baseStartOfWeek) {
+        baseStartOfWeek = getBaseStartOfWeek();
+    }
+    const startDate = new Date(baseStartOfWeek);
+    startDate.setDate(startDate.getDate() + (weekOffset * 7));
     // Generate dates for the week
     const dates = [];
     const dayNames = [];
@@ -87,10 +72,6 @@ function getWeekDates(weekOffset = 0) {
         dates.push(date.toISOString().split('T')[0]);
         dayNames.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
     }
-    
-    console.log('Generated dates:', dates);
-    console.log('Generated day names:', dayNames);
-    
     return {
         startDate: dates[0],
         endDate: dates[6],
@@ -717,9 +698,9 @@ export function initializeMealPlanner() {
 // Continue initialization after recipes are loaded
 async function continueInitialization() {
     try {
-        // Reset to current week
         currentWeekOffset = 0;
-        console.log('Reset currentWeekOffset to 0');
+        baseStartOfWeek = getBaseStartOfWeek();
+        console.log('Reset currentWeekOffset to 0 and set baseStartOfWeek');
         
         // Initialize DOM elements
         mealPlanForm = document.getElementById('meal-plan-form');
