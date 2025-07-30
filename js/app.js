@@ -67,6 +67,8 @@ function closeModalHandler() {
     recipeModal.classList.remove('active');
     recipeForm.reset();
     ingredientsList.innerHTML = '';
+    selectedIngredients.clear();
+    currentEditRecipeId = null;
 }
 
 // USDA API Functions
@@ -392,10 +394,19 @@ function createRecipeCard(recipe) {
                 <strong>Ingredients:</strong><br>
                 ${ingredients}
             </p>
+            ${recipe.steps ? `
+                <p class="recipe-steps">
+                    <strong>Instructions:</strong><br>
+                    ${recipe.steps.length > 100 ? recipe.steps.substring(0, 100) + '...' : recipe.steps}
+                </p>
+            ` : ''}
             
             <div class="recipe-actions">
                 <button class="btn btn-edit" onclick="editRecipe(${recipe.id})">
                     <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn btn-print" onclick="printRecipe(${recipe.id})">
+                    <i class="fas fa-print"></i> Print
                 </button>
                 <button class="btn btn-delete" onclick="deleteRecipe(${recipe.id})">
                     <i class="fas fa-trash"></i> Delete
@@ -436,6 +447,7 @@ async function handleRecipeSubmit(e) {
     const name = nameInput.value.trim();
     const servingSize = parseFloat(servingSizeInput.value);
     const category = categoryInput.value;
+    const steps = document.getElementById('recipe-steps').value.trim();
     
     if (!name || !servingSize || servingSize <= 0) {
         alert('Please fill in all required fields');
@@ -484,6 +496,7 @@ async function handleRecipeSubmit(e) {
         category: category,
         servingSize: servingSize,
         ingredients: ingredients,
+        steps: steps,
         nutrition: {
             calories: Math.round(totalNutrition.calories * (servingSize / totalWeight)),
             protein: Math.round(totalNutrition.protein * (servingSize / totalWeight)),
@@ -915,6 +928,200 @@ function initializeApp() {
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeApp);
 
+// Print recipe function
+function printRecipe(id) {
+    const recipe = recipes.find(r => r.id === id);
+    if (!recipe) return;
+    
+    const printWindow = window.open('', '_blank');
+    const totalWeight = recipe.ingredients.reduce((sum, ing) => sum + ing.amount, 0);
+    const numberOfServings = Math.round((totalWeight / recipe.servingSize) * 10) / 10;
+    
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>${recipe.name} - Recipe</title>
+            <style>
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }
+                .recipe-header {
+                    text-align: center;
+                    border-bottom: 3px solid #4CAF50;
+                    padding-bottom: 20px;
+                    margin-bottom: 30px;
+                }
+                .recipe-title {
+                    font-size: 2.5rem;
+                    color: #4CAF50;
+                    margin: 0 0 10px 0;
+                }
+                .recipe-category {
+                    background: #4CAF50;
+                    color: white;
+                    padding: 5px 15px;
+                    border-radius: 20px;
+                    font-size: 0.9rem;
+                    text-transform: uppercase;
+                    display: inline-block;
+                    margin-bottom: 10px;
+                }
+                .recipe-info {
+                    background: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 8px;
+                    margin-bottom: 30px;
+                }
+                .nutrition-grid {
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 15px;
+                    margin: 20px 0;
+                }
+                .nutrition-item {
+                    background: white;
+                    padding: 15px;
+                    border-radius: 6px;
+                    text-align: center;
+                    border: 1px solid #dee2e6;
+                }
+                .nutrition-value {
+                    font-size: 1.5rem;
+                    font-weight: bold;
+                    color: #4CAF50;
+                    display: block;
+                }
+                .nutrition-label {
+                    font-size: 0.9rem;
+                    color: #666;
+                    margin-top: 5px;
+                }
+                .ingredients-section, .instructions-section {
+                    margin-bottom: 30px;
+                }
+                .section-title {
+                    font-size: 1.5rem;
+                    color: #4CAF50;
+                    border-bottom: 2px solid #4CAF50;
+                    padding-bottom: 10px;
+                    margin-bottom: 20px;
+                }
+                .ingredients-list {
+                    list-style: none;
+                    padding: 0;
+                }
+                .ingredient-item {
+                    background: white;
+                    padding: 15px;
+                    margin-bottom: 10px;
+                    border-radius: 6px;
+                    border: 1px solid #dee2e6;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                .ingredient-name {
+                    font-weight: 600;
+                }
+                .ingredient-details {
+                    text-align: right;
+                    color: #666;
+                }
+                .instructions {
+                    background: white;
+                    padding: 20px;
+                    border-radius: 6px;
+                    border: 1px solid #dee2e6;
+                    white-space: pre-wrap;
+                    line-height: 1.8;
+                }
+                .no-instructions {
+                    color: #666;
+                    font-style: italic;
+                }
+                @media print {
+                    body { margin: 0; padding: 15px; }
+                    .recipe-header { border-bottom-color: #000; }
+                    .section-title { border-bottom-color: #000; color: #000; }
+                    .nutrition-value { color: #000; }
+                    .recipe-title { color: #000; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="recipe-header">
+                <h1 class="recipe-title">${recipe.name}</h1>
+                <span class="recipe-category">${recipe.category}</span>
+                <p>Serving Size: ${recipe.servingSize}g (Makes ${numberOfServings} servings)</p>
+            </div>
+            
+            <div class="recipe-info">
+                <h2 class="section-title">Nutrition Information</h2>
+                <div class="nutrition-grid">
+                    <div class="nutrition-item">
+                        <span class="nutrition-value">${recipe.nutrition.calories}</span>
+                        <span class="nutrition-label">Calories</span>
+                    </div>
+                    <div class="nutrition-item">
+                        <span class="nutrition-value">${recipe.nutrition.protein}g</span>
+                        <span class="nutrition-label">Protein</span>
+                    </div>
+                    <div class="nutrition-item">
+                        <span class="nutrition-value">${recipe.nutrition.carbs}g</span>
+                        <span class="nutrition-label">Carbs</span>
+                    </div>
+                    <div class="nutrition-item">
+                        <span class="nutrition-value">${recipe.nutrition.fat}g</span>
+                        <span class="nutrition-label">Fat</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="ingredients-section">
+                <h2 class="section-title">Ingredients</h2>
+                <ul class="ingredients-list">
+                    ${recipe.ingredients.map(ing => `
+                        <li class="ingredient-item">
+                            <span class="ingredient-name">${ing.name}</span>
+                            <div class="ingredient-details">
+                                <div>${ing.amount}g</div>
+                                <div style="font-size: 0.9rem;">
+                                    Cal: ${Math.round(ing.nutrition.calories * ing.amount)} | 
+                                    P: ${Math.round(ing.nutrition.protein * ing.amount)}g | 
+                                    C: ${Math.round(ing.nutrition.carbs * ing.amount)}g | 
+                                    F: ${Math.round(ing.nutrition.fat * ing.amount)}g
+                                </div>
+                            </div>
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+            
+            <div class="instructions-section">
+                <h2 class="section-title">Instructions</h2>
+                <div class="instructions">
+                    ${recipe.steps ? recipe.steps : '<span class="no-instructions">No instructions provided</span>'}
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    
+    // Wait for content to load then print
+    setTimeout(() => {
+        printWindow.print();
+    }, 500);
+}
+
 // Update editRecipe to set the global edit ID and handler
 function editRecipe(id) {
     const recipe = recipes.find(r => r.id === id);
@@ -925,6 +1132,7 @@ function editRecipe(id) {
     document.getElementById('recipe-name').value = recipe.name;
     document.getElementById('recipe-category').value = recipe.category;
     document.getElementById('recipe-serving-size').value = recipe.servingSize;
+    document.getElementById('recipe-steps').value = recipe.steps || '';
     recipe.ingredients.forEach(ing => {
         const ingredientItem = document.createElement('div');
         ingredientItem.className = 'ingredient-item';
@@ -988,6 +1196,7 @@ function editRecipe(id) {
 // Make edit and delete functions globally available
 window.editRecipe = editRecipe;
 window.deleteRecipe = deleteRecipe;
+window.printRecipe = printRecipe;
 
 // Add some CSS for the new search result styling
 const style = document.createElement('style');

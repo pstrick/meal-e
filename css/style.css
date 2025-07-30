@@ -258,7 +258,8 @@ h2 {
 }
 
 .modal .form-group input,
-.modal .form-group select {
+.modal .form-group select,
+.modal .form-group textarea {
     width: 100%;
     padding: 0.875rem;
     border: 2px solid #e9ecef;
@@ -266,10 +267,12 @@ h2 {
     font-size: 1rem;
     transition: all 0.3s ease;
     background-color: #fafbfc;
+    font-family: inherit;
 }
 
 .modal .form-group input:focus,
-.modal .form-group select:focus {
+.modal .form-group select:focus,
+.modal .form-group textarea:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
@@ -749,10 +752,30 @@ footer {
     transform: translateY(-1px);
 }
 
+.recipe-card .btn-print {
+    background: linear-gradient(135deg, #17a2b8, #138496);
+    color: white;
+    border: none;
+}
+
+.recipe-card .btn-print:hover {
+    background: linear-gradient(135deg, #138496, #117a8b);
+    transform: translateY(-1px);
+}
+
 .recipe-card p {
     margin: 0.5rem 0;
     color: var(--text-secondary);
     line-height: 1.5;
+}
+
+.recipe-card .recipe-steps {
+    font-size: 0.9rem;
+    background: #f8f9fa;
+    padding: 0.75rem;
+    border-radius: 6px;
+    border-left: 3px solid var(--primary-color);
+    margin-top: 1rem;
 }
 
 /* Enhanced Add Meal Button */
