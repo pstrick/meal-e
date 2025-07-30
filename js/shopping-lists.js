@@ -75,9 +75,12 @@ function closeShoppingListModal() {
 
 function handleShoppingListSubmit(e) {
     e.preventDefault();
+    console.log('Form submitted!');
     
     const name = document.getElementById('list-name').value.trim();
     const description = document.getElementById('list-description').value.trim();
+    
+    console.log('Form data:', { name, description, currentListId });
     
     if (!name) {
         alert('Please enter a list name');
@@ -85,6 +88,7 @@ function handleShoppingListSubmit(e) {
     }
     
     if (currentListId) {
+        console.log('Updating existing list');
         // Update existing list
         const index = shoppingLists.findIndex(l => l.id === currentListId);
         if (index !== -1) {
@@ -95,6 +99,7 @@ function handleShoppingListSubmit(e) {
             };
         }
     } else {
+        console.log('Creating new list');
         // Create new list
         const newList = {
             id: Date.now(),
@@ -105,10 +110,14 @@ function handleShoppingListSubmit(e) {
         };
         shoppingLists.push(newList);
         console.log('New list created:', newList);
+        console.log('Total lists after creation:', shoppingLists.length);
     }
     
+    console.log('Saving shopping lists...');
     saveShoppingLists();
+    console.log('Updating display...');
     updateShoppingListsDisplay();
+    console.log('Closing modal...');
     closeShoppingListModal();
 }
 
@@ -261,11 +270,19 @@ function handleAddItemSubmit(e) {
 
 // Shopping List Display
 function updateShoppingListsDisplay() {
-    if (!shoppingListsContainer) return;
+    console.log('updateShoppingListsDisplay called');
+    console.log('shoppingListsContainer:', shoppingListsContainer);
+    console.log('shoppingLists:', shoppingLists);
+    
+    if (!shoppingListsContainer) {
+        console.error('shoppingListsContainer not found!');
+        return;
+    }
     
     shoppingListsContainer.innerHTML = '';
     
     if (shoppingLists.length === 0) {
+        console.log('No shopping lists, showing empty state');
         shoppingListsContainer.innerHTML = `
             <div class="no-lists">
                 <p>No shopping lists yet. Create your first list to get started!</p>
@@ -275,9 +292,11 @@ function updateShoppingListsDisplay() {
     }
     
     console.log('Displaying', shoppingLists.length, 'shopping lists');
-    shoppingLists.forEach(list => {
+    shoppingLists.forEach((list, index) => {
+        console.log(`Creating element for list ${index}:`, list);
         const listElement = createShoppingListElement(list);
         shoppingListsContainer.appendChild(listElement);
+        console.log(`List ${index} element added to container`);
     });
 }
 
