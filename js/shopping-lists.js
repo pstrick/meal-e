@@ -3,21 +3,40 @@ let shoppingLists = [];
 let currentListId = null;
 let currentEditItemId = null;
 
-// DOM Elements
-const addListBtn = document.getElementById('add-list-btn');
-const shoppingListsContainer = document.getElementById('shopping-lists-container');
-const shoppingListModal = document.getElementById('shopping-list-modal');
-const shoppingListForm = document.getElementById('shopping-list-form');
-const shoppingItemsModal = document.getElementById('shopping-items-modal');
-const addItemModal = document.getElementById('add-item-modal');
-const addItemForm = document.getElementById('add-item-form');
-const addItemBtn = document.getElementById('add-item-btn');
-const printListBtn = document.getElementById('print-list-btn');
-const shoppingItemsList = document.getElementById('shopping-items-list');
+// DOM Elements (will be initialized when DOM is ready)
+let addListBtn;
+let shoppingListsContainer;
+let shoppingListModal;
+let shoppingListForm;
+let shoppingItemsModal;
+let addItemModal;
+let addItemForm;
+let addItemBtn;
+let printListBtn;
+let shoppingItemsList;
 
 // Initialize shopping lists
 function initializeShoppingLists() {
     console.log('Initializing shopping lists...');
+    
+    // Initialize DOM elements
+    addListBtn = document.getElementById('add-list-btn');
+    shoppingListsContainer = document.getElementById('shopping-lists-container');
+    shoppingListModal = document.getElementById('shopping-list-modal');
+    shoppingListForm = document.getElementById('shopping-list-form');
+    shoppingItemsModal = document.getElementById('shopping-items-modal');
+    addItemModal = document.getElementById('add-item-modal');
+    addItemForm = document.getElementById('add-item-form');
+    addItemBtn = document.getElementById('add-item-btn');
+    printListBtn = document.getElementById('print-list-btn');
+    shoppingItemsList = document.getElementById('shopping-items-list');
+    
+    console.log('DOM elements initialized:', {
+        addListBtn: !!addListBtn,
+        shoppingListsContainer: !!shoppingListsContainer,
+        shoppingListForm: !!shoppingListForm
+    });
+    
     loadShoppingLists();
     console.log('Loaded shopping lists:', shoppingLists);
     setupEventListeners();
