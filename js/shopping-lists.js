@@ -303,12 +303,17 @@ function updateShoppingListsDisplay() {
         console.log('Element HTML:', listElement.outerHTML);
         shoppingListsContainer.appendChild(listElement);
         console.log('Element appended to container');
+        console.log('Container children count after append:', shoppingListsContainer.children.length);
+        console.log('Last child in container:', shoppingListsContainer.lastElementChild);
     });
 }
 
 function createShoppingListElement(list) {
     const div = document.createElement('div');
     div.className = 'shopping-list-card';
+    // Temporary debugging: add a bright background to make sure it's visible
+    div.style.backgroundColor = '#ff0000';
+    div.style.border = '3px solid #00ff00';
     
     const itemCount = list.items.length;
     const totalItems = list.items.reduce((sum, item) => sum + item.amount, 0);
