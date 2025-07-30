@@ -1049,6 +1049,7 @@ function generateShoppingListFromMealPlan() {
         console.log('Generating shopping list for week:', startDate, 'to', endDate);
         
         const ingredients = new Map(); // Map to aggregate ingredients
+        const currentWeekMeals = []; // Track meals from current week
         
         // Process only meals from the current week
         console.log('DEBUG: Processing', Object.keys(mealPlan).length, 'total meals from meal plan');
@@ -1066,6 +1067,7 @@ function generateShoppingListFromMealPlan() {
                 // This is more reliable than Date object comparison
                 if (mealDate >= week.startDate && mealDate <= week.endDate) {
                     console.log(`✅ Processing meal from current week: ${mealKey} (date: ${mealDate})`);
+                    currentWeekMeals.push(mealKey);
                     const mealItems = mealPlan[mealKey];
                     
                     if (mealItems && Array.isArray(mealItems)) {
@@ -1096,10 +1098,12 @@ function generateShoppingListFromMealPlan() {
             }
         });
         
+        console.log('DEBUG: Meals found for current week:', currentWeekMeals);
         console.log('Aggregated ingredients:', ingredients);
+        console.log('DEBUG: Found', ingredients.size, 'unique ingredients for current week');
         
         if (ingredients.size === 0) {
-            alert('No ingredients found in your meal plan.');
+            alert(`No ingredients found in your meal plan for the week of ${startDate} to ${endDate}. Please add meals to this week first.`);
             return;
         }
         
