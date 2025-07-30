@@ -1116,9 +1116,7 @@ function generateShoppingListFromMealPlan() {
         }
         
         // Create new shopping list
-        const week = getWeekDates(currentWeekOffset);
-        const startDate = formatDate(week.startDate);
-        const endDate = formatDate(week.endDate);
+        // Use the week data already calculated above
         const listName = `Meal Plan Shopping List - Week of ${startDate}`;
         
         const newList = {
