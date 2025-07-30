@@ -90,6 +90,7 @@ function handleShoppingListSubmit(e) {
     const description = document.getElementById('list-description').value.trim();
     
     console.log('Form data:', { name, description });
+    console.log('currentListId:', currentListId);
     
     if (!name) {
         alert('Please enter a list name');
@@ -97,6 +98,7 @@ function handleShoppingListSubmit(e) {
     }
     
     if (currentListId) {
+        console.log('Updating existing list with ID:', currentListId);
         // Update existing list
         const index = shoppingLists.findIndex(l => l.id === currentListId);
         if (index !== -1) {
@@ -107,6 +109,7 @@ function handleShoppingListSubmit(e) {
             };
         }
     } else {
+        console.log('Creating new list (currentListId is null/falsy)');
         // Create new list
         const newList = {
             id: Date.now(),
