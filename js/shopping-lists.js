@@ -116,8 +116,10 @@ function handleShoppingListSubmit(e) {
             createdAt: new Date().toISOString()
         };
         shoppingLists.push(newList);
+        console.log('Created new list:', newList);
     }
     
+    console.log('Shopping lists after save:', shoppingLists);
     saveShoppingLists();
     updateShoppingListsDisplay();
     closeShoppingListModal();
@@ -272,11 +274,19 @@ function handleAddItemSubmit(e) {
 
 // Shopping List Display
 function updateShoppingListsDisplay() {
-    if (!shoppingListsContainer) return;
+    console.log('Updating shopping lists display...');
+    console.log('shoppingListsContainer:', shoppingListsContainer);
+    console.log('shoppingLists:', shoppingLists);
+    
+    if (!shoppingListsContainer) {
+        console.error('shoppingListsContainer not found!');
+        return;
+    }
     
     shoppingListsContainer.innerHTML = '';
     
     if (shoppingLists.length === 0) {
+        console.log('No shopping lists, showing empty state');
         shoppingListsContainer.innerHTML = `
             <div class="no-lists">
                 <p>No shopping lists yet. Create your first list to get started!</p>
@@ -285,6 +295,7 @@ function updateShoppingListsDisplay() {
         return;
     }
     
+    console.log(`Creating ${shoppingLists.length} list elements`);
     shoppingLists.forEach(list => {
         const listElement = createShoppingListElement(list);
         shoppingListsContainer.appendChild(listElement);
