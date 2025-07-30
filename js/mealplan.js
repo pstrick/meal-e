@@ -51,11 +51,17 @@ async function searchAllIngredients(query) {
 
 function getBaseStartOfWeekTimestamp() {
     const today = new Date();
+    console.log('DEBUG: Today:', today.toISOString());
+    console.log('DEBUG: window.settings:', window.settings);
     const startDay = parseInt(window.settings?.mealPlanStartDay) || 0;
+    console.log('DEBUG: startDay:', startDay);
     const currentDay = today.getDay();
+    console.log('DEBUG: currentDay:', currentDay);
     const daysToStart = (currentDay - startDay + 7) % 7;
+    console.log('DEBUG: daysToStart:', daysToStart);
     const base = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysToStart);
     base.setHours(0,0,0,0);
+    console.log('DEBUG: base date:', base.toISOString());
     return base.getTime();
 }
 
@@ -722,17 +728,8 @@ async function continueInitialization() {
             nextWeekBtn: !!nextWeekBtn
         });
         
-        // Load meal plan
-        await loadMealPlan();
-        
-        // Update week display to show current week
+        // Update week display to show current week (this will also load meal plan)
         updateWeekDisplay();
-        
-        // Ensure meal plan display is updated
-        const mealPlanGrid = document.querySelector('.meal-plan-grid');
-        if (mealPlanGrid) {
-            await updateMealPlanDisplay();
-        }
         
         // Initialize week navigation
         initializeWeekNavigation();
@@ -978,13 +975,7 @@ function initializeWeekNavigation() {
     }
 }
 
-// Initialize search handlers when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    initializeSearchHandlers();
-    initializeWeekNavigation();
-    initializePrintButton();
-    initializeShoppingListButton();
-});
+// Note: Initialization is now handled in continueInitialization() function
 
 // Add debounced search
 let searchTimeout;
