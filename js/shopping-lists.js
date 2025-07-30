@@ -122,22 +122,29 @@ function handleShoppingListSubmit(e) {
 }
 
 // Shopping Items Management
-function openShoppingItemsModal(listId) {
+function openManageListModal(listId) {
+    console.log('Opening manage list modal for listId:', listId);
     currentListId = listId;
     const list = shoppingLists.find(l => l.id === listId);
-    if (!list) return;
+    if (!list) {
+        console.error('List not found for ID:', listId);
+        return;
+    }
+    
+    console.log('Found list:', list);
     
     const modal = document.getElementById('shopping-items-modal');
     const title = document.getElementById('items-modal-title');
     const listName = document.getElementById('current-list-name');
     const listDescription = document.getElementById('current-list-description');
     
-    title.textContent = `Shopping List: ${list.name}`;
+    title.textContent = `Manage Shopping List: ${list.name}`;
     listName.textContent = list.name;
     listDescription.textContent = list.description || 'No description';
     
     updateShoppingItemsDisplay();
     modal.classList.add('active');
+    console.log('Manage list modal opened successfully');
 }
 
 function closeShoppingItemsModal() {
@@ -319,14 +326,11 @@ function createShoppingListElement(list) {
         ${list.description ? `<p class="list-description">${list.description}</p>` : ''}
         
         <div class="list-actions">
-            <button class="btn btn-primary" onclick="openShoppingItemsModal(${list.id})">
-                <i class="fas fa-eye"></i> View Items
+            <button class="btn btn-primary" onclick="openManageListModal(${list.id})">
+                <i class="fas fa-cog"></i> Manage List
             </button>
             <button class="btn btn-secondary" onclick="duplicateShoppingList(${list.id})">
                 <i class="fas fa-copy"></i> Duplicate
-            </button>
-            <button class="btn btn-edit" onclick="openShoppingListModal(${list.id})">
-                <i class="fas fa-edit"></i> Edit
             </button>
             <button class="btn btn-delete" onclick="deleteShoppingList(${list.id})">
                 <i class="fas fa-trash"></i> Delete
@@ -547,7 +551,7 @@ function saveShoppingLists() {
 
 // Make functions globally available
 window.openShoppingListModal = openShoppingListModal;
-window.openShoppingItemsModal = openShoppingItemsModal;
+window.openManageListModal = openManageListModal;
 window.duplicateShoppingList = duplicateShoppingList;
 window.deleteShoppingList = deleteShoppingList;
 window.editShoppingItem = editShoppingItem;
