@@ -17,7 +17,9 @@ const shoppingItemsList = document.getElementById('shopping-items-list');
 
 // Initialize shopping lists
 function initializeShoppingLists() {
+    console.log('Initializing shopping lists...');
     loadShoppingLists();
+    console.log('Loaded shopping lists:', shoppingLists);
     setupEventListeners();
     updateShoppingListsDisplay();
 }
@@ -533,4 +535,7 @@ window.editShoppingItem = editShoppingItem;
 window.deleteShoppingItem = deleteShoppingItem;
 
 // Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', initializeShoppingLists); 
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing shopping lists...');
+    initializeShoppingLists();
+}); 
