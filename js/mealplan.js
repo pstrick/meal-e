@@ -1034,37 +1034,57 @@ function generateShoppingListFromMealPlan() {
         
         const mealPlan = JSON.parse(mealPlanData);
         console.log('Loaded meal plan data:', mealPlan);
-        console.log('Meal plan keys:', Object.keys(mealPlan));
+        
+        // Get the current week dates
+        const week = getWeekDates(currentWeekOffset);
+        const startDate = formatDate(week.startDate);
+        const endDate = formatDate(week.endDate);
+        
+        console.log('Generating shopping list for week:', startDate, 'to', endDate);
+        
         const ingredients = new Map(); // Map to aggregate ingredients
         
-        // Process each meal in the meal plan
+        // Process only meals from the current week
         Object.keys(mealPlan).forEach(mealKey => {
-            const mealItems = mealPlan[mealKey];
-            console.log(`Processing meal key: ${mealKey}`, mealItems);
-            console.log(`Type of mealItems:`, typeof mealItems, Array.isArray(mealItems));
-            if (mealItems && Array.isArray(mealItems)) {
-                mealItems.forEach(item => {
-                    console.log('Processing item:', item);
+            // Extract date and meal type from meal key (format: "YYYY-MM-DD-mealtype")
+            const parts = mealKey.split('-');
+            if (parts.length >= 3) {
+                const mealDate = `${parts[0]}-${parts[1]}-${parts[2]}`;
+                
+                // Check if this meal is from the current week
+                const mealDateObj = new Date(mealDate);
+                const weekStart = new Date(week.startDate);
+                const weekEnd = new Date(week.endDate);
+                
+                if (mealDateObj >= weekStart && mealDateObj <= weekEnd) {
+                    console.log(`Processing meal from current week: ${mealKey}`);
+                    const mealItems = mealPlan[mealKey];
                     
-                    // Validate item has required properties
-                    if (!item || !item.name || typeof item.amount === 'undefined') {
-                        console.warn('Skipping invalid item:', item);
-                        return;
-                    }
-                    
-                    const key = item.name.toLowerCase();
-                    if (ingredients.has(key)) {
-                        const existing = ingredients.get(key);
-                        existing.amount += item.amount;
-                    } else {
-                        ingredients.set(key, {
-                            name: item.name,
-                            amount: item.amount,
-                            unit: 'g', // Default to grams
-                            notes: `From meal plan: ${item.name}`
+                    if (mealItems && Array.isArray(mealItems)) {
+                        mealItems.forEach(item => {
+                            // Validate item has required properties
+                            if (!item || !item.name || typeof item.amount === 'undefined') {
+                                console.warn('Skipping invalid item:', item);
+                                return;
+                            }
+                            
+                            const key = item.name.toLowerCase();
+                            if (ingredients.has(key)) {
+                                const existing = ingredients.get(key);
+                                existing.amount += item.amount;
+                            } else {
+                                ingredients.set(key, {
+                                    name: item.name,
+                                    amount: item.amount,
+                                    unit: 'g', // Default to grams
+                                    notes: `From meal plan: ${item.name}`
+                                });
+                            }
                         });
                     }
-                });
+                } else {
+                    console.log(`Skipping meal from different week: ${mealKey}`);
+                }
             }
         });
         
