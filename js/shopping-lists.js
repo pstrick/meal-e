@@ -297,8 +297,12 @@ function updateShoppingListsDisplay() {
     
     console.log(`Creating ${shoppingLists.length} list elements`);
     shoppingLists.forEach(list => {
+        console.log('Creating element for list:', list);
         const listElement = createShoppingListElement(list);
+        console.log('Created list element:', listElement);
+        console.log('Element HTML:', listElement.outerHTML);
         shoppingListsContainer.appendChild(listElement);
+        console.log('Element appended to container');
     });
 }
 
