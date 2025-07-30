@@ -78,7 +78,10 @@ function setupEventListeners() {
 // Shopping List Management
 function openShoppingListModal(listId = null) {
     console.log('openShoppingListModal called with listId:', listId);
-    currentListId = listId;
+    // Ensure currentListId is properly set to null for new lists
+    currentListId = listId || null;
+    console.log('currentListId set to:', currentListId);
+    
     const modal = document.getElementById('shopping-list-modal');
     const title = document.getElementById('list-modal-title');
     const form = document.getElementById('shopping-list-form');
@@ -115,6 +118,8 @@ function closeShoppingListModal() {
 function handleShoppingListSubmit(e) {
     e.preventDefault();
     console.log('Form submitted!');
+    console.log('currentListId before processing:', currentListId);
+    console.log('currentListId type:', typeof currentListId);
     
     const name = document.getElementById('list-name').value.trim();
     const description = document.getElementById('list-description').value.trim();
@@ -126,10 +131,14 @@ function handleShoppingListSubmit(e) {
         return;
     }
     
-    if (currentListId) {
+    // Ensure currentListId is properly handled
+    const listId = currentListId && typeof currentListId === 'number' ? currentListId : null;
+    console.log('Processed listId:', listId);
+    
+    if (listId) {
         console.log('Updating existing list');
         // Update existing list
-        const index = shoppingLists.findIndex(l => l.id === currentListId);
+        const index = shoppingLists.findIndex(l => l.id === listId);
         if (index !== -1) {
             shoppingLists[index] = {
                 ...shoppingLists[index],
