@@ -1033,13 +1033,16 @@ function generateShoppingListFromMealPlan() {
         }
         
         const mealPlan = JSON.parse(mealPlanData);
+        console.log('Loaded meal plan data:', mealPlan);
         const ingredients = new Map(); // Map to aggregate ingredients
         
         // Process each meal in the meal plan
         Object.keys(mealPlan).forEach(mealKey => {
-            const meal = mealPlan[mealKey];
-            if (meal && meal.items) {
-                meal.items.forEach(item => {
+            const mealItems = mealPlan[mealKey];
+            console.log(`Processing meal key: ${mealKey}`, mealItems);
+            if (mealItems && Array.isArray(mealItems)) {
+                mealItems.forEach(item => {
+                    console.log('Processing item:', item);
                     const key = item.name.toLowerCase();
                     if (ingredients.has(key)) {
                         const existing = ingredients.get(key);
@@ -1055,6 +1058,8 @@ function generateShoppingListFromMealPlan() {
                 });
             }
         });
+        
+        console.log('Aggregated ingredients:', ingredients);
         
         if (ingredients.size === 0) {
             alert('No ingredients found in your meal plan.');
