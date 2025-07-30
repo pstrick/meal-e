@@ -17,6 +17,7 @@ const shoppingItemsList = document.getElementById('shopping-items-list');
 
 // Initialize shopping lists
 function initializeShoppingLists() {
+    console.log('Initializing shopping lists...');
     loadShoppingLists();
     setupEventListeners();
     updateShoppingListsDisplay();
@@ -24,10 +25,15 @@ function initializeShoppingLists() {
 
 // Setup event listeners
 function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    console.log('addListBtn:', addListBtn);
+    
     // Shopping list modal
     addListBtn?.addEventListener('click', openShoppingListModal);
     document.querySelector('#shopping-list-modal .close')?.addEventListener('click', closeShoppingListModal);
     document.getElementById('cancel-list')?.addEventListener('click', closeShoppingListModal);
+    
+    console.log('shoppingListForm:', shoppingListForm);
     shoppingListForm?.addEventListener('submit', handleShoppingListSubmit);
     
     // Shopping items modal
@@ -45,10 +51,13 @@ function setupEventListeners() {
 
 // Shopping List Management
 function openShoppingListModal(listId = null) {
+    console.log('Opening shopping list modal, listId:', listId);
     currentListId = listId;
     const modal = document.getElementById('shopping-list-modal');
     const title = document.getElementById('list-modal-title');
     const form = document.getElementById('shopping-list-form');
+    
+    console.log('Modal elements:', { modal, title, form });
     
     if (listId) {
         // Edit existing list
@@ -74,10 +83,13 @@ function closeShoppingListModal() {
 }
 
 function handleShoppingListSubmit(e) {
+    console.log('Shopping list form submitted!');
     e.preventDefault();
     
     const name = document.getElementById('list-name').value.trim();
     const description = document.getElementById('list-description').value.trim();
+    
+    console.log('Form data:', { name, description });
     
     if (!name) {
         alert('Please enter a list name');
