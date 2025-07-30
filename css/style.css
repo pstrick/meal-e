@@ -2632,24 +2632,30 @@ main {
 }
 
 /* Shopping Items Styles */
-.list-info {
+.list-details-section {
     background: #f8f9fa;
-    padding: 1rem;
+    padding: 1.5rem;
     border-radius: 8px;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
     border: 1px solid #e9ecef;
 }
 
-.list-info h3 {
-    margin: 0 0 0.5rem 0;
+.list-details-section h3 {
+    margin: 0 0 1rem 0;
     color: var(--text-color);
     font-size: 1.1rem;
+    font-weight: 600;
 }
 
-.list-info p {
-    margin: 0;
-    color: var(--text-secondary);
-    font-style: italic;
+.items-section {
+    margin-top: 2rem;
+}
+
+.items-section h3 {
+    margin: 0 0 1rem 0;
+    color: var(--text-color);
+    font-size: 1.1rem;
+    font-weight: 600;
 }
 
 .items-controls {

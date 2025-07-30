@@ -41,6 +41,9 @@ function setupEventListeners() {
     document.querySelector('#add-item-modal .close')?.addEventListener('click', closeAddItemModal);
     document.getElementById('cancel-item')?.addEventListener('click', closeAddItemModal);
     addItemForm?.addEventListener('submit', handleAddItemSubmit);
+    
+    // Save list details button
+    document.getElementById('save-list-details-btn')?.addEventListener('click', handleSaveListDetails);
 }
 
 // Shopping List Management
@@ -135,12 +138,12 @@ function openManageListModal(listId) {
     
     const modal = document.getElementById('shopping-items-modal');
     const title = document.getElementById('items-modal-title');
-    const listName = document.getElementById('current-list-name');
-    const listDescription = document.getElementById('current-list-description');
+    const listNameInput = document.getElementById('manage-list-name');
+    const listDescriptionInput = document.getElementById('manage-list-description');
     
     title.textContent = `Manage Shopping List: ${list.name}`;
-    listName.textContent = list.name;
-    listDescription.textContent = list.description || 'No description';
+    listNameInput.value = list.name;
+    listDescriptionInput.value = list.description || '';
     
     updateShoppingItemsDisplay();
     modal.classList.add('active');
@@ -225,6 +228,47 @@ function closeAddItemModal() {
     const modal = document.getElementById('add-item-modal');
     modal.classList.remove('active');
     currentEditItemId = null;
+}
+
+function handleSaveListDetails() {
+    console.log('Saving list details...');
+    if (!currentListId) {
+        console.error('No current list ID');
+        return;
+    }
+    
+    const listName = document.getElementById('manage-list-name').value.trim();
+    const listDescription = document.getElementById('manage-list-description').value.trim();
+    
+    console.log('New list details:', { listName, listDescription });
+    
+    if (!listName) {
+        alert('Please enter a list name');
+        return;
+    }
+    
+    const listIndex = shoppingLists.findIndex(l => l.id === currentListId);
+    if (listIndex === -1) {
+        console.error('List not found for updating');
+        return;
+    }
+    
+    shoppingLists[listIndex] = {
+        ...shoppingLists[listIndex],
+        name: listName,
+        description: listDescription
+    };
+    
+    console.log('Updated list:', shoppingLists[listIndex]);
+    
+    saveShoppingLists();
+    updateShoppingListsDisplay();
+    
+    // Update the modal title
+    const title = document.getElementById('items-modal-title');
+    title.textContent = `Manage Shopping List: ${listName}`;
+    
+    alert('List details saved successfully!');
 }
 
 function handleAddItemSubmit(e) {

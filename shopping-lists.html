@@ -68,24 +68,41 @@
     <div id="shopping-items-modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h2 id="items-modal-title">Shopping List Items</h2>
+            <h2 id="items-modal-title">Manage Shopping List</h2>
             
-            <div class="list-info">
-                <h3 id="current-list-name"></h3>
-                <p id="current-list-description"></p>
+            <!-- List Details Section -->
+            <div class="list-details-section">
+                <h3>List Details</h3>
+                <div class="form-group">
+                    <label for="manage-list-name">List Name</label>
+                    <input type="text" id="manage-list-name" required placeholder="Enter list name...">
+                </div>
+                
+                <div class="form-group">
+                    <label for="manage-list-description">Description (Optional)</label>
+                    <textarea id="manage-list-description" rows="2" placeholder="Enter description..."></textarea>
+                </div>
+                
+                <button id="save-list-details-btn" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Details
+                </button>
             </div>
             
-            <div class="items-controls">
-                <button id="add-item-btn" class="btn btn-secondary">
-                    <i class="fas fa-plus"></i> Add Item
-                </button>
-                <button id="print-list-btn" class="btn btn-primary">
-                    <i class="fas fa-print"></i> Print List
-                </button>
-            </div>
-            
-            <div id="shopping-items-list">
-                <!-- Shopping items will be populated here -->
+            <!-- Items Section -->
+            <div class="items-section">
+                <h3>Shopping Items</h3>
+                <div class="items-controls">
+                    <button id="add-item-btn" class="btn btn-secondary">
+                        <i class="fas fa-plus"></i> Add Item
+                    </button>
+                    <button id="print-list-btn" class="btn btn-primary">
+                        <i class="fas fa-print"></i> Print List
+                    </button>
+                </div>
+                
+                <div id="shopping-items-list">
+                    <!-- Shopping items will be populated here -->
+                </div>
             </div>
         </div>
     </div>
