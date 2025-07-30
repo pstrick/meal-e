@@ -5,7 +5,6 @@ let currentEditItemId = null;
 
 // DOM Elements
 const addListBtn = document.getElementById('add-list-btn');
-const generateFromMealplanBtn = document.getElementById('generate-from-mealplan-btn');
 const shoppingListsContainer = document.getElementById('shopping-lists-container');
 const shoppingListModal = document.getElementById('shopping-list-modal');
 const shoppingListForm = document.getElementById('shopping-list-form');
@@ -41,8 +40,7 @@ function setupEventListeners() {
     document.getElementById('cancel-item')?.addEventListener('click', closeAddItemModal);
     addItemForm?.addEventListener('submit', handleAddItemSubmit);
     
-    // Generate from meal plan
-    generateFromMealplanBtn?.addEventListener('click', generateFromMealPlan);
+
 }
 
 // Shopping List Management
@@ -365,74 +363,7 @@ function deleteShoppingItem(itemId) {
     updateShoppingItemsDisplay();
 }
 
-// Generate from Meal Plan
-async function generateFromMealPlan() {
-    try {
-        // Load meal plan data from localStorage
-        const mealPlanData = localStorage.getItem('mealPlan');
-        if (!mealPlanData) {
-            alert('No meal plan found. Please create a meal plan first.');
-            return;
-        }
-        
-        const mealPlan = JSON.parse(mealPlanData);
-        const ingredients = new Map(); // Map to aggregate ingredients
-        
-        // Process each meal in the meal plan
-        Object.keys(mealPlan).forEach(mealKey => {
-            const meal = mealPlan[mealKey];
-            if (meal && meal.items) {
-                meal.items.forEach(item => {
-                    const key = item.name.toLowerCase();
-                    if (ingredients.has(key)) {
-                        const existing = ingredients.get(key);
-                        existing.amount += item.amount;
-                    } else {
-                        ingredients.set(key, {
-                            name: item.name,
-                            amount: item.amount,
-                            unit: 'g', // Default to grams
-                            notes: `From meal plan: ${item.name}`
-                        });
-                    }
-                });
-            }
-        });
-        
-        if (ingredients.size === 0) {
-            alert('No ingredients found in your meal plan.');
-            return;
-        }
-        
-        // Create new shopping list
-        const listName = `Meal Plan Shopping List - ${new Date().toLocaleDateString()}`;
-        const newList = {
-            id: Date.now(),
-            name: listName,
-            description: 'Generated from current meal plan',
-            items: Array.from(ingredients.values()).map(ing => ({
-                id: Date.now() + Math.random(),
-                name: ing.name,
-                amount: Math.round(ing.amount * 10) / 10, // Round to 1 decimal
-                unit: ing.unit,
-                notes: ing.notes,
-                addedAt: new Date().toISOString()
-            })),
-            createdAt: new Date().toISOString()
-        };
-        
-        shoppingLists.push(newList);
-        saveShoppingLists();
-        updateShoppingListsDisplay();
-        
-        // Open the new list
-        openShoppingItemsModal(newList.id);
-        
-    } catch (error) {
-        console.error('Error generating shopping list from meal plan:', error);
-        alert('Error generating shopping list. Please try again.');
-    }
-}
+
 
 // Print Shopping List
 function printShoppingList() {
