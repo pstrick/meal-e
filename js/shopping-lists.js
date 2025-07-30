@@ -17,7 +17,6 @@ const shoppingItemsList = document.getElementById('shopping-items-list');
 
 // Initialize shopping lists
 function initializeShoppingLists() {
-    console.log('Initializing shopping lists...');
     loadShoppingLists();
     setupEventListeners();
     updateShoppingListsDisplay();
@@ -25,15 +24,10 @@ function initializeShoppingLists() {
 
 // Setup event listeners
 function setupEventListeners() {
-    console.log('Setting up event listeners...');
-    console.log('addListBtn:', addListBtn);
-    
     // Shopping list modal
     addListBtn?.addEventListener('click', openShoppingListModal);
     document.querySelector('#shopping-list-modal .close')?.addEventListener('click', closeShoppingListModal);
     document.getElementById('cancel-list')?.addEventListener('click', closeShoppingListModal);
-    
-    console.log('shoppingListForm:', shoppingListForm);
     shoppingListForm?.addEventListener('submit', handleShoppingListSubmit);
     
     // Shopping items modal
@@ -45,19 +39,14 @@ function setupEventListeners() {
     document.querySelector('#add-item-modal .close')?.addEventListener('click', closeAddItemModal);
     document.getElementById('cancel-item')?.addEventListener('click', closeAddItemModal);
     addItemForm?.addEventListener('submit', handleAddItemSubmit);
-    
-
 }
 
 // Shopping List Management
 function openShoppingListModal(listId = null) {
-    console.log('Opening shopping list modal, listId:', listId);
     currentListId = listId;
     const modal = document.getElementById('shopping-list-modal');
     const title = document.getElementById('list-modal-title');
     const form = document.getElementById('shopping-list-form');
-    
-    console.log('Modal elements:', { modal, title, form });
     
     if (listId) {
         // Edit existing list
@@ -83,14 +72,10 @@ function closeShoppingListModal() {
 }
 
 function handleShoppingListSubmit(e) {
-    console.log('Shopping list form submitted!');
     e.preventDefault();
     
     const name = document.getElementById('list-name').value.trim();
     const description = document.getElementById('list-description').value.trim();
-    
-    console.log('Form data:', { name, description });
-    console.log('currentListId:', currentListId);
     
     if (!name) {
         alert('Please enter a list name');
@@ -98,7 +83,6 @@ function handleShoppingListSubmit(e) {
     }
     
     if (currentListId) {
-        console.log('Updating existing list with ID:', currentListId);
         // Update existing list
         const index = shoppingLists.findIndex(l => l.id === currentListId);
         if (index !== -1) {
@@ -109,7 +93,6 @@ function handleShoppingListSubmit(e) {
             };
         }
     } else {
-        console.log('Creating new list (currentListId is null/falsy)');
         // Create new list
         const newList = {
             id: Date.now(),
@@ -119,10 +102,8 @@ function handleShoppingListSubmit(e) {
             createdAt: new Date().toISOString()
         };
         shoppingLists.push(newList);
-        console.log('Created new list:', newList);
     }
     
-    console.log('Shopping lists after save:', shoppingLists);
     saveShoppingLists();
     updateShoppingListsDisplay();
     closeShoppingListModal();
@@ -277,19 +258,11 @@ function handleAddItemSubmit(e) {
 
 // Shopping List Display
 function updateShoppingListsDisplay() {
-    console.log('Updating shopping lists display...');
-    console.log('shoppingListsContainer:', shoppingListsContainer);
-    console.log('shoppingLists:', shoppingLists);
-    
-    if (!shoppingListsContainer) {
-        console.error('shoppingListsContainer not found!');
-        return;
-    }
+    if (!shoppingListsContainer) return;
     
     shoppingListsContainer.innerHTML = '';
     
     if (shoppingLists.length === 0) {
-        console.log('No shopping lists, showing empty state');
         shoppingListsContainer.innerHTML = `
             <div class="no-lists">
                 <p>No shopping lists yet. Create your first list to get started!</p>
@@ -298,25 +271,15 @@ function updateShoppingListsDisplay() {
         return;
     }
     
-    console.log(`Creating ${shoppingLists.length} list elements`);
     shoppingLists.forEach(list => {
-        console.log('Creating element for list:', list);
         const listElement = createShoppingListElement(list);
-        console.log('Created list element:', listElement);
-        console.log('Element HTML:', listElement.outerHTML);
         shoppingListsContainer.appendChild(listElement);
-        console.log('Element appended to container');
-        console.log('Container children count after append:', shoppingListsContainer.children.length);
-        console.log('Last child in container:', shoppingListsContainer.lastElementChild);
     });
 }
 
 function createShoppingListElement(list) {
     const div = document.createElement('div');
     div.className = 'shopping-list-card';
-    // Temporary debugging: add a bright background to make sure it's visible
-    div.style.backgroundColor = '#ff0000';
-    div.style.border = '3px solid #00ff00';
     
     const itemCount = list.items.length;
     const totalItems = list.items.reduce((sum, item) => sum + item.amount, 0);
