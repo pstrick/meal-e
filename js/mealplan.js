@@ -728,6 +728,12 @@ async function continueInitialization() {
         // Update week display to show current week
         updateWeekDisplay();
         
+        // Ensure meal plan display is updated
+        const mealPlanGrid = document.querySelector('.meal-plan-grid');
+        if (mealPlanGrid) {
+            await updateMealPlanDisplay();
+        }
+        
         // Initialize week navigation
         initializeWeekNavigation();
         
