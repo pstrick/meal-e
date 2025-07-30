@@ -45,8 +45,18 @@ function initializeShoppingLists() {
 
 // Setup event listeners
 function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    console.log('addListBtn:', addListBtn);
+    
     // Shopping list modal
-    addListBtn?.addEventListener('click', openShoppingListModal);
+    if (addListBtn) {
+        addListBtn.addEventListener('click', () => {
+            console.log('Add list button clicked!');
+            openShoppingListModal();
+        });
+    } else {
+        console.error('addListBtn not found!');
+    }
     document.querySelector('#shopping-list-modal .close')?.addEventListener('click', closeShoppingListModal);
     document.getElementById('cancel-list')?.addEventListener('click', closeShoppingListModal);
     shoppingListForm?.addEventListener('submit', handleShoppingListSubmit);
@@ -67,10 +77,17 @@ function setupEventListeners() {
 
 // Shopping List Management
 function openShoppingListModal(listId = null) {
+    console.log('openShoppingListModal called with listId:', listId);
     currentListId = listId;
     const modal = document.getElementById('shopping-list-modal');
     const title = document.getElementById('list-modal-title');
     const form = document.getElementById('shopping-list-form');
+    
+    console.log('Modal elements found:', {
+        modal: !!modal,
+        title: !!title,
+        form: !!form
+    });
     
     if (listId) {
         // Edit existing list
@@ -612,7 +629,7 @@ function saveShoppingLists() {
     }
 }
 
-// Make functions globally available
+// Make functions globally available immediately
 window.openShoppingListModal = openShoppingListModal;
 window.openManageListModal = openManageListModal;
 window.duplicateShoppingList = duplicateShoppingList;
