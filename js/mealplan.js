@@ -224,7 +224,7 @@ async function updateUnifiedList() {
                 servingSize: recipe.servingSize,
                 nutrition: recipe.nutrition,
                 icon: '🍽️',
-                label: 'Meal'
+                label: 'Recipe'
             });
         });
     }
@@ -243,7 +243,7 @@ async function updateUnifiedList() {
                     nutrition: ingredient.nutrition,
                     source: ingredient.source,
                     icon: '🥩',
-                    label: 'Ingredient'
+                    label: 'Custom Ingredient'
                 });
             }
         }
@@ -376,7 +376,7 @@ function createMealItem(item, amount, itemIndex, slot) {
     div.dataset.itemAmount = amount;
     
     const icon = item.type === 'meal' ? '🍽️' : '🥩';
-    const label = item.type === 'meal' ? 'Meal' : 'Ingredient';
+    const label = item.type === 'meal' ? 'Recipe' : 'Custom Ingredient';
     
     // Truncate item name to 50 characters
     const truncatedName = item.name.length > 50 ? item.name.substring(0, 50) + '...' : item.name;

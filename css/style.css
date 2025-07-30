@@ -783,7 +783,7 @@ footer {
 
 /* Empty State */
 .recipe-grid:empty::after {
-    content: "No meals found. Click 'Add Meal' to create your first meal!";
+    content: "No recipes found. Click 'Add Recipe' to create your first recipe!";
     grid-column: 1 / -1;
     text-align: center;
     padding: 3rem;
@@ -1678,7 +1678,7 @@ main {
 
 /* Empty State Improvements */
 .card-grid:empty::after {
-    content: "No meals found. Click 'Add New Meal' to create your first meal!";
+    content: "No recipes found. Click 'Add New Recipe' to create your first recipe!";
     grid-column: 1 / -1;
     text-align: center;
     padding: 3rem;
