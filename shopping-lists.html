@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Lists - Meal-E</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <a href="mealplan.html" class="logo">Meal-E</a>
+                <div class="nav-links">
+                    <a href="mealplan.html">Meal Plan</a>
+                    <a href="recipes.html">Custom Recipes</a>
+                    <a href="ingredients.html">Custom Ingredients</a>
+                    <a href="shopping-lists.html" class="active">Shopping Lists</a>
+                    <a href="settings.html">Settings</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="container">
+            <h1>Shopping Lists</h1>
+            
+            <div class="shopping-controls">
+                <button id="add-list-btn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create New List
+                </button>
+                <button id="generate-from-mealplan-btn" class="btn btn-secondary">
+                    <i class="fas fa-shopping-cart"></i> Generate from Meal Plan
+                </button>
+            </div>
+
+            <div id="shopping-lists-container">
+                <!-- Shopping lists will be populated here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Shopping List Modal -->
+    <div id="shopping-list-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="list-modal-title">Create New Shopping List</h2>
+            <form id="shopping-list-form">
+                <div class="form-group">
+                    <label for="list-name">List Name</label>
+                    <input type="text" id="list-name" required placeholder="Enter list name...">
+                </div>
+                
+                <div class="form-group">
+                    <label for="list-description">Description (Optional)</label>
+                    <textarea id="list-description" rows="3" placeholder="Enter description..."></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-list">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save List</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Shopping List Items Modal -->
+    <div id="shopping-items-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="items-modal-title">Shopping List Items</h2>
+            
+            <div class="list-info">
+                <h3 id="current-list-name"></h3>
+                <p id="current-list-description"></p>
+            </div>
+            
+            <div class="items-controls">
+                <button id="add-item-btn" class="btn btn-secondary">
+                    <i class="fas fa-plus"></i> Add Item
+                </button>
+                <button id="print-list-btn" class="btn btn-primary">
+                    <i class="fas fa-print"></i> Print List
+                </button>
+            </div>
+            
+            <div id="shopping-items-list">
+                <!-- Shopping items will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Item Modal -->
+    <div id="add-item-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Item to Shopping List</h2>
+            <form id="add-item-form">
+                <div class="form-group">
+                    <label for="item-name">Item Name</label>
+                    <input type="text" id="item-name" required placeholder="Enter item name...">
+                </div>
+                
+                <div class="form-group">
+                    <label for="item-amount">Amount</label>
+                    <input type="number" id="item-amount" step="0.1" min="0" required placeholder="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="item-unit">Unit</label>
+                    <select id="item-unit" required>
+                        <option value="g">grams (g)</option>
+                        <option value="kg">kilograms (kg)</option>
+                        <option value="oz">ounces (oz)</option>
+                        <option value="lb">pounds (lb)</option>
+                        <option value="ml">milliliters (ml)</option>
+                        <option value="l">liters (l)</option>
+                        <option value="cup">cups</option>
+                        <option value="tbsp">tablespoons (tbsp)</option>
+                        <option value="tsp">teaspoons (tsp)</option>
+                        <option value="piece">pieces</option>
+                        <option value="bunch">bunches</option>
+                        <option value="pack">packs</option>
+                        <option value="can">cans</option>
+                        <option value="jar">jars</option>
+                        <option value="bag">bags</option>
+                        <option value="box">boxes</option>
+                        <option value="other">other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="item-notes">Notes (Optional)</label>
+                    <textarea id="item-notes" rows="2" placeholder="Add any notes..."></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-item">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/shopping-lists.js" type="module"></script>
+    <script src="js/footer.js" type="module"></script>
+</body>
+</html> 

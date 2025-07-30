@@ -977,6 +977,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeSearchHandlers();
     initializeWeekNavigation();
     initializePrintButton();
+    initializeShoppingListButton();
 });
 
 // Add debounced search
@@ -1007,6 +1008,108 @@ function initializePrintButton() {
         printButton.addEventListener('click', () => {
             printMealPlan();
         });
+    }
+}
+
+// Initialize shopping list generation button
+function initializeShoppingListButton() {
+    const generateButton = document.getElementById('generate-shopping-list');
+    
+    if (generateButton) {
+        generateButton.addEventListener('click', () => {
+            generateShoppingListFromMealPlan();
+        });
+    }
+}
+
+// Generate shopping list from meal plan
+function generateShoppingListFromMealPlan() {
+    try {
+        // Load meal plan data from localStorage
+        const mealPlanData = localStorage.getItem('mealPlan');
+        if (!mealPlanData) {
+            alert('No meal plan found. Please add some meals to your plan first.');
+            return;
+        }
+        
+        const mealPlan = JSON.parse(mealPlanData);
+        const ingredients = new Map(); // Map to aggregate ingredients
+        
+        // Process each meal in the meal plan
+        Object.keys(mealPlan).forEach(mealKey => {
+            const meal = mealPlan[mealKey];
+            if (meal && meal.items) {
+                meal.items.forEach(item => {
+                    const key = item.name.toLowerCase();
+                    if (ingredients.has(key)) {
+                        const existing = ingredients.get(key);
+                        existing.amount += item.amount;
+                    } else {
+                        ingredients.set(key, {
+                            name: item.name,
+                            amount: item.amount,
+                            unit: 'g', // Default to grams
+                            notes: `From meal plan: ${item.name}`
+                        });
+                    }
+                });
+            }
+        });
+        
+        if (ingredients.size === 0) {
+            alert('No ingredients found in your meal plan.');
+            return;
+        }
+        
+        // Load existing shopping lists
+        let shoppingLists = [];
+        try {
+            const shoppingListsData = localStorage.getItem('shoppingLists');
+            if (shoppingListsData) {
+                shoppingLists = JSON.parse(shoppingListsData);
+            }
+        } catch (error) {
+            console.error('Error loading shopping lists:', error);
+        }
+        
+        // Create new shopping list
+        const week = getWeekDates(currentWeekOffset);
+        const startDate = formatDate(week.startDate);
+        const endDate = formatDate(week.endDate);
+        const listName = `Meal Plan Shopping List - Week of ${startDate}`;
+        
+        const newList = {
+            id: Date.now(),
+            name: listName,
+            description: `Generated from meal plan for week of ${startDate} to ${endDate}`,
+            items: Array.from(ingredients.values()).map(ing => ({
+                id: Date.now() + Math.random(),
+                name: ing.name,
+                amount: Math.round(ing.amount * 10) / 10, // Round to 1 decimal
+                unit: ing.unit,
+                notes: ing.notes,
+                addedAt: new Date().toISOString()
+            })),
+            createdAt: new Date().toISOString()
+        };
+        
+        shoppingLists.push(newList);
+        
+        // Save to localStorage
+        try {
+            localStorage.setItem('shoppingLists', JSON.stringify(shoppingLists));
+        } catch (error) {
+            console.error('Error saving shopping list:', error);
+            alert('Error saving shopping list. Please try again.');
+            return;
+        }
+        
+        // Redirect to shopping lists page
+        window.location.href = 'shopping-lists.html';
+        
+    } catch (error) {
+        console.error('Error generating shopping list from meal plan:', error);
+        alert('Error generating shopping list. Please try again.');
     }
 }
 

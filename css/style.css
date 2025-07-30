@@ -2463,6 +2463,327 @@ main {
     }
 }
 
+/* Shopping Lists Styles */
+.shopping-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.shopping-controls .btn {
+    background: linear-gradient(135deg, var(--primary-color), #66bb6a);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+}
+
+.shopping-controls .btn:hover {
+    background: linear-gradient(135deg, #66bb6a, var(--primary-color));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.shopping-controls .btn-secondary {
+    background: linear-gradient(135deg, #6c757d, #5a6268);
+}
+
+.shopping-controls .btn-secondary:hover {
+    background: linear-gradient(135deg, #5a6268, #495057);
+}
+
+.shopping-list-card {
+    background-color: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid #f1f3f4;
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.shopping-list-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-color: var(--primary-color);
+}
+
+.shopping-list-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color), #66bb6a);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.shopping-list-card:hover::before {
+    opacity: 1;
+}
+
+.list-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.list-header h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-color);
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.list-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.list-description {
+    padding: 1rem 1.5rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    background: #f8f9fa;
+    margin: 0;
+}
+
+.list-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    background: #f8f9fa;
+}
+
+.list-actions .btn {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.list-actions .btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), #66bb6a);
+    color: white;
+    border: none;
+}
+
+.list-actions .btn-primary:hover {
+    background: linear-gradient(135deg, #66bb6a, var(--primary-color));
+    transform: translateY(-1px);
+}
+
+.list-actions .btn-secondary {
+    background: linear-gradient(135deg, #17a2b8, #138496);
+    color: white;
+    border: none;
+}
+
+.list-actions .btn-secondary:hover {
+    background: linear-gradient(135deg, #138496, #117a8b);
+    transform: translateY(-1px);
+}
+
+.list-actions .btn-edit {
+    background: linear-gradient(135deg, #ffc107, #e0a800);
+    color: white;
+    border: none;
+}
+
+.list-actions .btn-edit:hover {
+    background: linear-gradient(135deg, #e0a800, #d39e00);
+    transform: translateY(-1px);
+}
+
+.list-actions .btn-delete {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+    border: none;
+}
+
+.list-actions .btn-delete:hover {
+    background: linear-gradient(135deg, #c82333, #bd2130);
+    transform: translateY(-1px);
+}
+
+.no-lists {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px dashed #dee2e6;
+}
+
+/* Shopping Items Styles */
+.list-info {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e9ecef;
+}
+
+.list-info h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-color);
+    font-size: 1.1rem;
+}
+
+.list-info p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.items-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.items-controls .btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.shopping-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.shopping-item:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.1);
+}
+
+.item-info {
+    flex: 1;
+}
+
+.item-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+.item-name {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.item-amount {
+    font-weight: 600;
+    color: var(--primary-color);
+    background: #e8f5e8;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.item-notes {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.item-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.item-actions .btn {
+    padding: 0.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    border-radius: 4px;
+}
+
+.item-actions .btn-edit {
+    color: #2196f3;
+}
+
+.item-actions .btn-edit:hover {
+    color: #1976d2;
+    background: #e3f2fd;
+}
+
+.item-actions .btn-delete {
+    color: #f44336;
+}
+
+.item-actions .btn-delete:hover {
+    color: #d32f2f;
+    background: #ffebee;
+}
+
+.no-items {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 2px dashed #dee2e6;
+}
+
+/* Mobile Responsive for Shopping Lists */
+@media (max-width: 768px) {
+    .shopping-controls {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .list-actions {
+        flex-direction: column;
+    }
+    
+    .list-meta {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .item-main {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .items-controls {
+        flex-direction: column;
+    }
+}
+
 /* Print Styles */
 @media print {
     /* Hide non-essential elements */
