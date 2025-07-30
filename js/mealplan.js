@@ -1051,13 +1051,10 @@ function generateShoppingListFromMealPlan() {
             if (parts.length >= 3) {
                 const mealDate = `${parts[0]}-${parts[1]}-${parts[2]}`;
                 
-                // Check if this meal is from the current week
-                const mealDateObj = new Date(mealDate);
-                const weekStart = new Date(week.startDate);
-                const weekEnd = new Date(week.endDate);
-                
-                if (mealDateObj >= weekStart && mealDateObj <= weekEnd) {
-                    console.log(`Processing meal from current week: ${mealKey}`);
+                // Check if this meal is from the current week using string comparison
+                // This is more reliable than Date object comparison
+                if (mealDate >= week.startDate && mealDate <= week.endDate) {
+                    console.log(`Processing meal from current week: ${mealKey} (date: ${mealDate})`);
                     const mealItems = mealPlan[mealKey];
                     
                     if (mealItems && Array.isArray(mealItems)) {
@@ -1083,7 +1080,7 @@ function generateShoppingListFromMealPlan() {
                         });
                     }
                 } else {
-                    console.log(`Skipping meal from different week: ${mealKey}`);
+                    console.log(`Skipping meal from different week: ${mealKey} (date: ${mealDate}, week: ${week.startDate} to ${week.endDate})`);
                 }
             }
         });
