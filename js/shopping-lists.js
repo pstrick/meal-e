@@ -102,6 +102,7 @@ function handleShoppingListSubmit(e) {
             createdAt: new Date().toISOString()
         };
         shoppingLists.push(newList);
+        console.log('New list created:', newList);
     }
     
     saveShoppingLists();
@@ -271,6 +272,7 @@ function updateShoppingListsDisplay() {
         return;
     }
     
+    console.log('Displaying', shoppingLists.length, 'shopping lists');
     shoppingLists.forEach(list => {
         const listElement = createShoppingListElement(list);
         shoppingListsContainer.appendChild(listElement);
