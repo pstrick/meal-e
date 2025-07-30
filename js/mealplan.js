@@ -1034,15 +1034,24 @@ function generateShoppingListFromMealPlan() {
         
         const mealPlan = JSON.parse(mealPlanData);
         console.log('Loaded meal plan data:', mealPlan);
+        console.log('Meal plan keys:', Object.keys(mealPlan));
         const ingredients = new Map(); // Map to aggregate ingredients
         
         // Process each meal in the meal plan
         Object.keys(mealPlan).forEach(mealKey => {
             const mealItems = mealPlan[mealKey];
             console.log(`Processing meal key: ${mealKey}`, mealItems);
+            console.log(`Type of mealItems:`, typeof mealItems, Array.isArray(mealItems));
             if (mealItems && Array.isArray(mealItems)) {
                 mealItems.forEach(item => {
                     console.log('Processing item:', item);
+                    
+                    // Validate item has required properties
+                    if (!item || !item.name || typeof item.amount === 'undefined') {
+                        console.warn('Skipping invalid item:', item);
+                        return;
+                    }
+                    
                     const key = item.name.toLowerCase();
                     if (ingredients.has(key)) {
                         const existing = ingredients.get(key);
