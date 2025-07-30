@@ -1036,25 +1036,36 @@ function generateShoppingListFromMealPlan() {
         console.log('Loaded meal plan data:', mealPlan);
         
         // Get the current week dates
+        console.log('DEBUG: currentWeekOffset before getWeekDates:', currentWeekOffset);
         const week = getWeekDates(currentWeekOffset);
         const startDate = formatDate(week.startDate);
         const endDate = formatDate(week.endDate);
         
+        console.log('DEBUG: Week object:', week);
+        console.log('DEBUG: Week start date (raw):', week.startDate);
+        console.log('DEBUG: Week end date (raw):', week.endDate);
+        console.log('DEBUG: Week start date (formatted):', startDate);
+        console.log('DEBUG: Week end date (formatted):', endDate);
         console.log('Generating shopping list for week:', startDate, 'to', endDate);
         
         const ingredients = new Map(); // Map to aggregate ingredients
         
         // Process only meals from the current week
+        console.log('DEBUG: Processing', Object.keys(mealPlan).length, 'total meals from meal plan');
         Object.keys(mealPlan).forEach(mealKey => {
             // Extract date and meal type from meal key (format: "YYYY-MM-DD-mealtype")
             const parts = mealKey.split('-');
             if (parts.length >= 3) {
                 const mealDate = `${parts[0]}-${parts[1]}-${parts[2]}`;
                 
+                console.log(`DEBUG: Checking meal: ${mealKey} with date: ${mealDate}`);
+                console.log(`DEBUG: Week range: ${week.startDate} to ${week.endDate}`);
+                console.log(`DEBUG: Date comparison: ${mealDate} >= ${week.startDate} && ${mealDate} <= ${week.endDate}`);
+                
                 // Check if this meal is from the current week using string comparison
                 // This is more reliable than Date object comparison
                 if (mealDate >= week.startDate && mealDate <= week.endDate) {
-                    console.log(`Processing meal from current week: ${mealKey} (date: ${mealDate})`);
+                    console.log(`✅ Processing meal from current week: ${mealKey} (date: ${mealDate})`);
                     const mealItems = mealPlan[mealKey];
                     
                     if (mealItems && Array.isArray(mealItems)) {
@@ -1080,7 +1091,7 @@ function generateShoppingListFromMealPlan() {
                         });
                     }
                 } else {
-                    console.log(`Skipping meal from different week: ${mealKey} (date: ${mealDate}, week: ${week.startDate} to ${week.endDate})`);
+                    console.log(`❌ Skipping meal from different week: ${mealKey} (date: ${mealDate}, week: ${week.startDate} to ${week.endDate})`);
                 }
             }
         });
