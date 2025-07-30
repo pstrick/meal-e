@@ -737,6 +737,10 @@ async function continueInitialization() {
         // Initialize search handlers
         initializeSearchHandlers();
         
+        // Initialize print and shopping list buttons
+        initializePrintButton();
+        initializeShoppingListButton();
+        
         // Initialize cancel meal button
         if (cancelMeal) {
             cancelMeal.addEventListener('click', closeMealPlanModal);
