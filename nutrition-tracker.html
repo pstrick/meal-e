@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nutrition Tracker - Meal-E</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <a href="mealplan.html" class="logo">Meal-E</a>
+                <div class="nav-links">
+                    <a href="mealplan.html">Meal Plan</a>
+                    <a href="recipes.html">Custom Recipes</a>
+                    <a href="ingredients.html">Custom Ingredients</a>
+                    <a href="shopping-lists.html">Shopping Lists</a>
+                    <a href="nutrition-tracker.html" class="active">Nutrition Tracker</a>
+                    <a href="settings.html">Settings</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="container">
+            <h1>Nutrition Tracker</h1>
+            
+            <!-- Date Navigation -->
+            <div class="date-navigation">
+                <button id="prev-day" class="btn btn-secondary">
+                    <i class="fas fa-chevron-left"></i> Previous Day
+                </button>
+                <h2 id="current-date">Today</h2>
+                <button id="next-day" class="btn btn-secondary">
+                    Next Day <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <!-- Daily Goals Section -->
+            <div class="goals-section">
+                <h3>Daily Goals</h3>
+                <div class="goals-grid">
+                    <div class="goal-item">
+                        <label for="calorie-goal">Calories</label>
+                        <input type="number" id="calorie-goal" placeholder="2000" min="0">
+                    </div>
+                    <div class="goal-item">
+                        <label for="protein-goal">Protein (g)</label>
+                        <input type="number" id="protein-goal" placeholder="150" min="0">
+                    </div>
+                    <div class="goal-item">
+                        <label for="carbs-goal">Carbs (g)</label>
+                        <input type="number" id="carbs-goal" placeholder="200" min="0">
+                    </div>
+                    <div class="goal-item">
+                        <label for="fat-goal">Fat (g)</label>
+                        <input type="number" id="fat-goal" placeholder="65" min="0">
+                    </div>
+                </div>
+                <button id="save-goals" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Goals
+                </button>
+            </div>
+
+            <!-- Daily Progress -->
+            <div class="progress-section">
+                <h3>Today's Progress</h3>
+                <div class="progress-grid">
+                    <div class="progress-item">
+                        <div class="progress-label">Calories</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="calorie-progress"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span id="calorie-current">0</span> / <span id="calorie-target">0</span>
+                        </div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-label">Protein</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="protein-progress"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span id="protein-current">0</span> / <span id="protein-target">0</span>g
+                        </div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-label">Carbs</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="carbs-progress"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span id="carbs-current">0</span> / <span id="carbs-target">0</span>g
+                        </div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-label">Fat</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="fat-progress"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span id="fat-current">0</span> / <span id="fat-target">0</span>g
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Meal Logging Section -->
+            <div class="meals-section">
+                <div class="meals-header">
+                    <h3>Meal Log</h3>
+                    <button id="auto-log-week" class="btn btn-secondary">
+                        <i class="fas fa-magic"></i> Auto-Log from Meal Plan
+                    </button>
+                </div>
+                
+                <div class="meals-container">
+                    <!-- Breakfast -->
+                    <div class="meal-group">
+                        <div class="meal-header">
+                            <h4><i class="fas fa-sun"></i> Breakfast</h4>
+                            <button class="add-food-btn" data-meal="breakfast">
+                                <i class="fas fa-plus"></i> Add Food
+                            </button>
+                        </div>
+                        <div class="meal-items" id="breakfast-items">
+                            <div class="no-items">No foods logged yet</div>
+                        </div>
+                        <div class="meal-totals" id="breakfast-totals">
+                            <span>0 calories</span>
+                        </div>
+                    </div>
+
+                    <!-- Lunch -->
+                    <div class="meal-group">
+                        <div class="meal-header">
+                            <h4><i class="fas fa-cloud-sun"></i> Lunch</h4>
+                            <button class="add-food-btn" data-meal="lunch">
+                                <i class="fas fa-plus"></i> Add Food
+                            </button>
+                        </div>
+                        <div class="meal-items" id="lunch-items">
+                            <div class="no-items">No foods logged yet</div>
+                        </div>
+                        <div class="meal-totals" id="lunch-totals">
+                            <span>0 calories</span>
+                        </div>
+                    </div>
+
+                    <!-- Dinner -->
+                    <div class="meal-group">
+                        <div class="meal-header">
+                            <h4><i class="fas fa-moon"></i> Dinner</h4>
+                            <button class="add-food-btn" data-meal="dinner">
+                                <i class="fas fa-plus"></i> Add Food
+                            </button>
+                        </div>
+                        <div class="meal-items" id="dinner-items">
+                            <div class="no-items">No foods logged yet</div>
+                        </div>
+                        <div class="meal-totals" id="dinner-totals">
+                            <span>0 calories</span>
+                        </div>
+                    </div>
+
+                    <!-- Snacks -->
+                    <div class="meal-group">
+                        <div class="meal-header">
+                            <h4><i class="fas fa-cookie-bite"></i> Snacks</h4>
+                            <button class="add-food-btn" data-meal="snacks">
+                                <i class="fas fa-plus"></i> Add Food
+                            </button>
+                        </div>
+                        <div class="meal-items" id="snacks-items">
+                            <div class="no-items">No foods logged yet</div>
+                        </div>
+                        <div class="meal-totals" id="snacks-totals">
+                            <span>0 calories</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Food Modal -->
+    <div id="add-food-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Food to <span id="modal-meal-name">Meal</span></h2>
+            
+            <div class="food-search-section">
+                <div class="form-group">
+                    <label for="food-search">Search Foods</label>
+                    <input type="text" id="food-search" placeholder="Search custom ingredients or recipes...">
+                </div>
+                
+                <div class="search-results" id="food-search-results">
+                    <!-- Search results will appear here -->
+                </div>
+            </div>
+
+            <div class="selected-food-section" id="selected-food-section" style="display: none;">
+                <h3>Selected Food</h3>
+                <div id="selected-food-details"></div>
+                
+                <div class="form-group">
+                    <label for="food-amount">Amount (g)</label>
+                    <input type="number" id="food-amount" min="0" step="0.1" value="100">
+                </div>
+                
+                <div class="form-group">
+                    <label for="food-servings">Servings</label>
+                    <input type="number" id="food-servings" min="0" step="0.1" value="1">
+                </div>
+                
+                <div class="nutrition-preview" id="nutrition-preview">
+                    <!-- Nutrition preview will appear here -->
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancel-add-food">Cancel</button>
+                <button type="button" class="btn btn-primary" id="add-food-to-meal">Add to Meal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/nutrition-tracker.js" type="module"></script>
+    <script src="js/footer.js" type="module"></script>
+</body>
+</html> 
