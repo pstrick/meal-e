@@ -1,11 +1,10 @@
 // Nutrition Tracker Module
-import { loadSettings } from './settings.js';
+import { settings } from './settings.js';
 
 // Global variables
 let currentDate = new Date();
 let currentDayOffset = 0;
 let nutritionLogs = {};
-let dailyGoals = {};
 let currentMeal = '';
 
 // DOM elements
@@ -21,15 +20,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 async function initializeNutritionTracker() {
     try {
-        // Load settings first
-        await loadSettings();
-        
         // Initialize DOM elements
         initializeDOMElements();
         
         // Load data
         loadNutritionLogs();
-        loadDailyGoals();
         
         // Set up event listeners
         setupEventListeners();
@@ -63,7 +58,6 @@ function initializeDOMElements() {
     nextDayBtn = document.getElementById('next-day');
     
     // Button elements
-    saveGoalsBtn = document.getElementById('save-goals');
     autoLogWeekBtn = document.getElementById('auto-log-week');
 }
 
@@ -72,15 +66,17 @@ function setupEventListeners() {
     prevDayBtn.addEventListener('click', () => navigateDate(-1));
     nextDayBtn.addEventListener('click', () => navigateDate(1));
     
-    // Goals
-    saveGoalsBtn.addEventListener('click', saveDailyGoals);
+    // Goals are now handled in settings
     
     // Auto-log from meal plan
     autoLogWeekBtn.addEventListener('click', autoLogFromMealPlan);
     
     // Add food buttons
     document.querySelectorAll('.add-food-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => openAddFoodModal(e.target.dataset.meal));
+        btn.addEventListener('click', (e) => {
+            const meal = e.target.closest('.add-food-btn').dataset.meal;
+            openAddFoodModal(meal);
+        });
     });
     
     // Modal events
@@ -113,6 +109,8 @@ function navigateDate(direction) {
     currentDate = new Date();
     currentDate.setDate(currentDate.getDate() + currentDayOffset);
     
+    console.log('Navigating date:', direction, 'New date:', currentDate.toISOString().split('T')[0]);
+    
     updateDateDisplay();
     updateProgressDisplay();
     updateMealsDisplay();
@@ -138,52 +136,13 @@ function updateDateDisplay() {
 }
 
 // Goals Management
-function loadDailyGoals() {
-    const saved = localStorage.getItem('nutritionDailyGoals');
-    if (saved) {
-        dailyGoals = JSON.parse(saved);
-    } else {
-        // Default goals
-        dailyGoals = {
-            calories: 2000,
-            protein: 150,
-            carbs: 200,
-            fat: 65
-        };
-    }
-}
-
-function saveDailyGoals() {
-    const goals = {
-        calories: parseInt(document.getElementById('calorie-goal').value) || 0,
-        protein: parseInt(document.getElementById('protein-goal').value) || 0,
-        carbs: parseInt(document.getElementById('carbs-goal').value) || 0,
-        fat: parseInt(document.getElementById('fat-goal').value) || 0
-    };
-    
-    dailyGoals = goals;
-    localStorage.setItem('nutritionDailyGoals', JSON.stringify(goals));
-    
-    updateGoalsDisplay();
-    updateProgressDisplay();
-    
-    // Show success message
-    const btn = saveGoalsBtn;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-check"></i> Saved!';
-    btn.style.background = 'var(--success-color)';
-    
-    setTimeout(() => {
-        btn.innerHTML = originalText;
-        btn.style.background = '';
-    }, 2000);
-}
-
 function updateGoalsDisplay() {
-    document.getElementById('calorie-goal').value = dailyGoals.calories || '';
-    document.getElementById('protein-goal').value = dailyGoals.protein || '';
-    document.getElementById('carbs-goal').value = dailyGoals.carbs || '';
-    document.getElementById('fat-goal').value = dailyGoals.fat || '';
+    const goals = settings.nutritionGoals || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    
+    document.getElementById('calorie-goal-display').textContent = goals.calories || 0;
+    document.getElementById('protein-goal-display').textContent = goals.protein || 0;
+    document.getElementById('carbs-goal-display').textContent = goals.carbs || 0;
+    document.getElementById('fat-goal-display').textContent = goals.fat || 0;
 }
 
 // Nutrition Logs Management
@@ -228,17 +187,19 @@ function updateProgressDisplay() {
     document.getElementById('carbs-current').textContent = Math.round(totals.carbs);
     document.getElementById('fat-current').textContent = Math.round(totals.fat);
     
+    const goals = settings.nutritionGoals || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    
     // Update targets
-    document.getElementById('calorie-target').textContent = dailyGoals.calories || 0;
-    document.getElementById('protein-target').textContent = dailyGoals.protein || 0;
-    document.getElementById('carbs-target').textContent = dailyGoals.carbs || 0;
-    document.getElementById('fat-target').textContent = dailyGoals.fat || 0;
+    document.getElementById('calorie-target').textContent = goals.calories || 0;
+    document.getElementById('protein-target').textContent = goals.protein || 0;
+    document.getElementById('carbs-target').textContent = goals.carbs || 0;
+    document.getElementById('fat-target').textContent = goals.fat || 0;
     
     // Update progress bars
-    updateProgressBar('calorie', totals.calories, dailyGoals.calories);
-    updateProgressBar('protein', totals.protein, dailyGoals.protein);
-    updateProgressBar('carbs', totals.carbs, dailyGoals.carbs);
-    updateProgressBar('fat', totals.fat, dailyGoals.fat);
+    updateProgressBar('calorie', totals.calories, goals.calories);
+    updateProgressBar('protein', totals.protein, goals.protein);
+    updateProgressBar('carbs', totals.carbs, goals.carbs);
+    updateProgressBar('fat', totals.fat, goals.fat);
 }
 
 function updateProgressBar(type, current, target) {
@@ -279,6 +240,7 @@ function calculateDayTotals(dayLog) {
 // Meals Display
 function updateMealsDisplay() {
     const dayLog = getDayLog();
+    console.log('Updating meals display for date:', getCurrentDateKey(), 'Day log:', dayLog);
     
     ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(meal => {
         updateMealDisplay(meal, dayLog[meal]);

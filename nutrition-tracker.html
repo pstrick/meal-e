@@ -40,30 +40,16 @@
                 </button>
             </div>
 
-            <!-- Daily Goals Section -->
-            <div class="goals-section">
+            <!-- Daily Goals Info -->
+            <div class="goals-info">
                 <h3>Daily Goals</h3>
-                <div class="goals-grid">
-                    <div class="goal-item">
-                        <label for="calorie-goal">Calories</label>
-                        <input type="number" id="calorie-goal" placeholder="2000" min="0">
-                    </div>
-                    <div class="goal-item">
-                        <label for="protein-goal">Protein (g)</label>
-                        <input type="number" id="protein-goal" placeholder="150" min="0">
-                    </div>
-                    <div class="goal-item">
-                        <label for="carbs-goal">Carbs (g)</label>
-                        <input type="number" id="carbs-goal" placeholder="200" min="0">
-                    </div>
-                    <div class="goal-item">
-                        <label for="fat-goal">Fat (g)</label>
-                        <input type="number" id="fat-goal" placeholder="65" min="0">
-                    </div>
+                <p>Set your nutrition goals in <a href="settings.html">Settings</a></p>
+                <div class="goals-display">
+                    <span class="goal-display">Calories: <span id="calorie-goal-display">0</span></span>
+                    <span class="goal-display">Protein: <span id="protein-goal-display">0</span>g</span>
+                    <span class="goal-display">Carbs: <span id="carbs-goal-display">0</span>g</span>
+                    <span class="goal-display">Fat: <span id="fat-goal-display">0</span>g</span>
                 </div>
-                <button id="save-goals" class="btn btn-primary">
-                    <i class="fas fa-save"></i> Save Goals
-                </button>
             </div>
 
             <!-- Daily Progress -->
