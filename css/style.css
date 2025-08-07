@@ -3179,10 +3179,17 @@ main {
     color: var(--text-color);
 }
 
-.food-type, .serving-size {
+.food-type, .serving-size, .nutrition-info {
     margin: 0.25rem 0;
     color: var(--text-secondary);
     font-size: 0.9rem;
+}
+
+.nutrition-info {
+    background: #e8f5e8;
+    padding: 0.5rem;
+    border-radius: 4px;
+    border-left: 3px solid var(--primary-color);
 }
 
 .nutrition-preview {

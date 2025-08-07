@@ -408,11 +408,16 @@ function selectFood(foodResult) {
     const food = foodResult.data;
     const type = foodResult.type;
     
+    // Store the selected food data for calculations
+    selectedFoodDetails.dataset.foodData = JSON.stringify(food);
+    selectedFoodDetails.dataset.foodType = type;
+    
     selectedFoodDetails.innerHTML = `
         <div class="selected-food-info">
             <h4>${food.name}</h4>
             <p class="food-type">${type === 'recipe' ? 'Recipe' : 'Ingredient'}</p>
             ${type === 'recipe' ? `<p class="serving-size">Serving size: ${food.servingSize || '1 serving'}</p>` : ''}
+            ${type === 'ingredient' ? `<p class="nutrition-info">Per 100g: ${food.calories || 0} cal, ${food.protein || 0}g protein, ${food.carbs || 0}g carbs, ${food.fat || 0}g fat</p>` : ''}
         </div>
     `;
     
@@ -424,11 +429,43 @@ function updateNutritionPreview() {
     const amount = parseFloat(foodAmount.value) || 0;
     const servings = parseFloat(foodServings.value) || 1;
     
-    // This is a simplified calculation - in a real app, you'd calculate based on the actual food data
-    const calories = Math.round(amount * 0.1 * servings); // Placeholder calculation
-    const protein = Math.round(amount * 0.02 * servings);
-    const carbs = Math.round(amount * 0.05 * servings);
-    const fat = Math.round(amount * 0.01 * servings);
+    // Get the selected food data
+    const foodDataStr = selectedFoodDetails.dataset.foodData;
+    const foodType = selectedFoodDetails.dataset.foodType;
+    
+    if (!foodDataStr) {
+        nutritionPreview.innerHTML = '<h4>Nutrition Preview</h4><p>Select a food first</p>';
+        return;
+    }
+    
+    const foodData = JSON.parse(foodDataStr);
+    let calories = 0, protein = 0, carbs = 0, fat = 0;
+    
+    if (foodType === 'ingredient') {
+        // For ingredients, calculate based on per 100g values
+        const multiplier = amount / 100; // Convert to percentage of 100g
+        calories = Math.round((foodData.calories || 0) * multiplier * servings);
+        protein = Math.round((foodData.protein || 0) * multiplier * servings);
+        carbs = Math.round((foodData.carbs || 0) * multiplier * servings);
+        fat = Math.round((foodData.fat || 0) * multiplier * servings);
+    } else if (foodType === 'recipe') {
+        // For recipes, calculate based on serving size and ingredients
+        if (foodData.ingredients && Array.isArray(foodData.ingredients)) {
+            foodData.ingredients.forEach(ingredient => {
+                const ingredientMultiplier = (ingredient.amount || 0) / 100;
+                calories += Math.round((ingredient.calories || 0) * ingredientMultiplier * servings);
+                protein += Math.round((ingredient.protein || 0) * ingredientMultiplier * servings);
+                carbs += Math.round((ingredient.carbs || 0) * ingredientMultiplier * servings);
+                fat += Math.round((ingredient.fat || 0) * ingredientMultiplier * servings);
+            });
+        } else {
+            // Fallback for recipes without detailed ingredient data
+            calories = Math.round((foodData.calories || 0) * servings);
+            protein = Math.round((foodData.protein || 0) * servings);
+            carbs = Math.round((foodData.carbs || 0) * servings);
+            fat = Math.round((foodData.fat || 0) * servings);
+        }
+    }
     
     nutritionPreview.innerHTML = `
         <h4>Nutrition Preview</h4>
@@ -450,17 +487,57 @@ function addFoodToMeal() {
         return;
     }
     
-    // Create food entry (simplified - you'd calculate actual nutrition here)
+    // Get the selected food data
+    const foodDataStr = selectedFoodDetails.dataset.foodData;
+    const foodType = selectedFoodDetails.dataset.foodType;
+    
+    if (!foodDataStr) {
+        alert('Please select a food first');
+        return;
+    }
+    
+    const foodData = JSON.parse(foodDataStr);
+    let calories = 0, protein = 0, carbs = 0, fat = 0;
+    
+    if (foodType === 'ingredient') {
+        // For ingredients, calculate based on per 100g values
+        const multiplier = amount / 100; // Convert to percentage of 100g
+        calories = Math.round((foodData.calories || 0) * multiplier * servings);
+        protein = Math.round((foodData.protein || 0) * multiplier * servings);
+        carbs = Math.round((foodData.carbs || 0) * multiplier * servings);
+        fat = Math.round((foodData.fat || 0) * multiplier * servings);
+    } else if (foodType === 'recipe') {
+        // For recipes, calculate based on serving size and ingredients
+        if (foodData.ingredients && Array.isArray(foodData.ingredients)) {
+            foodData.ingredients.forEach(ingredient => {
+                const ingredientMultiplier = (ingredient.amount || 0) / 100;
+                calories += Math.round((ingredient.calories || 0) * ingredientMultiplier * servings);
+                protein += Math.round((ingredient.protein || 0) * ingredientMultiplier * servings);
+                carbs += Math.round((ingredient.carbs || 0) * ingredientMultiplier * servings);
+                fat += Math.round((ingredient.fat || 0) * ingredientMultiplier * servings);
+            });
+        } else {
+            // Fallback for recipes without detailed ingredient data
+            calories = Math.round((foodData.calories || 0) * servings);
+            protein = Math.round((foodData.protein || 0) * servings);
+            carbs = Math.round((foodData.carbs || 0) * servings);
+            fat = Math.round((foodData.fat || 0) * servings);
+        }
+    }
+    
+    // Create food entry with calculated nutrition
     const foodEntry = {
         name: selectedFoodDetails.querySelector('h4').textContent,
         amount: amount,
         servings: servings,
-        calories: Math.round(amount * 0.1 * servings),
-        protein: Math.round(amount * 0.02 * servings),
-        carbs: Math.round(amount * 0.05 * servings),
-        fat: Math.round(amount * 0.01 * servings),
+        calories: calories,
+        protein: protein,
+        carbs: carbs,
+        fat: fat,
         timestamp: new Date().toISOString()
     };
+    
+    console.log('Adding food entry:', foodEntry);
     
     // Add to current day's log
     const dayLog = getDayLog();
