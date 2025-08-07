@@ -354,7 +354,8 @@ function searchFoods(query) {
     const results = [];
     
     // Search custom ingredients
-    const ingredients = JSON.parse(localStorage.getItem('ingredients') || '[]');
+    const ingredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
+    console.log('Searching ingredients:', ingredients.length, 'found');
     ingredients.forEach(ingredient => {
         if (ingredient.name.toLowerCase().includes(query)) {
             results.push({
@@ -366,6 +367,7 @@ function searchFoods(query) {
     
     // Search custom recipes
     const recipes = JSON.parse(localStorage.getItem('recipes') || '[]');
+    console.log('Searching recipes:', recipes.length, 'found');
     recipes.forEach(recipe => {
         if (recipe.name.toLowerCase().includes(query)) {
             results.push({
@@ -375,6 +377,7 @@ function searchFoods(query) {
         }
     });
     
+    console.log('Search results:', results.length, 'total');
     return results.slice(0, 10); // Limit to 10 results
 }
 
@@ -446,21 +449,20 @@ function updateNutritionPreview() {
         carbs = Math.round((foodData.carbs || 0) * multiplier);
         fat = Math.round((foodData.fat || 0) * multiplier);
     } else if (foodType === 'recipe') {
-        // For recipes, calculate based on serving size and ingredients
-        if (foodData.ingredients && Array.isArray(foodData.ingredients)) {
-            foodData.ingredients.forEach(ingredient => {
-                const ingredientMultiplier = (ingredient.amount || 0) / 100;
-                calories += Math.round((ingredient.calories || 0) * ingredientMultiplier);
-                protein += Math.round((ingredient.protein || 0) * ingredientMultiplier);
-                carbs += Math.round((ingredient.carbs || 0) * ingredientMultiplier);
-                fat += Math.round((ingredient.fat || 0) * ingredientMultiplier);
-            });
+        // For recipes, use the stored nutrition data per serving
+        if (foodData.nutrition) {
+            // Calculate based on the amount relative to serving size
+            const servingRatio = amount / (foodData.servingSize || 1);
+            calories = Math.round((foodData.nutrition.calories || 0) * servingRatio);
+            protein = Math.round((foodData.nutrition.protein || 0) * servingRatio);
+            carbs = Math.round((foodData.nutrition.carbs || 0) * servingRatio);
+            fat = Math.round((foodData.nutrition.fat || 0) * servingRatio);
         } else {
-            // Fallback for recipes without detailed ingredient data
-            calories = Math.round((foodData.calories || 0));
-            protein = Math.round((foodData.protein || 0));
-            carbs = Math.round((foodData.carbs || 0));
-            fat = Math.round((foodData.fat || 0));
+            // Fallback for recipes without nutrition data
+            calories = 0;
+            protein = 0;
+            carbs = 0;
+            fat = 0;
         }
     }
     

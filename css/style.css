@@ -146,6 +146,16 @@ h2 {
     background-color: var(--secondary-color);
 }
 
+/* Blue print button for meal plan */
+#print-meal-plan {
+    background-color: #2196F3 !important;
+    color: white !important;
+}
+
+#print-meal-plan:hover {
+    background-color: #1976D2 !important;
+}
+
 .btn-secondary {
     background-color: white;
     color: var(--text-color);
