@@ -49,7 +49,6 @@ function initializeDOMElements() {
     selectedFoodSection = document.getElementById('selected-food-section');
     selectedFoodDetails = document.getElementById('selected-food-details');
     foodAmount = document.getElementById('food-amount');
-    foodServings = document.getElementById('food-servings');
     nutritionPreview = document.getElementById('nutrition-preview');
     
     // Navigation elements
@@ -91,9 +90,8 @@ function setupEventListeners() {
     // Search functionality
     foodSearch.addEventListener('input', handleFoodSearch);
     
-    // Amount/servings changes
+    // Amount changes
     foodAmount.addEventListener('input', updateNutritionPreview);
-    foodServings.addEventListener('input', updateNutritionPreview);
     
     // Click outside modal to close
     window.addEventListener('click', (e) => {
@@ -292,7 +290,7 @@ function createFoodElement(food, meal, index) {
         <div class="food-info">
             <div class="food-name">${food.name}</div>
             <div class="food-details">
-                ${food.amount}g • ${food.servings} serving${food.servings !== 1 ? 's' : ''}
+                ${food.amount}g
             </div>
             <div class="food-nutrition">
                 <span class="calories">${Math.round(food.calories)} cal</span>
@@ -427,7 +425,6 @@ function selectFood(foodResult) {
 
 function updateNutritionPreview() {
     const amount = parseFloat(foodAmount.value) || 0;
-    const servings = parseFloat(foodServings.value) || 1;
     
     // Get the selected food data
     const foodDataStr = selectedFoodDetails.dataset.foodData;
@@ -444,28 +441,35 @@ function updateNutritionPreview() {
     if (foodType === 'ingredient') {
         // For ingredients, calculate based on per 100g values
         const multiplier = amount / 100; // Convert to percentage of 100g
-        calories = Math.round((foodData.calories || 0) * multiplier * servings);
-        protein = Math.round((foodData.protein || 0) * multiplier * servings);
-        carbs = Math.round((foodData.carbs || 0) * multiplier * servings);
-        fat = Math.round((foodData.fat || 0) * multiplier * servings);
+        calories = Math.round((foodData.calories || 0) * multiplier);
+        protein = Math.round((foodData.protein || 0) * multiplier);
+        carbs = Math.round((foodData.carbs || 0) * multiplier);
+        fat = Math.round((foodData.fat || 0) * multiplier);
     } else if (foodType === 'recipe') {
         // For recipes, calculate based on serving size and ingredients
         if (foodData.ingredients && Array.isArray(foodData.ingredients)) {
             foodData.ingredients.forEach(ingredient => {
                 const ingredientMultiplier = (ingredient.amount || 0) / 100;
-                calories += Math.round((ingredient.calories || 0) * ingredientMultiplier * servings);
-                protein += Math.round((ingredient.protein || 0) * ingredientMultiplier * servings);
-                carbs += Math.round((ingredient.carbs || 0) * ingredientMultiplier * servings);
-                fat += Math.round((ingredient.fat || 0) * ingredientMultiplier * servings);
+                calories += Math.round((ingredient.calories || 0) * ingredientMultiplier);
+                protein += Math.round((ingredient.protein || 0) * ingredientMultiplier);
+                carbs += Math.round((ingredient.carbs || 0) * ingredientMultiplier);
+                fat += Math.round((ingredient.fat || 0) * ingredientMultiplier);
             });
         } else {
             // Fallback for recipes without detailed ingredient data
-            calories = Math.round((foodData.calories || 0) * servings);
-            protein = Math.round((foodData.protein || 0) * servings);
-            carbs = Math.round((foodData.carbs || 0) * servings);
-            fat = Math.round((foodData.fat || 0) * servings);
+            calories = Math.round((foodData.calories || 0));
+            protein = Math.round((foodData.protein || 0));
+            carbs = Math.round((foodData.carbs || 0));
+            fat = Math.round((foodData.fat || 0));
         }
     }
+    
+    console.log('Nutrition preview calculation:', {
+        amount,
+        foodType,
+        foodData,
+        calculated: { calories, protein, carbs, fat }
+    });
     
     nutritionPreview.innerHTML = `
         <h4>Nutrition Preview</h4>
@@ -480,10 +484,9 @@ function updateNutritionPreview() {
 
 function addFoodToMeal() {
     const amount = parseFloat(foodAmount.value) || 0;
-    const servings = parseFloat(foodServings.value) || 1;
     
-    if (amount <= 0 || servings <= 0) {
-        alert('Please enter valid amounts');
+    if (amount <= 0) {
+        alert('Please enter a valid amount');
         return;
     }
     
@@ -502,26 +505,26 @@ function addFoodToMeal() {
     if (foodType === 'ingredient') {
         // For ingredients, calculate based on per 100g values
         const multiplier = amount / 100; // Convert to percentage of 100g
-        calories = Math.round((foodData.calories || 0) * multiplier * servings);
-        protein = Math.round((foodData.protein || 0) * multiplier * servings);
-        carbs = Math.round((foodData.carbs || 0) * multiplier * servings);
-        fat = Math.round((foodData.fat || 0) * multiplier * servings);
+        calories = Math.round((foodData.calories || 0) * multiplier);
+        protein = Math.round((foodData.protein || 0) * multiplier);
+        carbs = Math.round((foodData.carbs || 0) * multiplier);
+        fat = Math.round((foodData.fat || 0) * multiplier);
     } else if (foodType === 'recipe') {
         // For recipes, calculate based on serving size and ingredients
         if (foodData.ingredients && Array.isArray(foodData.ingredients)) {
             foodData.ingredients.forEach(ingredient => {
                 const ingredientMultiplier = (ingredient.amount || 0) / 100;
-                calories += Math.round((ingredient.calories || 0) * ingredientMultiplier * servings);
-                protein += Math.round((ingredient.protein || 0) * ingredientMultiplier * servings);
-                carbs += Math.round((ingredient.carbs || 0) * ingredientMultiplier * servings);
-                fat += Math.round((ingredient.fat || 0) * ingredientMultiplier * servings);
+                calories += Math.round((ingredient.calories || 0) * ingredientMultiplier);
+                protein += Math.round((ingredient.protein || 0) * ingredientMultiplier);
+                carbs += Math.round((ingredient.carbs || 0) * ingredientMultiplier);
+                fat += Math.round((ingredient.fat || 0) * ingredientMultiplier);
             });
         } else {
             // Fallback for recipes without detailed ingredient data
-            calories = Math.round((foodData.calories || 0) * servings);
-            protein = Math.round((foodData.protein || 0) * servings);
-            carbs = Math.round((foodData.carbs || 0) * servings);
-            fat = Math.round((foodData.fat || 0) * servings);
+            calories = Math.round((foodData.calories || 0));
+            protein = Math.round((foodData.protein || 0));
+            carbs = Math.round((foodData.carbs || 0));
+            fat = Math.round((foodData.fat || 0));
         }
     }
     
@@ -529,7 +532,6 @@ function addFoodToMeal() {
     const foodEntry = {
         name: selectedFoodDetails.querySelector('h4').textContent,
         amount: amount,
-        servings: servings,
         calories: calories,
         protein: protein,
         carbs: carbs,
@@ -603,7 +605,6 @@ async function autoLogFromMealPlan() {
                     const foodEntry = {
                         name: item.name,
                         amount: item.amount || 100,
-                        servings: 1,
                         calories: item.calories || 0,
                         protein: item.protein || 0,
                         carbs: item.carbs || 0,
