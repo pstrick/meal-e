@@ -559,6 +559,8 @@ function addFoodToMeal() {
 async function autoLogFromMealPlan() {
     try {
         const mealPlan = JSON.parse(localStorage.getItem('mealPlan') || '{}');
+        console.log('Meal plan data:', mealPlan);
+        console.log('Meal plan keys:', Object.keys(mealPlan));
         const dayLog = getDayLog();
         
         // Clear existing logs for the week
@@ -587,9 +589,18 @@ async function autoLogFromMealPlan() {
         
         // Process meal plan data
         Object.keys(mealPlan).forEach(mealKey => {
-            const [dateStr, timeSlot] = mealKey.split('_');
+            console.log('Processing meal key:', mealKey);
+            const parts = mealKey.split('-');
+            if (parts.length < 4) {
+                console.log('Skipping invalid key:', mealKey);
+                return; // Skip invalid keys
+            }
+            
+            const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
+            const timeSlot = parts[3];
             const mealDate = new Date(dateStr);
             const dateKey = mealDate.toISOString().split('T')[0];
+            console.log('Parsed date:', dateStr, 'timeSlot:', timeSlot, 'dateKey:', dateKey);
             
             if (!nutritionLogs[dateKey]) return;
             
@@ -604,13 +615,25 @@ async function autoLogFromMealPlan() {
             
             mealItems.forEach(item => {
                 if (item && item.name) {
+                    let calories = 0, protein = 0, carbs = 0, fat = 0;
+                    
+                    // Calculate nutrition based on item type and nutrition data
+                    if (item.nutrition) {
+                        // Convert from per-gram to total amount
+                        const amount = item.amount || 100;
+                        calories = Math.round((item.nutrition.calories || 0) * amount);
+                        protein = Math.round((item.nutrition.protein || 0) * amount);
+                        carbs = Math.round((item.nutrition.carbs || 0) * amount);
+                        fat = Math.round((item.nutrition.fat || 0) * amount);
+                    }
+                    
                     const foodEntry = {
                         name: item.name,
                         amount: item.amount || 100,
-                        calories: item.calories || 0,
-                        protein: item.protein || 0,
-                        carbs: item.carbs || 0,
-                        fat: item.fat || 0,
+                        calories: calories,
+                        protein: protein,
+                        carbs: carbs,
+                        fat: fat,
                         timestamp: new Date().toISOString(),
                         fromMealPlan: true
                     };
