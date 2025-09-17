@@ -585,65 +585,6 @@ async function calculateDayNutrition(date) {
     return nutrition;
 }
 
-async function updateNutritionSummary() {
-    try {
-        // Check if we're on the meal plan page
-        const mealPlanGrid = document.querySelector('.meal-plan-grid');
-        if (!mealPlanGrid) {
-            console.log('Not on meal plan page, skipping nutrition update');
-            return;
-        }
-
-        const week = getWeekDates(currentWeekOffset);
-        const nutritionSummary = document.querySelector('.nutrition-summary');
-        if (!nutritionSummary) {
-            console.log('Nutrition summary element not found');
-            return;
-        }
-
-        // Calculate total nutrition for the week
-        let totalCalories = 0;
-        let totalProtein = 0;
-        let totalCarbs = 0;
-        let totalFat = 0;
-
-        // Calculate nutrition for each day
-        for (const date of week.dates) {
-            const dayNutrition = await calculateDayNutrition(date);
-            totalCalories += dayNutrition.calories;
-            totalProtein += dayNutrition.protein;
-            totalCarbs += dayNutrition.carbs;
-            totalFat += dayNutrition.fat;
-        }
-
-        // Update the summary display with weekly totals only
-        nutritionSummary.innerHTML = `
-            <h3>Weekly Nutrition Summary</h3>
-            <div class="weekly-totals">
-                <div class="nutrition-grid">
-                    <div class="nutrition-item">
-                        <span class="label">Total Calories:</span>
-                        <span class="value">${Math.round(totalCalories)}</span>
-                    </div>
-                    <div class="nutrition-item">
-                        <span class="label">Protein:</span>
-                        <span class="value">${Math.round(totalProtein)}g</span>
-                    </div>
-                    <div class="nutrition-item">
-                        <span class="label">Carbs:</span>
-                        <span class="value">${Math.round(totalCarbs)}g</span>
-                    </div>
-                    <div class="nutrition-item">
-                        <span class="label">Fat:</span>
-                        <span class="value">${Math.round(totalFat)}g</span>
-                    </div>
-                </div>
-            </div>
-        `;
-    } catch (error) {
-        console.error('Error updating nutrition summary:', error);
-    }
-}
 
 // Remove the old event listeners for meal slots since we're handling clicks on the buttons directly
 document.querySelectorAll('.meal-slot').forEach(slot => {
@@ -934,13 +875,30 @@ async function updateMealPlanDisplay() {
     dailyEmptyCell.className = 'daily-nutrition-cell';
     dailyNutritionRow.appendChild(dailyEmptyCell);
     
-    // Add daily nutrition for each day
+    // Add daily nutrition for each day with progress bar
+    const dailyCalorieGoal = 2000; // Default daily calorie goal
     dayNutritionData.forEach(({ date, nutrition }) => {
         const dayNutritionCell = document.createElement('div');
         dayNutritionCell.className = 'daily-nutrition-cell';
+        
+        const caloriesConsumed = Math.round(nutrition.calories);
+        const caloriesRemaining = Math.max(0, dailyCalorieGoal - caloriesConsumed);
+        const progressPercentage = Math.min(100, (caloriesConsumed / dailyCalorieGoal) * 100);
+        
         dayNutritionCell.innerHTML = `
             <div class="daily-totals">
-                <div class="daily-calories">${Math.round(nutrition.calories)} cal</div>
+                <div class="calorie-progress-container">
+                    <div class="calorie-progress-header">
+                        <span class="calories-consumed">${caloriesConsumed}</span>
+                        <span class="calorie-separator">/</span>
+                        <span class="calories-goal">${dailyCalorieGoal}</span>
+                        <span class="calorie-unit">cal</span>
+                    </div>
+                    <div class="calorie-progress-bar">
+                        <div class="calorie-progress-fill" style="width: ${progressPercentage}%"></div>
+                    </div>
+                    <div class="calorie-remaining">${caloriesRemaining} remaining</div>
+                </div>
                 <div class="daily-macros">
                     <span class="daily-protein">${Math.round(nutrition.protein)}g P</span>
                     <span class="daily-carbs">${Math.round(nutrition.carbs)}g C</span>
@@ -952,9 +910,6 @@ async function updateMealPlanDisplay() {
     });
     
     mealPlanGrid.appendChild(dailyNutritionRow);
-    
-    // Update weekly nutrition summary
-    await updateNutritionSummary();
 }
 
 // Add window resize handler to reload meal plan when switching between mobile and desktop
