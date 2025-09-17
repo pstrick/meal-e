@@ -91,6 +91,11 @@
     background-color: #2a2a2a;
 }
 
+:root.dark-mode header nav {
+    background-color: var(--card-bg) !important;
+    box-shadow: 0 2px 4px var(--shadow-color);
+}
+
 /* Dark Mode Main Content */
 :root.dark-mode .container {
     background-color: var(--card-bg) !important;
