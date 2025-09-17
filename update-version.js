@@ -14,9 +14,21 @@ let currentBuild = 1;
 
 try {
     const versionContent = fs.readFileSync(versionFilePath, 'utf8');
+    const yearMatch = versionContent.match(/year:\s*(\d+)/);
+    const monthMatch = versionContent.match(/month:\s*(\d+)/);
     const buildMatch = versionContent.match(/build:\s*(\d+)/);
-    if (buildMatch) {
-        currentBuild = parseInt(buildMatch[1]) + 1;
+    
+    if (yearMatch && monthMatch && buildMatch) {
+        const lastYear = parseInt(yearMatch[1]);
+        const lastMonth = parseInt(monthMatch[1]);
+        const lastBuild = parseInt(buildMatch[1]);
+        
+        // If it's a new month or year, reset build to 1, otherwise increment
+        if (currentYear > lastYear || (currentYear === lastYear && currentMonth > lastMonth)) {
+            currentBuild = 1;
+        } else {
+            currentBuild = lastBuild + 1;
+        }
     }
 } catch (error) {
     console.log('Could not read current version file, starting with build 1');
