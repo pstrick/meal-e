@@ -746,6 +746,25 @@ async function continueInitialization() {
             cancelMeal.addEventListener('click', closeMealPlanModal);
         }
         
+        // Initialize close button for meal plan modal
+        const closeBtn = mealPlanModal?.querySelector('.close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeMealPlanModal);
+            console.log('Meal plan modal close button initialized');
+        } else {
+            console.warn('Meal plan modal close button not found');
+        }
+        
+        // Initialize click-outside-to-close for meal plan modal
+        if (mealPlanModal) {
+            mealPlanModal.addEventListener('click', (event) => {
+                if (event.target === mealPlanModal) {
+                    closeMealPlanModal();
+                }
+            });
+            console.log('Meal plan modal click-outside handler initialized');
+        }
+        
         // Attach the submit handler for the meal plan form
         if (mealPlanForm) {
             mealPlanForm.addEventListener('submit', handleMealPlanSubmit);
