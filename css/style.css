@@ -324,6 +324,218 @@
     }
 }
 
+/* Comprehensive Dark Mode Hover States */
+:root.dark-mode .nav-links a:hover {
+    background-color: #2a2a2a !important;
+    color: var(--text-color) !important;
+}
+
+:root.dark-mode .btn-primary:hover {
+    background-color: var(--secondary-color) !important;
+}
+
+:root.dark-mode .btn-secondary:hover {
+    background-color: #3a3a3a !important;
+    color: var(--text-color) !important;
+}
+
+:root.dark-mode .close:hover {
+    background-color: #3a3a3a !important;
+    color: var(--error-color) !important;
+}
+
+:root.dark-mode .modal .close:hover {
+    background-color: #3a3a3a !important;
+    color: var(--error-color) !important;
+}
+
+:root.dark-mode .modal .ingredient-item:hover {
+    background-color: #2a2a2a !important;
+    border-color: var(--primary-color) !important;
+}
+
+:root.dark-mode .modal .remove-ingredient:hover {
+    background-color: var(--error-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .modal #add-ingredient:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .modal .nutrition-item:hover {
+    background-color: #2a2a2a !important;
+}
+
+:root.dark-mode .modal .form-actions .btn:not(.btn-secondary):hover {
+    background-color: var(--secondary-color) !important;
+}
+
+:root.dark-mode .modal .form-actions .btn-secondary:hover {
+    background-color: #3a3a3a !important;
+    color: var(--text-color) !important;
+}
+
+:root.dark-mode .recipe-card:hover {
+    background-color: #2a2a2a !important;
+    border-color: var(--primary-color) !important;
+    transform: translateY(-2px) !important;
+}
+
+:root.dark-mode .recipe-card .btn-edit:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .recipe-card .btn-delete:hover {
+    background-color: var(--error-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .recipe-card .btn-print:hover {
+    background-color: #2196F3 !important;
+    color: white !important;
+}
+
+:root.dark-mode #add-recipe-btn:hover {
+    background-color: var(--secondary-color) !important;
+}
+
+:root.dark-mode .add-meal-btn:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .meal-item .remove-meal:hover {
+    background-color: var(--error-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .meal-actions button:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .search-result-item:hover {
+    background-color: #2a2a2a !important;
+    border-color: var(--primary-color) !important;
+}
+
+:root.dark-mode .ingredients-table tbody tr:hover {
+    background-color: #2a2a2a !important;
+}
+
+:root.dark-mode #add-recipe:hover {
+    background-color: var(--secondary-color) !important;
+}
+
+:root.dark-mode .macro-card:hover {
+    background-color: #2a2a2a !important;
+    border-color: var(--primary-color) !important;
+    transform: translateY(-2px) !important;
+}
+
+:root.dark-mode .meal-plan-controls .btn:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .ingredients-table .btn-edit:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .ingredients-table .btn-delete:hover {
+    background-color: var(--error-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .modal .unified-option:hover:not(.selected) {
+    background-color: #2a2a2a !important;
+    border-color: var(--primary-color) !important;
+}
+
+:root.dark-mode .modal #ingredients-list .macro-item:hover {
+    background-color: #2a2a2a !important;
+}
+
+:root.dark-mode .modal #ingredients-list .remove-ingredient:hover {
+    background-color: var(--error-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .nutrition-item:hover {
+    background-color: #2a2a2a !important;
+}
+
+:root.dark-mode .shopping-controls .btn:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .shopping-controls .btn-secondary:hover {
+    background-color: #3a3a3a !important;
+    color: var(--text-color) !important;
+}
+
+:root.dark-mode .shopping-list-card:hover {
+    background-color: #2a2a2a !important;
+    border-color: var(--primary-color) !important;
+    transform: translateY(-2px) !important;
+}
+
+:root.dark-mode .list-actions .btn-primary:hover {
+    background-color: var(--secondary-color) !important;
+}
+
+:root.dark-mode .list-actions .btn-secondary:hover {
+    background-color: #3a3a3a !important;
+    color: var(--text-color) !important;
+}
+
+:root.dark-mode .list-actions .btn-edit:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .list-actions .btn-delete:hover {
+    background-color: var(--error-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .shopping-item:hover {
+    background-color: #2a2a2a !important;
+}
+
+:root.dark-mode .item-actions .btn-edit:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .item-actions .btn-delete:hover {
+    background-color: var(--error-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .goals-info a:hover {
+    color: var(--primary-color) !important;
+}
+
+:root.dark-mode .add-food-btn:hover {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+:root.dark-mode .food-item:hover {
+    background-color: #2a2a2a !important;
+}
+
+:root.dark-mode .remove-food:hover {
+    background-color: var(--error-color) !important;
+    color: white !important;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -484,10 +696,11 @@ h2 {
     cursor: pointer;
     font-weight: 600;
     margin-bottom: 0;
-    gap: 16px;
-    min-height: 40px;
-    padding: 8px 0;
+    gap: 20px;
+    min-height: 44px;
+    padding: 10px 0;
     width: 100%;
+    position: relative;
 }
 
 .toggle-input {
@@ -504,6 +717,7 @@ h2 {
     transition: background-color 0.3s ease;
     margin: 0;
     padding: 0;
+    order: 1;
 }
 
 .toggle-slider::before {
@@ -535,6 +749,8 @@ h2 {
     padding: 0;
     white-space: nowrap;
     overflow: visible;
+    order: 2;
+    min-width: 0;
 }
 
 /* Enhanced Modals */
