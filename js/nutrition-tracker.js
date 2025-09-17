@@ -636,8 +636,9 @@ async function autoLogFromMealPlan() {
                         const amount = item.amount || 100;
                         
                         if (item.type === 'meal') {
-                            // For recipes: nutrition is total per serving size, use serving ratio
-                            const servingSize = item.servingSize || 100;
+                            // For recipes: look up the actual recipe to get correct serving size
+                            const recipe = window.recipes.find(r => r.id === item.id);
+                            const servingSize = recipe ? (recipe.servingSize || 100) : (item.servingSize || 100);
                             const servingRatio = amount / servingSize;
                             
                             calories = Math.round((item.nutrition.calories || 0) * servingRatio);
@@ -653,11 +654,13 @@ async function autoLogFromMealPlan() {
                                 totalCalories: calories,
                                 itemNutrition: item.nutrition,
                                 itemServingSize: item.servingSize,
+                                recipeServingSize: recipe ? recipe.servingSize : 'not found',
+                                servingSizeSource: recipe ? 'from recipe lookup' : 'from meal plan item',
                                 calculation: `${item.nutrition.calories} * (${amount} / ${servingSize}) = ${calories}`,
                                 expectedCalories: Math.round(item.nutrition.calories * (amount / servingSize)),
                                 debug: {
-                                    recipeFound: !!window.recipes.find(r => r.id === item.id),
-                                    recipeData: window.recipes.find(r => r.id === item.id),
+                                    recipeFound: !!recipe,
+                                    recipeData: recipe,
                                     itemType: item.type,
                                     itemId: item.id
                                 }
