@@ -384,8 +384,8 @@ function createMealItem(item, amount, itemIndex, slot) {
     const icon = item.type === 'meal' ? '🍽️' : '🥩';
     const label = item.type === 'meal' ? 'Recipe' : 'Custom Ingredient';
     
-    // Truncate item name to 50 characters
-    const truncatedName = item.name.length > 50 ? item.name.substring(0, 50) + '...' : item.name;
+    // Truncate item name to 25 characters for uniform boxes
+    const truncatedName = item.name.length > 25 ? item.name.substring(0, 25) + '...' : item.name;
     
     // Calculate nutrition for this item
     let itemNutrition = { calories: 0, protein: 0, carbs: 0, fat: 0 };
