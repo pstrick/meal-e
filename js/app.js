@@ -128,10 +128,93 @@ function calculateRelevancyScore(foodDesc, searchTerms) {
     return finalScore;
 }
 
+// Smart Relevancy Scoring System
+function calculateRelevancyScore(product, query) {
+    const queryLower = query.toLowerCase();
+    let score = 0;
+    
+    // Product name exact match (highest priority)
+    if (product.product_name) {
+        const nameLower = product.product_name.toLowerCase();
+        if (nameLower === queryLower) {
+            score += 100; // Exact match
+        } else if (nameLower.startsWith(queryLower)) {
+            score += 80; // Starts with query
+        } else if (nameLower.includes(queryLower)) {
+            score += 60; // Contains query
+        }
+        
+        // Word boundary matches (more relevant)
+        const queryWords = queryLower.split(/\s+/);
+        const nameWords = nameLower.split(/\s+/);
+        queryWords.forEach(queryWord => {
+            if (nameWords.some(nameWord => nameWord === queryWord)) {
+                score += 40; // Word exact match
+            } else if (nameWords.some(nameWord => nameWord.startsWith(queryWord))) {
+                score += 30; // Word starts with
+            } else if (nameWords.some(nameWord => nameWord.includes(queryWord))) {
+                score += 20; // Word contains
+            }
+        });
+    }
+    
+    // Brand name relevance
+    if (product.brands) {
+        const brandsLower = product.brands.toLowerCase();
+        if (brandsLower.includes(queryLower)) {
+            score += 15; // Brand contains query
+        }
+    }
+    
+    // Category relevance (food categories get higher scores)
+    if (product.categories) {
+        const categoriesLower = product.categories.toLowerCase();
+        const foodCategories = ['food', 'beverage', 'dairy', 'meat', 'vegetable', 'fruit', 'grain', 'snack'];
+        const isFoodCategory = foodCategories.some(cat => categoriesLower.includes(cat));
+        
+        if (isFoodCategory) {
+            score += 25; // Food category bonus
+        }
+        
+        // Specific category matches
+        if (categoriesLower.includes(queryLower)) {
+            score += 35; // Category contains query
+        }
+    }
+    
+    // Ingredients text relevance (lower priority but still important)
+    if (product.ingredients_text) {
+        const ingredientsLower = product.ingredients_text.toLowerCase();
+        if (ingredientsLower.includes(queryLower)) {
+            score += 10; // Ingredients contain query
+        }
+    }
+    
+    // Quality indicators (products with more complete data)
+    if (product.nutrition_grades && product.nutrition_grades !== 'unknown') {
+        score += 5; // Has nutrition grade
+    }
+    
+    if (product.image_url) {
+        score += 3; // Has image
+    }
+    
+    if (product.ingredients_text && product.ingredients_text.length > 50) {
+        score += 2; // Detailed ingredients
+    }
+    
+    // Penalty for very long product names (likely less relevant)
+    if (product.product_name && product.product_name.length > 100) {
+        score -= 10;
+    }
+    
+    return score;
+}
+
 async function searchIngredients(query) {
     const params = new URLSearchParams({
         search_terms: query,
-        page_size: 25,
+        page_size: 50, // Get more results to sort
         json: 1
     });
 
@@ -147,8 +230,44 @@ async function searchIngredients(query) {
             return [];
         }
 
-        console.log('Open Food Facts search results:', data.products);
-        return data.products;
+        // Filter out products without names and apply additional relevancy filters
+        const validProducts = data.products.filter(product => {
+            if (!product.product_name) return false;
+            
+            // Filter out products that are clearly not food items
+            const nameLower = product.product_name.toLowerCase();
+            const categoriesLower = (product.categories || '').toLowerCase();
+            
+            // Skip non-food items
+            const nonFoodKeywords = ['cosmetic', 'cleaning', 'hygiene', 'beauty', 'shampoo', 'soap', 'toothpaste', 'medicine', 'supplement', 'vitamin'];
+            if (nonFoodKeywords.some(keyword => nameLower.includes(keyword) || categoriesLower.includes(keyword))) {
+                return false;
+            }
+            
+            // Skip products with very low relevancy scores (likely irrelevant)
+            const score = calculateRelevancyScore(product, query);
+            return score > 5; // Only include products with some relevancy
+        });
+        
+        // Calculate relevancy scores and sort
+        const scoredProducts = validProducts.map(product => ({
+            ...product,
+            relevancyScore: calculateRelevancyScore(product, query)
+        }));
+        
+        // Sort by relevancy score (highest first)
+        const sortedProducts = scoredProducts.sort((a, b) => b.relevancyScore - a.relevancyScore);
+        
+        // Return top 25 most relevant results
+        const topResults = sortedProducts.slice(0, 25);
+        
+        console.log('Open Food Facts search results (ranked by relevancy):', topResults.map(p => ({
+            name: p.product_name,
+            score: p.relevancyScore,
+            brand: p.brands
+        })));
+        
+        return topResults;
     } catch (error) {
         console.error('Error searching ingredients:', error);
         throw error;
