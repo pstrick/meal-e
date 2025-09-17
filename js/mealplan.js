@@ -905,19 +905,22 @@ async function updateMealPlanDisplay() {
         const fatProgressPercentage = Math.min(100, (fatConsumed / dailyGoals.fat) * 100);
         const isFatOverGoal = fatConsumed > dailyGoals.fat;
         
+        // Format numbers with commas
+        const formatNumber = (num) => num.toLocaleString();
+        
         dayNutritionCell.innerHTML = `
             <div class="daily-totals">
                 <div class="calorie-progress-container">
                     <div class="calorie-progress-header">
-                        <span class="calories-consumed">${caloriesConsumed}</span>
+                        <span class="calories-consumed">${formatNumber(caloriesConsumed)}</span>
                         <span class="calorie-separator">/</span>
-                        <span class="calories-goal">${dailyGoals.calories}</span>
+                        <span class="calories-goal">${formatNumber(dailyGoals.calories)}</span>
                         <span class="calorie-unit">cal</span>
                     </div>
                     <div class="calorie-progress-bar">
                         <div class="calorie-progress-fill ${isCalorieOverGoal ? 'over-goal' : ''}" style="width: ${calorieProgressPercentage}%"></div>
                     </div>
-                    <div class="calorie-remaining">${caloriesRemaining} remaining</div>
+                    <div class="calorie-remaining">${formatNumber(caloriesRemaining)} remaining</div>
                 </div>
                 <div class="macro-progress-container">
                     <div class="macro-progress-item">
@@ -927,7 +930,7 @@ async function updateMealPlanDisplay() {
                                 <path class="circular-progress-fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
                             </svg>
                             <div class="circular-progress-text">
-                                <span class="macro-value">${proteinConsumed}</span>
+                                <span class="macro-value">${formatNumber(proteinConsumed)}</span>
                                 <span class="macro-unit">g</span>
                             </div>
                         </div>
@@ -940,7 +943,7 @@ async function updateMealPlanDisplay() {
                                 <path class="circular-progress-fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
                             </svg>
                             <div class="circular-progress-text">
-                                <span class="macro-value">${carbsConsumed}</span>
+                                <span class="macro-value">${formatNumber(carbsConsumed)}</span>
                                 <span class="macro-unit">g</span>
                             </div>
                         </div>
@@ -953,7 +956,7 @@ async function updateMealPlanDisplay() {
                                 <path class="circular-progress-fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
                             </svg>
                             <div class="circular-progress-text">
-                                <span class="macro-value">${fatConsumed}</span>
+                                <span class="macro-value">${formatNumber(fatConsumed)}</span>
                                 <span class="macro-unit">g</span>
                             </div>
                         </div>
