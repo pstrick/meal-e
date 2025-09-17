@@ -559,6 +559,20 @@ function addFoodToMeal() {
 // Auto-log from Meal Plan
 async function autoLogFromMealPlan() {
     try {
+        // Ensure recipes are loaded
+        if (!window.recipes) {
+            console.log('Recipes not loaded, loading from localStorage...');
+            const savedRecipes = localStorage.getItem('recipes');
+            if (savedRecipes) {
+                window.recipes = JSON.parse(savedRecipes);
+                console.log('Recipes loaded from localStorage:', window.recipes);
+            } else {
+                console.error('No recipes found in localStorage');
+                alert('No recipes found. Please add some recipes first.');
+                return;
+            }
+        }
+        
         const mealPlan = JSON.parse(localStorage.getItem('mealPlan') || '{}');
         console.log('Meal plan data:', mealPlan);
         console.log('Meal plan keys:', Object.keys(mealPlan));
