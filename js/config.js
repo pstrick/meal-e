@@ -1,7 +1,6 @@
-// Open Food Facts API Configuration
+// App Configuration
 const config = {
-    OFF_API_BASE_URL: 'https://world.openfoodfacts.org',
-    // No API key needed for Open Food Facts - it's completely free!
+    // No external APIs needed - using custom ingredients only
 };
 
 export default config; 

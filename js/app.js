@@ -85,212 +85,32 @@ function normalizeSearchTerm(term) {
 }
 
 
-// Smart Relevancy Scoring System
-function calculateRelevancyScore(product, query) {
+// Custom Ingredients Search Functions
+function searchCustomIngredients(query) {
+    const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
     const queryLower = query.toLowerCase();
-    let score = 0;
     
-    // Product name exact match (highest priority)
-    if (product.product_name) {
-        const nameLower = product.product_name.toLowerCase();
-        if (nameLower === queryLower) {
-            score += 100; // Exact match
-        } else if (nameLower.startsWith(queryLower)) {
-            score += 80; // Starts with query
-        } else if (nameLower.includes(queryLower)) {
-            score += 60; // Contains query
-        }
-        
-        // Word boundary matches (more relevant)
-        const queryWords = queryLower.split(/\s+/);
-        const nameWords = nameLower.split(/\s+/);
-        queryWords.forEach(queryWord => {
-            if (nameWords.some(nameWord => nameWord === queryWord)) {
-                score += 40; // Word exact match
-            } else if (nameWords.some(nameWord => nameWord.startsWith(queryWord))) {
-                score += 30; // Word starts with
-            } else if (nameWords.some(nameWord => nameWord.includes(queryWord))) {
-                score += 20; // Word contains
-            }
-        });
-    }
-    
-    // Brand name relevance
-    if (product.brands) {
-        const brandsLower = product.brands.toLowerCase();
-        if (brandsLower.includes(queryLower)) {
-            score += 15; // Brand contains query
-        }
-    }
-    
-    // Category relevance (food categories get higher scores)
-    if (product.categories) {
-        const categoriesLower = product.categories.toLowerCase();
-        const foodCategories = ['food', 'beverage', 'dairy', 'meat', 'vegetable', 'fruit', 'grain', 'snack'];
-        const isFoodCategory = foodCategories.some(cat => categoriesLower.includes(cat));
-        
-        if (isFoodCategory) {
-            score += 25; // Food category bonus
-        }
-        
-        // Specific category matches
-        if (categoriesLower.includes(queryLower)) {
-            score += 35; // Category contains query
-        }
-    }
-    
-    // Ingredients text relevance (lower priority but still important)
-    if (product.ingredients_text) {
-        const ingredientsLower = product.ingredients_text.toLowerCase();
-        if (ingredientsLower.includes(queryLower)) {
-            score += 10; // Ingredients contain query
-        }
-    }
-    
-    // Quality indicators (products with more complete data)
-    if (product.nutrition_grades && product.nutrition_grades !== 'unknown') {
-        score += 5; // Has nutrition grade
-    }
-    
-    if (product.image_url) {
-        score += 3; // Has image
-    }
-    
-    if (product.ingredients_text && product.ingredients_text.length > 50) {
-        score += 2; // Detailed ingredients
-    }
-    
-    // Penalty for very long product names (likely less relevant)
-    if (product.product_name && product.product_name.length > 100) {
-        score -= 10;
-    }
-    
-    return score;
-}
-
-async function searchIngredients(query) {
-    const params = new URLSearchParams({
-        search_terms: query,
-        page_size: 50, // Get more results to sort
-        json: 1
+    return customIngredients.filter(ingredient => {
+        const nameLower = ingredient.name.toLowerCase();
+        return nameLower.includes(queryLower) || 
+               nameLower.startsWith(queryLower) ||
+               nameLower === queryLower;
     });
-
-    try {
-        const response = await fetch(`${config.OFF_API_BASE_URL}/cgi/search.pl?${params}`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        
-        if (!data || !data.products) {
-            console.error('Invalid response format:', data);
-            return [];
-        }
-
-        // Filter out products without names and apply additional relevancy filters
-        const validProducts = data.products.filter(product => {
-            if (!product.product_name) return false;
-            
-            // Filter out products that are clearly not food items
-            const nameLower = product.product_name.toLowerCase();
-            const categoriesLower = (product.categories || '').toLowerCase();
-            
-            // Skip non-food items
-            const nonFoodKeywords = ['cosmetic', 'cleaning', 'hygiene', 'beauty', 'shampoo', 'soap', 'toothpaste', 'medicine', 'supplement', 'vitamin'];
-            if (nonFoodKeywords.some(keyword => nameLower.includes(keyword) || categoriesLower.includes(keyword))) {
-                return false;
-            }
-            
-            // Skip products with very low relevancy scores (likely irrelevant)
-            const score = calculateRelevancyScore(product, query);
-            return score > 5; // Only include products with some relevancy
-        });
-        
-        // Calculate relevancy scores and sort
-        const scoredProducts = validProducts.map(product => ({
-            ...product,
-            relevancyScore: calculateRelevancyScore(product, query)
-        }));
-        
-        // Sort by relevancy score (highest first)
-        const sortedProducts = scoredProducts.sort((a, b) => b.relevancyScore - a.relevancyScore);
-        
-        // Return top 25 most relevant results
-        const topResults = sortedProducts.slice(0, 25);
-        
-        console.log('Open Food Facts search results (ranked by relevancy):', topResults.map(p => ({
-            name: p.product_name,
-            score: p.relevancyScore,
-            brand: p.brands
-        })));
-        
-        return topResults;
-    } catch (error) {
-        console.error('Error searching ingredients:', error);
-        throw error;
-    }
 }
 
-async function getFoodDetails(productCode) {
-    try {
-        const response = await fetch(`${config.OFF_API_BASE_URL}/product/${productCode}.json`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        console.log('Open Food Facts product details:', data);
-        return data;
-    } catch (error) {
-        console.error('Error getting food details:', error);
-        return null;
-    }
-}
-
-// Modified Nutrition Calculations for Open Food Facts
-function calculateNutritionPerGram(foodData) {
-    console.log('Calculating nutrition for food:', foodData.product?.product_name || 'Unknown');
+// Nutrition Calculations for Custom Ingredients
+function calculateNutritionPerGram(ingredient) {
+    console.log('Calculating nutrition for ingredient:', ingredient.name || 'Unknown');
     
+    // Custom ingredients already have nutrition per 100g, convert to per gram
     const nutrition = {
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0
+        calories: (ingredient.calories || 0) / 100,
+        protein: (ingredient.protein || 0) / 100,
+        carbs: (ingredient.carbs || 0) / 100,
+        fat: (ingredient.fat || 0) / 100
     };
 
-    if (!foodData.product || !foodData.product.nutriments) {
-        console.error('No nutrition data found in Open Food Facts response');
-        return nutrition;
-    }
-
-    const nutriments = foodData.product.nutriments;
-    
-    // Open Food Facts provides nutrition per 100g by default
-    // We need to convert to per gram (divide by 100)
-    
-    // Energy (calories) - try different possible keys
-    if (nutriments['energy-kcal_100g']) {
-        nutrition.calories = nutriments['energy-kcal_100g'] / 100;
-    } else if (nutriments['energy_100g']) {
-        // Convert from kJ to kcal (1 kcal = 4.184 kJ)
-        nutrition.calories = (nutriments['energy_100g'] / 4.184) / 100;
-    }
-    
-    // Protein
-    if (nutriments['proteins_100g']) {
-        nutrition.protein = nutriments['proteins_100g'] / 100;
-    }
-    
-    // Carbohydrates
-    if (nutriments['carbohydrates_100g']) {
-        nutrition.carbs = nutriments['carbohydrates_100g'] / 100;
-    }
-    
-    // Fat
-    if (nutriments['fat_100g']) {
-        nutrition.fat = nutriments['fat_100g'] / 100;
-    }
-
-    console.log('Final calculated nutrition (per gram):', nutrition);
+    console.log('Calculated nutrition per gram:', nutrition);
     return nutrition;
 }
 
@@ -1300,7 +1120,7 @@ function closeIngredientSearch() {
 async function searchAllIngredients(query) {
     const results = [];
     
-    // Search custom ingredients
+    // Search only custom ingredients
     const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
     const customMatches = customIngredients.filter(ingredient => 
         ingredient.name.toLowerCase().includes(query.toLowerCase())
@@ -1325,31 +1145,8 @@ async function searchAllIngredients(query) {
         });
     });
     
-    // Search Open Food Facts ingredients
-    try {
-        const offResults = await searchIngredients(query);
-        offResults.forEach(product => {
-            if (product.product_name) {
-                results.push({
-                    id: product.code || product._id,
-                    name: product.product_name,
-                    source: 'off',
-                    productCode: product.code || product._id,
-                    brandOwner: product.brands || product.brand_owner || 'Generic',
-                    image: product.image_url || product.image_front_url
-                });
-            }
-        });
-    } catch (error) {
-        console.error('Error searching Open Food Facts ingredients:', error);
-    }
-    
-    // Sort results: custom ingredients first, then by name
-    results.sort((a, b) => {
-        if (a.source === 'custom' && b.source !== 'custom') return -1;
-        if (a.source !== 'custom' && b.source === 'custom') return 1;
-        return a.name.localeCompare(b.name);
-    });
+    // Sort results by name
+    results.sort((a, b) => a.name.localeCompare(b.name));
     
     return results;
 }
@@ -1368,8 +1165,8 @@ async function displaySearchResults(results) {
         div.className = 'search-result-item';
         
         // Create visual indicator for ingredient source
-        const sourceIcon = ingredient.source === 'custom' ? '🏠' : (ingredient.source === 'off' ? '🌍' : '🔍');
-        const sourceLabel = ingredient.source === 'custom' ? 'Custom' : (ingredient.source === 'off' ? 'Open Food Facts' : 'Unknown');
+        const sourceIcon = '🏠';
+        const sourceLabel = 'Custom Ingredient';
         
         const [mainName, ...details] = ingredient.name.split(',');
         div.innerHTML = `
@@ -1389,60 +1186,28 @@ async function displaySearchResults(results) {
                     return;
                 }
                 
-                let ingredientData;
+                // Handle custom ingredient
+                const ingredientData = {
+                    name: ingredient.name,
+                    amount: parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0,
+                    nutrition: ingredient.nutrition,
+                    source: 'custom',
+                    id: ingredient.id
+                };
                 
-                if (ingredient.source === 'custom') {
-                    // Handle custom ingredient
-                    ingredientData = {
-                        name: ingredient.name,
-                        amount: parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0,
-                        nutrition: ingredient.nutrition,
-                        source: 'custom',
-                        id: ingredient.id
-                    };
-                    
-                    // Store in selectedIngredients with custom ID
-                    selectedIngredients.set(`custom-${ingredient.id}`, ingredientData);
-                    
-                    // Update the input field
-                    currentIngredientInput.querySelector('.ingredient-name').value = ingredient.name;
-                    currentIngredientInput.querySelector('.ingredient-name').dataset.fdcId = `custom-${ingredient.id}`;
-                    
-                } else if (ingredient.source === 'off') {
-                    // Handle Open Food Facts ingredient
-                    const details = await getFoodDetails(ingredient.productCode);
-                    if (details) {
-                        const nutrition = calculateNutritionPerGram(details);
-                        const amount = parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0;
-                        
-                        ingredientData = {
-                            name: ingredient.name,
-                            amount: amount,
-                            nutrition: nutrition,
-                            source: 'off',
-                            productCode: ingredient.productCode
-                        };
-                        
-                        // Store in selectedIngredients with Open Food Facts product code
-                        selectedIngredients.set(ingredient.productCode, ingredientData);
-                        
-                        // Update the input field
-                        currentIngredientInput.querySelector('.ingredient-name').value = ingredient.name;
-                        currentIngredientInput.querySelector('.ingredient-name').dataset.fdcId = ingredient.productCode;
-                    }
-                } else {
-                    // Handle other sources (fallback)
-                    console.warn('Unknown ingredient source:', ingredient.source);
-                }
+                // Store in selectedIngredients with custom ID
+                selectedIngredients.set(`custom-${ingredient.id}`, ingredientData);
                 
-                if (ingredientData) {
-                    // Update ingredient macros
-                    updateIngredientMacros(currentIngredientInput, ingredientData);
-                    
-                    // Update nutrition display
-                    updateTotalNutrition();
-                    closeIngredientSearch();
-                }
+                // Update the input field
+                currentIngredientInput.querySelector('.ingredient-name').value = ingredient.name;
+                currentIngredientInput.querySelector('.ingredient-name').dataset.fdcId = `custom-${ingredient.id}`;
+                
+                // Update ingredient macros
+                updateIngredientMacros(currentIngredientInput, ingredientData);
+                
+                // Update nutrition display
+                updateTotalNutrition();
+                closeIngredientSearch();
             } catch (error) {
                 console.error('Error selecting ingredient:', error);
                 alert('Error selecting ingredient. Please try again.');
