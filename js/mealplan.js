@@ -875,15 +875,34 @@ async function updateMealPlanDisplay() {
     dailyEmptyCell.className = 'daily-nutrition-cell';
     dailyNutritionRow.appendChild(dailyEmptyCell);
     
-    // Add daily nutrition for each day with progress bar
-    const dailyCalorieGoal = 2000; // Default daily calorie goal
+    // Add daily nutrition for each day with progress bars
+    const dailyGoals = {
+        calories: 2000,
+        protein: 150,  // grams
+        carbs: 250,    // grams
+        fat: 80        // grams
+    };
+    
     dayNutritionData.forEach(({ date, nutrition }) => {
         const dayNutritionCell = document.createElement('div');
         dayNutritionCell.className = 'daily-nutrition-cell';
         
         const caloriesConsumed = Math.round(nutrition.calories);
-        const caloriesRemaining = Math.max(0, dailyCalorieGoal - caloriesConsumed);
-        const progressPercentage = Math.min(100, (caloriesConsumed / dailyCalorieGoal) * 100);
+        const caloriesRemaining = Math.max(0, dailyGoals.calories - caloriesConsumed);
+        const calorieProgressPercentage = Math.min(100, (caloriesConsumed / dailyGoals.calories) * 100);
+        const isCalorieOverGoal = caloriesConsumed > dailyGoals.calories;
+        
+        const proteinConsumed = Math.round(nutrition.protein);
+        const proteinProgressPercentage = Math.min(100, (proteinConsumed / dailyGoals.protein) * 100);
+        const isProteinOverGoal = proteinConsumed > dailyGoals.protein;
+        
+        const carbsConsumed = Math.round(nutrition.carbs);
+        const carbsProgressPercentage = Math.min(100, (carbsConsumed / dailyGoals.carbs) * 100);
+        const isCarbsOverGoal = carbsConsumed > dailyGoals.carbs;
+        
+        const fatConsumed = Math.round(nutrition.fat);
+        const fatProgressPercentage = Math.min(100, (fatConsumed / dailyGoals.fat) * 100);
+        const isFatOverGoal = fatConsumed > dailyGoals.fat;
         
         dayNutritionCell.innerHTML = `
             <div class="daily-totals">
@@ -891,18 +910,54 @@ async function updateMealPlanDisplay() {
                     <div class="calorie-progress-header">
                         <span class="calories-consumed">${caloriesConsumed}</span>
                         <span class="calorie-separator">/</span>
-                        <span class="calories-goal">${dailyCalorieGoal}</span>
+                        <span class="calories-goal">${dailyGoals.calories}</span>
                         <span class="calorie-unit">cal</span>
                     </div>
                     <div class="calorie-progress-bar">
-                        <div class="calorie-progress-fill" style="width: ${progressPercentage}%"></div>
+                        <div class="calorie-progress-fill ${isCalorieOverGoal ? 'over-goal' : ''}" style="width: ${calorieProgressPercentage}%"></div>
                     </div>
                     <div class="calorie-remaining">${caloriesRemaining} remaining</div>
                 </div>
-                <div class="daily-macros">
-                    <span class="daily-protein">${Math.round(nutrition.protein)}g P</span>
-                    <span class="daily-carbs">${Math.round(nutrition.carbs)}g C</span>
-                    <span class="daily-fat">${Math.round(nutrition.fat)}g F</span>
+                <div class="macro-progress-container">
+                    <div class="macro-progress-item">
+                        <div class="circular-progress" data-progress="${proteinProgressPercentage}" data-over-goal="${isProteinOverGoal}">
+                            <svg class="circular-progress-svg" viewBox="0 0 36 36">
+                                <path class="circular-progress-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                <path class="circular-progress-fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            </svg>
+                            <div class="circular-progress-text">
+                                <span class="macro-value">${proteinConsumed}</span>
+                                <span class="macro-unit">g</span>
+                            </div>
+                        </div>
+                        <div class="macro-label">Protein</div>
+                    </div>
+                    <div class="macro-progress-item">
+                        <div class="circular-progress" data-progress="${carbsProgressPercentage}" data-over-goal="${isCarbsOverGoal}">
+                            <svg class="circular-progress-svg" viewBox="0 0 36 36">
+                                <path class="circular-progress-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                <path class="circular-progress-fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            </svg>
+                            <div class="circular-progress-text">
+                                <span class="macro-value">${carbsConsumed}</span>
+                                <span class="macro-unit">g</span>
+                            </div>
+                        </div>
+                        <div class="macro-label">Carbs</div>
+                    </div>
+                    <div class="macro-progress-item">
+                        <div class="circular-progress" data-progress="${fatProgressPercentage}" data-over-goal="${isFatOverGoal}">
+                            <svg class="circular-progress-svg" viewBox="0 0 36 36">
+                                <path class="circular-progress-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                <path class="circular-progress-fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            </svg>
+                            <div class="circular-progress-text">
+                                <span class="macro-value">${fatConsumed}</span>
+                                <span class="macro-unit">g</span>
+                            </div>
+                        </div>
+                        <div class="macro-label">Fat</div>
+                    </div>
                 </div>
             </div>
         `;
@@ -910,6 +965,24 @@ async function updateMealPlanDisplay() {
     });
     
     mealPlanGrid.appendChild(dailyNutritionRow);
+    
+    // Animate circular progress bars
+    setTimeout(() => {
+        document.querySelectorAll('.circular-progress').forEach(progress => {
+            const progressPercentage = parseFloat(progress.dataset.progress);
+            const isOverGoal = progress.dataset.overGoal === 'true';
+            const fillPath = progress.querySelector('.circular-progress-fill');
+            
+            // Calculate stroke-dasharray for the progress
+            const circumference = 2 * Math.PI * 15.9155; // radius = 15.9155
+            const strokeDasharray = circumference;
+            const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
+            
+            fillPath.style.strokeDasharray = strokeDasharray;
+            fillPath.style.strokeDashoffset = strokeDashoffset;
+            fillPath.classList.toggle('over-goal', isOverGoal);
+        });
+    }, 100);
 }
 
 // Add window resize handler to reload meal plan when switching between mobile and desktop
