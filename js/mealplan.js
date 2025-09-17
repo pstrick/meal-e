@@ -1098,17 +1098,55 @@ function generateShoppingListFromMealPlan() {
                                 return;
                             }
                             
-                            const key = item.name.toLowerCase();
-                            if (ingredients.has(key)) {
-                                const existing = ingredients.get(key);
-                                existing.amount += item.amount;
-                            } else {
-                                ingredients.set(key, {
-                                    name: item.name,
-                                    amount: item.amount,
-                                    unit: 'g', // Default to grams
-                                    notes: `From meal plan: ${item.name}`
-                                });
+                            if (item.type === 'meal') {
+                                // For recipes, break down into individual ingredients
+                                const recipe = window.recipes.find(r => r.id === item.id);
+                                if (recipe && recipe.ingredients) {
+                                    console.log(`Breaking down recipe: ${item.name} (${item.amount}g)`);
+                                    
+                                    // Calculate scaling factor based on recipe serving size vs amount
+                                    const servingSize = recipe.servingSize || 100;
+                                    const scaleFactor = item.amount / servingSize;
+                                    
+                                    recipe.ingredients.forEach(ingredient => {
+                                        if (ingredient.name && ingredient.amount) {
+                                            const scaledAmount = Math.round(ingredient.amount * scaleFactor);
+                                            const key = ingredient.name.toLowerCase();
+                                            
+                                            if (ingredients.has(key)) {
+                                                const existing = ingredients.get(key);
+                                                existing.amount += scaledAmount;
+                                                // Update notes to include recipe name
+                                                if (!existing.notes.includes(recipe.name)) {
+                                                    existing.notes += `, ${recipe.name}`;
+                                                }
+                                            } else {
+                                                ingredients.set(key, {
+                                                    name: ingredient.name,
+                                                    amount: scaledAmount,
+                                                    unit: 'g',
+                                                    notes: `From recipe: ${recipe.name}`
+                                                });
+                                            }
+                                        }
+                                    });
+                                } else {
+                                    console.warn(`Recipe not found or no ingredients for: ${item.name}`);
+                                }
+                            } else if (item.type === 'ingredient') {
+                                // For ingredients, add directly
+                                const key = item.name.toLowerCase();
+                                if (ingredients.has(key)) {
+                                    const existing = ingredients.get(key);
+                                    existing.amount += item.amount;
+                                } else {
+                                    ingredients.set(key, {
+                                        name: item.name,
+                                        amount: item.amount,
+                                        unit: 'g',
+                                        notes: `From meal plan: ${item.name}`
+                                    });
+                                }
                             }
                         });
                     }
