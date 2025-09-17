@@ -444,10 +444,10 @@ function updateNutritionPreview() {
     if (foodType === 'ingredient') {
         // For ingredients, calculate based on per 100g values
         const multiplier = amount / 100; // Convert to percentage of 100g
-        calories = Math.round((foodData.calories || 0) * multiplier);
-        protein = Math.round((foodData.protein || 0) * multiplier);
-        carbs = Math.round((foodData.carbs || 0) * multiplier);
-        fat = Math.round((foodData.fat || 0) * multiplier);
+        calories = Math.round((foodData.nutrition?.calories || 0) * multiplier);
+        protein = Math.round((foodData.nutrition?.protein || 0) * multiplier);
+        carbs = Math.round((foodData.nutrition?.carbs || 0) * multiplier);
+        fat = Math.round((foodData.nutrition?.fat || 0) * multiplier);
     } else if (foodType === 'recipe') {
         // For recipes, use the stored nutrition data per serving
         if (foodData.nutrition) {
@@ -509,10 +509,10 @@ function addFoodToMeal() {
     if (foodType === 'ingredient') {
         // For ingredients, calculate based on per 100g values
         const multiplier = amount / 100; // Convert to percentage of 100g
-        calories = Math.round((foodData.calories || 0) * multiplier);
-        protein = Math.round((foodData.protein || 0) * multiplier);
-        carbs = Math.round((foodData.carbs || 0) * multiplier);
-        fat = Math.round((foodData.fat || 0) * multiplier);
+        calories = Math.round((foodData.nutrition?.calories || 0) * multiplier);
+        protein = Math.round((foodData.nutrition?.protein || 0) * multiplier);
+        carbs = Math.round((foodData.nutrition?.carbs || 0) * multiplier);
+        fat = Math.round((foodData.nutrition?.fat || 0) * multiplier);
     } else if (foodType === 'recipe') {
         // For recipes, use the stored nutrition data per serving
         if (foodData.nutrition) {
@@ -643,7 +643,8 @@ async function autoLogFromMealPlan() {
                                 perGram: nutritionPerGram.calories,
                                 totalCalories: calories,
                                 itemNutrition: item.nutrition,
-                                itemServingSize: item.servingSize
+                                itemServingSize: item.servingSize,
+                                calculation: `${item.nutrition.calories} / ${servingSize} * ${amount} = ${calories}`
                             });
                         } else if (item.type === 'ingredient') {
                             // For ingredients: nutrition is already per-gram
