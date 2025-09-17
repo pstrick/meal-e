@@ -1478,8 +1478,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     closeModalHandler();
                 } else if (modal && modal.id === 'ingredient-search-modal') {
                     closeIngredientSearch();
-                } else if (modal && modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
-                    window.closeMealPlanModal();
+                } else if (modal && modal.id === 'meal-plan-modal') {
+                    if (window.closeMealPlanModal) {
+                        window.closeMealPlanModal();
+                    } else {
+                        // Fallback: hide the modal directly
+                        modal.classList.remove('active');
+                        modal.style.display = 'none';
+                    }
                 }
             });
         }
@@ -1494,8 +1500,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         closeModalHandler();
                     } else if (modal.id === 'ingredient-search-modal') {
                         closeIngredientSearch();
-                    } else if (modal.id === 'meal-plan-modal' && window.closeMealPlanModal) {
-                        window.closeMealPlanModal();
+                    } else if (modal.id === 'meal-plan-modal') {
+                        if (window.closeMealPlanModal) {
+                            window.closeMealPlanModal();
+                        } else {
+                            // Fallback: hide the modal directly
+                            modal.classList.remove('active');
+                            modal.style.display = 'none';
+                        }
                     }
                 }
             });
