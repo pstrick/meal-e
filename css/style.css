@@ -1812,6 +1812,7 @@ footer {
     display: block;
     line-height: 1.2;
     flex: 1;
+    margin-right: 0.5rem;
 }
 
 .meal-item-details {

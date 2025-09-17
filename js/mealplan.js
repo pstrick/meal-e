@@ -381,11 +381,10 @@ function createMealItem(item, amount, itemIndex, slot) {
     div.dataset.itemId = item.id;
     div.dataset.itemAmount = amount;
     
-    const icon = item.type === 'meal' ? '🍽️' : '🥩';
     const label = item.type === 'meal' ? 'Recipe' : 'Custom Ingredient';
     
-    // Truncate item name to 25 characters for uniform boxes
-    const truncatedName = item.name.length > 25 ? item.name.substring(0, 25) + '...' : item.name;
+    // Truncate item name to 200 characters for better readability
+    const truncatedName = item.name.length > 200 ? item.name.substring(0, 200) + '...' : item.name;
     
     // Calculate nutrition for this item
     let itemNutrition = { calories: 0, protein: 0, carbs: 0, fat: 0 };
@@ -446,7 +445,6 @@ function createMealItem(item, amount, itemIndex, slot) {
     
     div.innerHTML = `
         <div class="meal-item-header">
-            <span class="meal-item-icon">${icon}</span>
             <span class="meal-item-name" title="${item.name}">${truncatedName}</span>
             <button class="remove-meal" title="Remove Item">&times;</button>
         </div>
