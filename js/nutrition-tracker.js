@@ -563,29 +563,22 @@ async function autoLogFromMealPlan() {
         console.log('Meal plan keys:', Object.keys(mealPlan));
         const dayLog = getDayLog();
         
-        // Clear existing logs for the week
-        const weekStart = new Date(currentDate);
-        weekStart.setDate(weekStart.getDate() - currentDate.getDay());
+        // Clear existing logs for the current day only
+        const currentDateKey = currentDate.toISOString().split('T')[0];
         
-        for (let i = 0; i < 7; i++) {
-            const date = new Date(weekStart);
-            date.setDate(date.getDate() + i);
-            const dateKey = date.toISOString().split('T')[0];
-            
-            if (!nutritionLogs[dateKey]) {
-                nutritionLogs[dateKey] = {
-                    breakfast: [],
-                    lunch: [],
-                    dinner: [],
-                    snacks: []
-                };
-            }
-            
-            // Clear existing data for this day
-            Object.keys(nutritionLogs[dateKey]).forEach(meal => {
-                nutritionLogs[dateKey][meal] = [];
-            });
+        if (!nutritionLogs[currentDateKey]) {
+            nutritionLogs[currentDateKey] = {
+                breakfast: [],
+                lunch: [],
+                dinner: [],
+                snacks: []
+            };
         }
+        
+        // Clear existing data for current day only
+        Object.keys(nutritionLogs[currentDateKey]).forEach(meal => {
+            nutritionLogs[currentDateKey][meal] = [];
+        });
         
         // Process meal plan data
         Object.keys(mealPlan).forEach(mealKey => {
@@ -601,6 +594,12 @@ async function autoLogFromMealPlan() {
             const mealDate = new Date(dateStr);
             const dateKey = mealDate.toISOString().split('T')[0];
             console.log('Parsed date:', dateStr, 'timeSlot:', timeSlot, 'dateKey:', dateKey);
+            
+            // Only process meals for the current day
+            if (dateKey !== currentDateKey) {
+                console.log('Skipping meal for different day:', dateKey, 'current:', currentDateKey);
+                return;
+            }
             
             if (!nutritionLogs[dateKey]) return;
             
@@ -619,12 +618,20 @@ async function autoLogFromMealPlan() {
                     
                     // Calculate nutrition based on item type and nutrition data
                     if (item.nutrition) {
-                        // Convert from per-gram to total amount
+                        // Nutrition values are per-gram, so multiply by amount in grams
                         const amount = item.amount || 100;
                         calories = Math.round((item.nutrition.calories || 0) * amount);
                         protein = Math.round((item.nutrition.protein || 0) * amount);
                         carbs = Math.round((item.nutrition.carbs || 0) * amount);
                         fat = Math.round((item.nutrition.fat || 0) * amount);
+                        
+                        console.log(`Nutrition calculation for ${item.name}:`, {
+                            amount: amount,
+                            perGramCalories: item.nutrition.calories,
+                            totalCalories: calories,
+                            perGramProtein: item.nutrition.protein,
+                            totalProtein: protein
+                        });
                     }
                     
                     const foodEntry = {
@@ -647,7 +654,7 @@ async function autoLogFromMealPlan() {
         updateMealsDisplay();
         updateProgressDisplay();
         
-        alert('Successfully imported meal plan data for the week!');
+        alert('Successfully imported meal plan data for today!');
         
     } catch (error) {
         console.error('Error auto-logging from meal plan:', error);
