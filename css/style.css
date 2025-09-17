@@ -69,6 +69,167 @@
     border-color: var(--border-color);
 }
 
+/* Dark Mode Header and Navigation */
+:root.dark-mode header {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+:root.dark-mode .nav-links a:hover {
+    background-color: #2a2a2a;
+}
+
+/* Dark Mode Main Content */
+:root.dark-mode .container {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+/* Dark Mode Cards */
+:root.dark-mode .card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+/* Dark Mode Forms */
+:root.dark-mode .form-group input,
+:root.dark-mode .form-group select,
+:root.dark-mode .form-group textarea {
+    background-color: #2a2a2a;
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+:root.dark-mode .form-group input:focus,
+:root.dark-mode .form-group select:focus,
+:root.dark-mode .form-group textarea:focus {
+    background-color: #333;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(102, 187, 106, 0.1);
+}
+
+/* Dark Mode Buttons */
+:root.dark-mode .btn-secondary {
+    background-color: #2a2a2a;
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+:root.dark-mode .btn-secondary:hover {
+    background-color: #3a3a3a;
+}
+
+/* Dark Mode Tables */
+:root.dark-mode table {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+:root.dark-mode th {
+    background-color: #2a2a2a;
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+:root.dark-mode td {
+    border-color: var(--border-color);
+}
+
+/* Dark Mode Lists */
+:root.dark-mode .recipe-grid,
+:root.dark-mode .ingredient-grid,
+:root.dark-mode .unified-list {
+    background-color: transparent;
+}
+
+:root.dark-mode .recipe-item,
+:root.dark-mode .ingredient-item,
+:root.dark-mode .unified-option {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+:root.dark-mode .recipe-item:hover,
+:root.dark-mode .ingredient-item:hover,
+:root.dark-mode .unified-option:hover {
+    background-color: #2a2a2a;
+    border-color: var(--primary-color);
+}
+
+/* Dark Mode Meal Plan */
+:root.dark-mode .meal-plan-grid {
+    background-color: transparent;
+}
+
+:root.dark-mode .meal-slot {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+:root.dark-mode .meal-slot:hover {
+    background-color: #2a2a2a;
+}
+
+/* Dark Mode Week Navigation */
+:root.dark-mode .week-navigation {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+/* Dark Mode Search Results */
+:root.dark-mode .search-results {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+:root.dark-mode .search-result-item {
+    background-color: #2a2a2a;
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+:root.dark-mode .search-result-item:hover {
+    background-color: #3a3a3a;
+}
+
+/* Dark Mode Nutrition Display */
+:root.dark-mode .nutrition-display,
+:root.dark-mode .nutrition-summary {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+/* Dark Mode Goals Grid */
+:root.dark-mode .goals-grid {
+    background-color: transparent;
+}
+
+:root.dark-mode .goal-item {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+/* Dark Mode Shopping Lists */
+:root.dark-mode .shopping-list-item {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+:root.dark-mode .shopping-list-item:hover {
+    background-color: #2a2a2a;
+}
+
+/* Dark Mode Print Styles */
+@media print {
+    :root.dark-mode .container,
+    :root.dark-mode .card {
+        background-color: white !important;
+        color: black !important;
+        border-color: #ddd !important;
+    }
+}
+
 * {
     margin: 0;
     padding: 0;
