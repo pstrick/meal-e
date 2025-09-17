@@ -536,6 +536,136 @@
     color: white !important;
 }
 
+/* Additional Dark Mode Elements */
+:root.dark-mode .shopping-lists-container {
+    background-color: transparent;
+}
+
+:root.dark-mode .shopping-lists-container > div {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+:root.dark-mode .shopping-list-card {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+:root.dark-mode .shopping-list-card:hover {
+    background-color: #2a2a2a !important;
+    border-color: var(--primary-color) !important;
+    transform: translateY(-2px) !important;
+}
+
+:root.dark-mode .recipe-list > div {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+:root.dark-mode .recipe-list .recipe-card {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+:root.dark-mode .recipe-list .recipe-card:hover {
+    background-color: #2a2a2a !important;
+    border-color: var(--primary-color) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Dark Mode for Nested Card Elements */
+:root.dark-mode .card > div {
+    background-color: transparent;
+}
+
+:root.dark-mode .card .form-group > div {
+    background-color: transparent;
+}
+
+:root.dark-mode .card .goals-grid > div {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+/* Dark Mode for All Generic Divs in Cards */
+:root.dark-mode .card div:not(.form-group):not(.goals-grid):not(.toggle-label) {
+    background-color: transparent;
+}
+
+/* Dark Mode for Specific Card Content */
+:root.dark-mode .card h1,
+:root.dark-mode .card h2,
+:root.dark-mode .card h3,
+:root.dark-mode .card h4,
+:root.dark-mode .card h5,
+:root.dark-mode .card h6 {
+    color: var(--text-color) !important;
+}
+
+:root.dark-mode .card p,
+:root.dark-mode .card span,
+:root.dark-mode .card div {
+    color: var(--text-color);
+}
+
+/* Dark Mode for List Items */
+:root.dark-mode .shopping-list-item,
+:root.dark-mode .recipe-item,
+:root.dark-mode .ingredient-item {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+:root.dark-mode .shopping-list-item:hover,
+:root.dark-mode .recipe-item:hover,
+:root.dark-mode .ingredient-item:hover {
+    background-color: #2a2a2a !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* Dark Mode for Container Elements */
+:root.dark-mode .container > div {
+    background-color: transparent;
+}
+
+:root.dark-mode .container .card {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+/* Dark Mode for Form Containers */
+:root.dark-mode .form-group > div {
+    background-color: transparent;
+}
+
+:root.dark-mode .form-group label {
+    color: var(--text-color) !important;
+}
+
+/* Dark Mode for All Generic Containers */
+:root.dark-mode div:not(.modal):not(.modal-content):not(.toggle-label):not(.toggle-slider) {
+    background-color: transparent;
+}
+
+/* Override for specific elements that should have backgrounds */
+:root.dark-mode .card,
+:root.dark-mode .container,
+:root.dark-mode .shopping-list-card,
+:root.dark-mode .recipe-card,
+:root.dark-mode .goal-item,
+:root.dark-mode .shopping-list-item,
+:root.dark-mode .recipe-item,
+:root.dark-mode .ingredient-item {
+    background-color: var(--card-bg) !important;
+}
+
 * {
     margin: 0;
     padding: 0;
