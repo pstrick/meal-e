@@ -622,29 +622,31 @@ async function autoLogFromMealPlan() {
                         const amount = item.amount || 100;
                         
                         if (item.type === 'meal') {
-                            // For recipes: nutrition is total per serving size, need to convert to per-gram first
+                            // For recipes: nutrition is total per serving size, use serving ratio
                             const servingSize = item.servingSize || 100;
-                            const nutritionPerGram = {
-                                calories: (item.nutrition.calories || 0) / servingSize,
-                                protein: (item.nutrition.protein || 0) / servingSize,
-                                carbs: (item.nutrition.carbs || 0) / servingSize,
-                                fat: (item.nutrition.fat || 0) / servingSize
-                            };
+                            const servingRatio = amount / servingSize;
                             
-                            calories = Math.round(nutritionPerGram.calories * amount);
-                            protein = Math.round(nutritionPerGram.protein * amount);
-                            carbs = Math.round(nutritionPerGram.carbs * amount);
-                            fat = Math.round(nutritionPerGram.fat * amount);
+                            calories = Math.round((item.nutrition.calories || 0) * servingRatio);
+                            protein = Math.round((item.nutrition.protein || 0) * servingRatio);
+                            carbs = Math.round((item.nutrition.carbs || 0) * servingRatio);
+                            fat = Math.round((item.nutrition.fat || 0) * servingRatio);
                             
                             console.log(`Recipe nutrition calculation for ${item.name}:`, {
                                 amount: amount,
                                 servingSize: servingSize,
                                 totalPerServing: item.nutrition.calories,
-                                perGram: nutritionPerGram.calories,
+                                servingRatio: servingRatio,
                                 totalCalories: calories,
                                 itemNutrition: item.nutrition,
                                 itemServingSize: item.servingSize,
-                                calculation: `${item.nutrition.calories} / ${servingSize} * ${amount} = ${calories}`
+                                calculation: `${item.nutrition.calories} * (${amount} / ${servingSize}) = ${calories}`,
+                                expectedCalories: Math.round(item.nutrition.calories * (amount / servingSize)),
+                                debug: {
+                                    recipeFound: !!window.recipes.find(r => r.id === item.id),
+                                    recipeData: window.recipes.find(r => r.id === item.id),
+                                    itemType: item.type,
+                                    itemId: item.id
+                                }
                             });
                         } else if (item.type === 'ingredient') {
                             // For ingredients: nutrition is already per-gram
