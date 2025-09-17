@@ -138,6 +138,21 @@
     background-color: #3a3a3a;
 }
 
+/* Dark Mode Buttons in Cards */
+:root.dark-mode .card .btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+}
+
+:root.dark-mode .card .btn:hover {
+    background-color: var(--secondary-color);
+}
+
+:root.dark-mode .card .btn i {
+    color: white;
+}
+
 /* Dark Mode Tables */
 :root.dark-mode table {
     background-color: var(--card-bg);
@@ -174,6 +189,47 @@
 :root.dark-mode .unified-option:hover {
     background-color: #2a2a2a;
     border-color: var(--primary-color);
+}
+
+/* Dark Mode Recipe Items */
+:root.dark-mode .recipe-item {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+:root.dark-mode .recipe-item h3,
+:root.dark-mode .recipe-item p {
+    color: var(--text-color);
+}
+
+:root.dark-mode .recipe-item .recipe-category {
+    color: var(--text-secondary);
+}
+
+/* Dark Mode Form Elements in Cards */
+:root.dark-mode .card form {
+    background-color: transparent;
+}
+
+:root.dark-mode .card .form-group {
+    background-color: transparent;
+}
+
+:root.dark-mode .card .form-group label {
+    color: var(--text-color);
+}
+
+:root.dark-mode .card .form-group select {
+    background-color: #2a2a2a !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+:root.dark-mode .card .form-group select:focus {
+    background-color: #333 !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(102, 187, 106, 0.1) !important;
 }
 
 /* Dark Mode Meal Plan */
@@ -227,8 +283,25 @@
 }
 
 :root.dark-mode .goal-item {
-    background-color: var(--card-bg);
-    border-color: var(--border-color);
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+:root.dark-mode .goal-item label {
+    color: var(--text-color);
+}
+
+:root.dark-mode .goal-item input {
+    background-color: #2a2a2a !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+:root.dark-mode .goal-item input:focus {
+    background-color: #333 !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(102, 187, 106, 0.1) !important;
 }
 
 /* Dark Mode Shopping Lists */
