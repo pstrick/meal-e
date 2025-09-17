@@ -1,7 +1,7 @@
-// USDA Food Data Central API Configuration
+// Open Food Facts API Configuration
 const config = {
-    USDA_API_KEY: 'c1p1VUluPSfUCh7qssNJfnvfoZoNaV8uNOE3BaB7',
-    USDA_API_BASE_URL: 'https://api.nal.usda.gov/fdc/v1'
+    OFF_API_BASE_URL: 'https://world.openfoodfacts.org/api/v0',
+    // No API key needed for Open Food Facts - it's completely free!
 };
 
 export default config; 

@@ -130,46 +130,39 @@ function calculateRelevancyScore(foodDesc, searchTerms) {
 
 async function searchIngredients(query) {
     const params = new URLSearchParams({
-        api_key: config.USDA_API_KEY,
-        query: query,
-        dataType: ['Survey (FNDDS)', 'Foundation', 'SR Legacy'].join(','),
-        pageSize: 25,
-        nutrients: [208, 203, 204, 205].join(',') // Request specific nutrients
+        search_terms: query,
+        page_size: 25,
+        json: 1
     });
 
     try {
-        const response = await fetch(`${config.USDA_API_BASE_URL}/foods/search?${params}`);
+        const response = await fetch(`${config.OFF_API_BASE_URL}/cgi/search.pl?${params}`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
         
-        if (!data || !data.foods) {
+        if (!data || !data.products) {
             console.error('Invalid response format:', data);
             return [];
         }
 
-        console.log('Search results with nutrition:', data.foods);
-        return data.foods;
+        console.log('Open Food Facts search results:', data.products);
+        return data.products;
     } catch (error) {
         console.error('Error searching ingredients:', error);
         throw error;
     }
 }
 
-async function getFoodDetails(fdcId) {
-    const params = new URLSearchParams({
-        api_key: config.USDA_API_KEY,
-        nutrients: [208, 203, 204, 205].join(',') // Request specific nutrients
-    });
-
+async function getFoodDetails(productCode) {
     try {
-        const response = await fetch(`${config.USDA_API_BASE_URL}/food/${fdcId}?${params}`);
+        const response = await fetch(`${config.OFF_API_BASE_URL}/product/${productCode}.json`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        console.log('Raw API Response:', JSON.stringify(data, null, 2));
+        console.log('Open Food Facts product details:', data);
         return data;
     } catch (error) {
         console.error('Error getting food details:', error);
@@ -177,29 +170,10 @@ async function getFoodDetails(fdcId) {
     }
 }
 
-// Modified Nutrition Calculations
+// Modified Nutrition Calculations for Open Food Facts
 function calculateNutritionPerGram(foodData) {
-    console.log('Calculating nutrition for food:', foodData.description);
+    console.log('Calculating nutrition for food:', foodData.product?.product_name || 'Unknown');
     
-    // First try foodNutrients array
-    let nutrients = foodData.foodNutrients;
-    
-    // If no nutrients found, try looking in the nutrientData object
-    if (!nutrients || nutrients.length === 0) {
-        nutrients = [];
-        if (foodData.nutrientData) {
-            for (let nutrientId in foodData.nutrientData) {
-                nutrients.push({
-                    nutrientId: parseInt(nutrientId),
-                    amount: foodData.nutrientData[nutrientId].amount,
-                    unitName: foodData.nutrientData[nutrientId].unit
-                });
-            }
-        }
-    }
-
-    console.log('Found nutrients:', nutrients);
-
     const nutrition = {
         calories: 0,
         protein: 0,
@@ -207,44 +181,38 @@ function calculateNutritionPerGram(foodData) {
         fat: 0
     };
 
-    if (!nutrients || nutrients.length === 0) {
-        console.error('No nutrients found in food data');
+    if (!foodData.product || !foodData.product.nutriments) {
+        console.error('No nutrition data found in Open Food Facts response');
         return nutrition;
     }
 
-    nutrients.forEach(nutrient => {
-        // Handle different API response formats
-        const id = nutrient.nutrientId || nutrient.nutrient?.id || nutrient.number;
-        const amount = nutrient.amount || nutrient.value || 0;
-
-        console.log('Processing nutrient:', {
-            id: id,
-            amount: amount,
-            unit: nutrient.unitName || nutrient.unit
-        });
-
-        // Convert to number if it's a string
-        const numericId = typeof id === 'string' ? parseInt(id) : id;
-
-        switch (numericId) {
-            case 208:   // Energy (kcal)
-            case 1008:  // Energy (kcal)
-                nutrition.calories = amount / 100; // Convert to per gram
-                break;
-            case 203:   // Protein
-            case 1003:  // Protein
-                nutrition.protein = amount / 100;
-                break;
-            case 204:   // Total Fat
-            case 1004:  // Total Fat
-                nutrition.fat = amount / 100;
-                break;
-            case 205:   // Carbohydrates
-            case 1005:  // Carbohydrates
-                nutrition.carbs = amount / 100;
-                break;
-        }
-    });
+    const nutriments = foodData.product.nutriments;
+    
+    // Open Food Facts provides nutrition per 100g by default
+    // We need to convert to per gram (divide by 100)
+    
+    // Energy (calories) - try different possible keys
+    if (nutriments['energy-kcal_100g']) {
+        nutrition.calories = nutriments['energy-kcal_100g'] / 100;
+    } else if (nutriments['energy_100g']) {
+        // Convert from kJ to kcal (1 kcal = 4.184 kJ)
+        nutrition.calories = (nutriments['energy_100g'] / 4.184) / 100;
+    }
+    
+    // Protein
+    if (nutriments['proteins_100g']) {
+        nutrition.protein = nutriments['proteins_100g'] / 100;
+    }
+    
+    // Carbohydrates
+    if (nutriments['carbohydrates_100g']) {
+        nutrition.carbs = nutriments['carbohydrates_100g'] / 100;
+    }
+    
+    // Fat
+    if (nutriments['fat_100g']) {
+        nutrition.fat = nutriments['fat_100g'] / 100;
+    }
 
     console.log('Final calculated nutrition (per gram):', nutrition);
     return nutrition;
@@ -1281,20 +1249,23 @@ async function searchAllIngredients(query) {
         });
     });
     
-    // Search USDA ingredients
+    // Search Open Food Facts ingredients
     try {
-        const usdaResults = await searchIngredients(query);
-        usdaResults.forEach(food => {
-            results.push({
-                id: food.fdcId.toString(),
-                name: food.description,
-                source: 'usda',
-                fdcId: food.fdcId,
-                brandOwner: food.brandOwner || 'Generic'
-            });
+        const offResults = await searchIngredients(query);
+        offResults.forEach(product => {
+            if (product.product_name) {
+                results.push({
+                    id: product.code || product._id,
+                    name: product.product_name,
+                    source: 'off',
+                    productCode: product.code || product._id,
+                    brandOwner: product.brands || product.brand_owner || 'Generic',
+                    image: product.image_url || product.image_front_url
+                });
+            }
         });
     } catch (error) {
-        console.error('Error searching USDA ingredients:', error);
+        console.error('Error searching Open Food Facts ingredients:', error);
     }
     
     // Sort results: custom ingredients first, then by name
@@ -1321,8 +1292,8 @@ async function displaySearchResults(results) {
         div.className = 'search-result-item';
         
         // Create visual indicator for ingredient source
-        const sourceIcon = ingredient.source === 'custom' ? '🏠' : '🔍';
-        const sourceLabel = ingredient.source === 'custom' ? 'Custom' : 'USDA';
+        const sourceIcon = ingredient.source === 'custom' ? '🏠' : (ingredient.source === 'off' ? '🌍' : '🔍');
+        const sourceLabel = ingredient.source === 'custom' ? 'Custom' : (ingredient.source === 'off' ? 'Open Food Facts' : 'Unknown');
         
         const [mainName, ...details] = ingredient.name.split(',');
         div.innerHTML = `
@@ -1361,9 +1332,9 @@ async function displaySearchResults(results) {
                     currentIngredientInput.querySelector('.ingredient-name').value = ingredient.name;
                     currentIngredientInput.querySelector('.ingredient-name').dataset.fdcId = `custom-${ingredient.id}`;
                     
-                } else {
-                    // Handle USDA ingredient
-                    const details = await getFoodDetails(ingredient.fdcId);
+                } else if (ingredient.source === 'off') {
+                    // Handle Open Food Facts ingredient
+                    const details = await getFoodDetails(ingredient.productCode);
                     if (details) {
                         const nutrition = calculateNutritionPerGram(details);
                         const amount = parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0;
@@ -1372,17 +1343,20 @@ async function displaySearchResults(results) {
                             name: ingredient.name,
                             amount: amount,
                             nutrition: nutrition,
-                            source: 'usda',
-                            fdcId: ingredient.fdcId
+                            source: 'off',
+                            productCode: ingredient.productCode
                         };
                         
-                        // Store in selectedIngredients with USDA fdcId
-                        selectedIngredients.set(ingredient.fdcId.toString(), ingredientData);
+                        // Store in selectedIngredients with Open Food Facts product code
+                        selectedIngredients.set(ingredient.productCode, ingredientData);
                         
                         // Update the input field
                         currentIngredientInput.querySelector('.ingredient-name').value = ingredient.name;
-                        currentIngredientInput.querySelector('.ingredient-name').dataset.fdcId = ingredient.fdcId.toString();
+                        currentIngredientInput.querySelector('.ingredient-name').dataset.fdcId = ingredient.productCode;
                     }
+                } else {
+                    // Handle other sources (fallback)
+                    console.warn('Unknown ingredient source:', ingredient.source);
                 }
                 
                 if (ingredientData) {
