@@ -1,4 +1,5 @@
 import { version } from './version.js';
+import { settings, applyDarkMode } from './settings.js';
 
 // Update version in footer
 const versionEl = document.getElementById('version');
@@ -230,4 +231,6 @@ window.deleteCustomIngredient = deleteCustomIngredient;
 window.editCustomIngredient = editCustomIngredient;
 
 // Initialize
-loadCustomIngredients(); 
+loadCustomIngredients();
+// Apply dark mode on page load
+applyDarkMode(); 

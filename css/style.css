@@ -13,6 +13,62 @@
     --shadow-color: rgba(0, 0, 0, 0.1);
 }
 
+/* Dark Mode Variables */
+:root.dark-mode {
+    --primary-color: #66bb6a;
+    --secondary-color: #4caf50;
+    --text-color: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --background-color: #121212;
+    --card-bg: #1e1e1e;
+    --border-color: #333;
+    --error-color: #f44336;
+    --success-color: #4caf50;
+    --shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Dark Mode Specific Styles */
+:root.dark-mode .modal {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+:root.dark-mode .modal-content {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+:root.dark-mode .close {
+    background-color: #2a2a2a;
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+}
+
+:root.dark-mode .close:hover {
+    background-color: #3a3a3a;
+    color: var(--error-color);
+}
+
+:root.dark-mode .modal .form-group input,
+:root.dark-mode .modal .form-group select,
+:root.dark-mode .modal .form-group textarea {
+    background-color: #2a2a2a;
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+:root.dark-mode .modal .form-group input:focus,
+:root.dark-mode .modal .form-group select:focus,
+:root.dark-mode .modal .form-group textarea:focus {
+    background-color: #333;
+    border-color: var(--primary-color);
+}
+
+:root.dark-mode .modal #ingredients-list {
+    background-color: #2a2a2a;
+    border-color: var(--border-color);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -164,6 +220,54 @@ h2 {
 
 .btn-secondary:hover {
     background-color: var(--background-color);
+}
+
+/* Toggle Switch Styles */
+.toggle-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+.toggle-input {
+    display: none;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 50px;
+    height: 24px;
+    background-color: #ccc;
+    border-radius: 24px;
+    margin-right: 12px;
+    transition: background-color 0.3s ease;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
+
+.toggle-input:checked + .toggle-slider {
+    background-color: var(--primary-color);
+}
+
+.toggle-input:checked + .toggle-slider::before {
+    transform: translateX(26px);
+}
+
+.toggle-text {
+    color: var(--text-color);
+    font-size: 1rem;
 }
 
 /* Enhanced Modals */

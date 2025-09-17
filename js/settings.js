@@ -3,6 +3,7 @@ import { version } from './version.js';
 // Initialize settings immediately
 let settings = {
     mealPlanStartDay: 0,  // Default to Sunday
+    darkMode: false,      // Default to light mode
     nutritionGoals: {
         calories: 2000,
         protein: 150,
@@ -26,15 +27,37 @@ if (savedSettings) {
 // Make settings available globally immediately
 window.settings = settings;
 
+// Apply dark mode to the document
+function applyDarkMode() {
+    if (settings.darkMode) {
+        document.documentElement.classList.add('dark-mode');
+    } else {
+        document.documentElement.classList.remove('dark-mode');
+    }
+}
+
 // Save settings to localStorage
 function saveToLocalStorage() {
     localStorage.setItem('meale-settings', JSON.stringify(settings));
     // Update global settings
     window.settings = settings;
+    // Apply dark mode immediately
+    applyDarkMode();
 }
 
 // Initialize form with current settings
 function initializeForm() {
+    // Initialize dark mode toggle
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    if (darkModeToggle) {
+        darkModeToggle.checked = settings.darkMode;
+        darkModeToggle.addEventListener('change', (event) => {
+            settings.darkMode = event.target.checked;
+            saveToLocalStorage();
+            console.log('Dark mode toggled:', settings.darkMode);
+        });
+    }
+
     const startDaySelect = document.getElementById('start-day');
     if (startDaySelect) {
         startDaySelect.value = settings.mealPlanStartDay.toString();
@@ -99,7 +122,9 @@ function saveNutritionGoals() {
 // Add event listeners
 document.addEventListener('DOMContentLoaded', () => {
     initializeForm();
+    // Apply dark mode on page load
+    applyDarkMode();
 });
 
 // Export settings and save function
-export { settings, saveToLocalStorage }; 
+export { settings, saveToLocalStorage, applyDarkMode }; 

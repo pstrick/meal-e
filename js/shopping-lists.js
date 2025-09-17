@@ -1,4 +1,6 @@
 // Shopping Lists Management
+import { settings, applyDarkMode } from './settings.js';
+
 let shoppingLists = [];
 let currentListId = null;
 let currentEditItemId = null;
@@ -649,5 +651,7 @@ window.deleteShoppingItem = deleteShoppingItem;
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing shopping lists...');
+    // Apply dark mode on page load
+    applyDarkMode();
     initializeShoppingLists();
 }); 
