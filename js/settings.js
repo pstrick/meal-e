@@ -94,7 +94,7 @@ function initializeForm() {
     }
 }
 
-function saveNutritionGoals() {
+async function saveNutritionGoals() {
     const goals = {
         calories: parseInt(document.getElementById('calorie-goal').value) || 0,
         protein: parseInt(document.getElementById('protein-goal').value) || 0,
@@ -117,6 +117,16 @@ function saveNutritionGoals() {
     }, 2000);
     
     console.log('Nutrition goals saved:', goals);
+    
+    // Refresh meal plan if we're on the meal plan page
+    if (window.location.pathname.includes('mealplan.html')) {
+        try {
+            const { refreshMealPlanOnSettingsChange } = await import('./mealplan.js');
+            refreshMealPlanOnSettingsChange();
+        } catch (error) {
+            console.log('Meal plan refresh not available:', error);
+        }
+    }
 }
 
 // Add event listeners

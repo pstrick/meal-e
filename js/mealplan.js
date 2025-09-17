@@ -876,11 +876,12 @@ async function updateMealPlanDisplay() {
     dailyNutritionRow.appendChild(dailyEmptyCell);
     
     // Add daily nutrition for each day with progress bars
+    // Get nutrition goals from settings, with fallbacks
     const dailyGoals = {
-        calories: 2000,
-        protein: 150,  // grams
-        carbs: 250,    // grams
-        fat: 80        // grams
+        calories: window.settings?.nutritionGoals?.calories || 2000,
+        protein: window.settings?.nutritionGoals?.protein || 150,
+        carbs: window.settings?.nutritionGoals?.carbs || 200,
+        fat: window.settings?.nutritionGoals?.fat || 65
     };
     
     dayNutritionData.forEach(({ date, nutrition }) => {
@@ -983,6 +984,12 @@ async function updateMealPlanDisplay() {
             fillPath.classList.toggle('over-goal', isOverGoal);
         });
     }, 100);
+}
+
+// Function to refresh meal plan when settings change
+export function refreshMealPlanOnSettingsChange() {
+    // Re-display the meal plan with updated settings
+    updateMealPlanDisplay();
 }
 
 // Add window resize handler to reload meal plan when switching between mobile and desktop
