@@ -96,11 +96,78 @@
     box-shadow: 0 2px 4px var(--shadow-color);
 }
 
+/* Dark Mode Footer */
+:root.dark-mode footer {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color);
+    border-top: 1px solid var(--border-color);
+}
+
+:root.dark-mode footer div {
+    background-color: transparent !important;
+    color: var(--text-color);
+}
+
+/* Dark Mode Recipe List Elements */
+:root.dark-mode .recipe-list > div {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color);
+}
+
+:root.dark-mode .recipe-list .recipe-card {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color);
+}
+
+:root.dark-mode .recipe-list p {
+    color: var(--text-color) !important;
+}
+
 /* Dark Mode Main Content */
 :root.dark-mode .container {
     background-color: var(--card-bg) !important;
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow);
+}
+
+:root.dark-mode .container > div {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color);
+}
+
+:root.dark-mode .container > div > div {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color);
+}
+
+:root.dark-mode .container p {
+    color: var(--text-color) !important;
+}
+
+:root.dark-mode .container div p {
+    color: var(--text-color) !important;
+}
+
+/* Dark Mode General Element Overrides */
+:root.dark-mode div:not(.modal):not(.modal-content):not(.toggle-label):not(.toggle-slider) {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color);
+}
+
+:root.dark-mode p {
+    color: var(--text-color) !important;
+}
+
+:root.dark-mode span {
+    color: var(--text-color) !important;
+}
+
+:root.dark-mode div p {
+    color: var(--text-color) !important;
+}
+
+:root.dark-mode div span {
+    color: var(--text-color) !important;
 }
 
 /* Dark Mode Cards */
