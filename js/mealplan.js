@@ -791,7 +791,8 @@ async function handleMealPlanSubmit(e) {
         id: selectedItem.id,
         amount: amount,
         name: selectedItem.name,
-        nutrition: selectedItem.nutrition
+        nutrition: selectedItem.nutrition,
+        servingSize: selectedItem.servingSize
     });
     saveMealPlan();
     await updateMealPlanDisplay();
