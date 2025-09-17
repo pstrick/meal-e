@@ -84,49 +84,6 @@ function normalizeSearchTerm(term) {
         .trim();
 }
 
-// Helper function to calculate relevancy score
-function calculateRelevancyScore(foodDesc, searchTerms) {
-    const description = foodDesc.toLowerCase();
-    const normalizedDesc = description.split(/[,()]/).map(part => part.trim());
-    let score = 0;
-
-    // Normalize search terms
-    const normalizedTerms = searchTerms.map(term => normalizeSearchTerm(term));
-    
-    // Core term matching (first part of description)
-    const mainTerm = normalizedDesc[0];
-    for (const term of normalizedTerms) {
-        // Exact match of main term
-        if (normalizeSearchTerm(mainTerm) === term) {
-            score += 100;
-        }
-        // Main term starts with search term
-        else if (normalizeSearchTerm(mainTerm).startsWith(term)) {
-            score += 50;
-        }
-        // Main term contains search term
-        else if (normalizeSearchTerm(mainTerm).includes(term)) {
-            score += 25;
-        }
-    }
-
-    // Penalize for complexity and processing terms
-    const complexityPenalty = description.split(/[,()]/).length * 5;
-    const processingTerms = [
-        'prepared', 'processed', 'mixed', 'enriched', 'fortified',
-        'preserved', 'canned', 'packaged', 'with added'
-    ];
-    const processingPenalty = processingTerms.some(term => description.includes(term)) ? 20 : 0;
-
-    // Prefer raw/basic ingredients
-    const rawBonus = description.includes('raw') ? 15 : 0;
-    const basicBonus = normalizedDesc.length === 1 ? 10 : 0;
-
-    // Calculate final score
-    const finalScore = score + rawBonus + basicBonus - complexityPenalty - processingPenalty;
-
-    return finalScore;
-}
 
 // Smart Relevancy Scoring System
 function calculateRelevancyScore(product, query) {
