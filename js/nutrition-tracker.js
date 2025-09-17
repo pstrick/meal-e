@@ -616,22 +616,45 @@ async function autoLogFromMealPlan() {
                 if (item && item.name) {
                     let calories = 0, protein = 0, carbs = 0, fat = 0;
                     
-                    // Calculate nutrition based on item type and nutrition data
+                    // Calculate nutrition based on item type
                     if (item.nutrition) {
-                        // Nutrition values are per-gram, so multiply by amount in grams
                         const amount = item.amount || 100;
-                        calories = Math.round((item.nutrition.calories || 0) * amount);
-                        protein = Math.round((item.nutrition.protein || 0) * amount);
-                        carbs = Math.round((item.nutrition.carbs || 0) * amount);
-                        fat = Math.round((item.nutrition.fat || 0) * amount);
                         
-                        console.log(`Nutrition calculation for ${item.name}:`, {
-                            amount: amount,
-                            perGramCalories: item.nutrition.calories,
-                            totalCalories: calories,
-                            perGramProtein: item.nutrition.protein,
-                            totalProtein: protein
-                        });
+                        if (item.type === 'meal') {
+                            // For recipes: nutrition is total per serving size, need to convert to per-gram first
+                            const servingSize = item.servingSize || 100;
+                            const nutritionPerGram = {
+                                calories: (item.nutrition.calories || 0) / servingSize,
+                                protein: (item.nutrition.protein || 0) / servingSize,
+                                carbs: (item.nutrition.carbs || 0) / servingSize,
+                                fat: (item.nutrition.fat || 0) / servingSize
+                            };
+                            
+                            calories = Math.round(nutritionPerGram.calories * amount);
+                            protein = Math.round(nutritionPerGram.protein * amount);
+                            carbs = Math.round(nutritionPerGram.carbs * amount);
+                            fat = Math.round(nutritionPerGram.fat * amount);
+                            
+                            console.log(`Recipe nutrition calculation for ${item.name}:`, {
+                                amount: amount,
+                                servingSize: servingSize,
+                                totalPerServing: item.nutrition.calories,
+                                perGram: nutritionPerGram.calories,
+                                totalCalories: calories
+                            });
+                        } else if (item.type === 'ingredient') {
+                            // For ingredients: nutrition is already per-gram
+                            calories = Math.round((item.nutrition.calories || 0) * amount);
+                            protein = Math.round((item.nutrition.protein || 0) * amount);
+                            carbs = Math.round((item.nutrition.carbs || 0) * amount);
+                            fat = Math.round((item.nutrition.fat || 0) * amount);
+                            
+                            console.log(`Ingredient nutrition calculation for ${item.name}:`, {
+                                amount: amount,
+                                perGramCalories: item.nutrition.calories,
+                                totalCalories: calories
+                            });
+                        }
                     }
                     
                     const foodEntry = {
