@@ -3181,7 +3181,7 @@ main {
 
 .daily-nutrition-cell {
     background-color: #f8f9fa;
-    padding: 0.75rem;
+    padding: 1rem 0.75rem;
     text-align: center;
     font-size: 0.85rem;
     font-weight: 600;
@@ -3189,6 +3189,7 @@ main {
     vertical-align: middle;
     border-top: 2px solid #e9ecef;
     border-right: 1px solid #e9ecef;
+    min-width: 120px;
 }
 
 /* Calorie Progress Bar Styles */
@@ -3275,7 +3276,8 @@ main {
     justify-content: space-around;
     align-items: center;
     margin-top: 0.5rem;
-    gap: 0.5rem;
+    gap: 0.3rem;
+    padding: 0 0.25rem;
 }
 
 .macro-progress-item {
@@ -3287,8 +3289,8 @@ main {
 
 .circular-progress {
     position: relative;
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     margin-bottom: 0.25rem;
 }
 
