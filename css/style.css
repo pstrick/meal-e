@@ -71,8 +71,20 @@
 
 /* Dark Mode Header and Navigation */
 :root.dark-mode header {
-    background-color: var(--card-bg);
+    background-color: var(--card-bg) !important;
     border-bottom: 1px solid var(--border-color);
+}
+
+:root.dark-mode .nav-container {
+    background-color: var(--card-bg) !important;
+}
+
+:root.dark-mode .nav-links {
+    background-color: transparent;
+}
+
+:root.dark-mode .logo {
+    color: var(--primary-color);
 }
 
 :root.dark-mode .nav-links a:hover {
