@@ -1779,11 +1779,11 @@ footer {
     border-radius: 6px;
     box-shadow: 0 1px 3px rgba(76,175,80,0.07);
     margin-bottom: 0.5rem;
-    padding: 0.5rem 0.75rem 0.5rem 0.75rem;
+    padding: 0.4rem 0.6rem;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    font-size: 1rem;
+    font-size: 0.85rem;
     position: relative;
     transition: box-shadow 0.2s;
     max-width: 100%;
@@ -1799,7 +1799,7 @@ footer {
 
 .meal-item-name {
     font-weight: 600;
-    font-size: 0.9em;
+    font-size: 0.8em;
     color: var(--text-color);
     max-width: 100%;
     overflow: hidden;
@@ -1812,18 +1812,18 @@ footer {
 }
 
 .meal-item-details {
-    font-size: 0.95em;
+    font-size: 0.75em;
     color: var(--text-secondary);
-    margin-top: 0.2rem;
+    margin-top: 0.15rem;
 }
 
 .meal-item .remove-meal {
     background: none;
     border: none;
     color: #e57373;
-    font-size: 1.1rem;
+    font-size: 1rem;
     cursor: pointer;
-    margin-left: 0.5rem;
+    margin-left: 0.4rem;
     transition: color 0.2s;
 }
 

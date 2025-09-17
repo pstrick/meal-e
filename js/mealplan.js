@@ -454,12 +454,6 @@ function createMealItem(item, amount, itemIndex, slot) {
             <span class="meal-item-amount">${amount}g</span>
             <span class="meal-item-type">${label}</span>
         </div>
-        <div class="meal-item-nutrition">
-            <span class="nutrition-calories">${Math.round(itemNutrition.calories)} cal</span>
-            <span class="nutrition-protein">${Math.round(itemNutrition.protein)}g P</span>
-            <span class="nutrition-carbs">${Math.round(itemNutrition.carbs)}g C</span>
-            <span class="nutrition-fat">${Math.round(itemNutrition.fat)}g F</span>
-        </div>
     `;
     
     // Remove item handler
