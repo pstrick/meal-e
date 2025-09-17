@@ -93,14 +93,16 @@
 
 /* Dark Mode Main Content */
 :root.dark-mode .container {
-    background-color: var(--card-bg);
+    background-color: var(--card-bg) !important;
     border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
 }
 
 /* Dark Mode Cards */
 :root.dark-mode .card {
-    background-color: var(--card-bg);
+    background-color: var(--card-bg) !important;
     border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
 }
 
 /* Dark Mode Forms */
@@ -185,8 +187,9 @@
 
 /* Dark Mode Week Navigation */
 :root.dark-mode .week-navigation {
-    background-color: var(--card-bg);
-    border-color: var(--border-color);
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
 }
 
 /* Dark Mode Search Results */
@@ -208,8 +211,9 @@
 /* Dark Mode Nutrition Display */
 :root.dark-mode .nutrition-display,
 :root.dark-mode .nutrition-summary {
-    background-color: var(--card-bg);
-    border-color: var(--border-color);
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
 }
 
 /* Dark Mode Goals Grid */
