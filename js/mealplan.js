@@ -14,6 +14,38 @@ let weekNavInitialized = false;
 // Initialize meal plan data
 let mealPlan = {};
 
+// Week offset persistence functions
+function saveWeekOffset(offset) {
+    try {
+        localStorage.setItem('meale-current-week-offset', offset.toString());
+        console.log('Saved week offset:', offset);
+    } catch (error) {
+        console.error('Error saving week offset:', error);
+    }
+}
+
+function loadWeekOffset() {
+    try {
+        const savedOffset = localStorage.getItem('meale-current-week-offset');
+        if (savedOffset !== null) {
+            const offset = parseInt(savedOffset, 10);
+            console.log('Loaded week offset:', offset);
+            return offset;
+        }
+    } catch (error) {
+        console.error('Error loading week offset:', error);
+    }
+    return 0; // Default to current week if no saved offset
+}
+
+// Function to reset week offset to current week (useful for debugging or user preference)
+function resetWeekOffset() {
+    currentWeekOffset = 0;
+    saveWeekOffset(currentWeekOffset);
+    updateWeekDisplay();
+    console.log('Week offset reset to current week');
+}
+
 // Custom ingredient search function for meal plan (no USDA API)
 async function searchAllIngredients(query) {
     const results = [];
@@ -372,6 +404,11 @@ function closeMealPlanModal() {
 // Make closeMealPlanModal available globally
 window.closeMealPlanModal = closeMealPlanModal;
 
+// Make week offset functions available globally for debugging
+window.resetWeekOffset = resetWeekOffset;
+window.saveWeekOffset = saveWeekOffset;
+window.loadWeekOffset = loadWeekOffset;
+
 function createMealItem(item, amount, itemIndex, slot) {
     console.log('Creating meal item:', item, 'amount:', amount);
     
@@ -641,9 +678,9 @@ export function initializeMealPlanner() {
 // Continue initialization after recipes are loaded
 async function continueInitialization() {
     try {
-        currentWeekOffset = 0;
+        currentWeekOffset = loadWeekOffset();
         baseStartOfWeekTimestamp = getBaseStartOfWeekTimestamp();
-        console.log('Reset currentWeekOffset to 0 and set baseStartOfWeekTimestamp');
+        console.log('Loaded currentWeekOffset:', currentWeekOffset, 'and set baseStartOfWeekTimestamp');
         
         // Initialize DOM elements
         mealPlanForm = document.getElementById('meal-plan-form');
@@ -1016,6 +1053,7 @@ function initializeWeekNavigation() {
         prevWeekBtn.addEventListener('click', async () => {
             currentWeekOffset--;
             console.log('DEBUG: prevWeekBtn clicked, new currentWeekOffset:', currentWeekOffset);
+            saveWeekOffset(currentWeekOffset);
             updateWeekDisplay();
         });
     }
@@ -1024,6 +1062,7 @@ function initializeWeekNavigation() {
         nextWeekBtn.addEventListener('click', async () => {
             currentWeekOffset++;
             console.log('DEBUG: nextWeekBtn clicked, new currentWeekOffset:', currentWeekOffset);
+            saveWeekOffset(currentWeekOffset);
             updateWeekDisplay();
         });
     }
