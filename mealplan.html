@@ -91,41 +91,41 @@
                             <span class="nutrition-value">F: <span class="fat">0</span>g</span>
                         </div>
                     </div>
-                <div class="form-group">
-                    <label for="item-amount">Amount (g):</label>
-                    <input type="number" id="item-amount" min="1" step="1" value="100" required>
-                </div>
-                
-                <!-- Recurring Options -->
-                <div class="recurring-options" style="display: none;">
-                    <h3>Recurring Options</h3>
                     <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="make-recurring"> Make this a recurring item
-                        </label>
+                        <label for="item-amount">Amount (g):</label>
+                        <input type="number" id="item-amount" min="1" step="1" value="100" required>
                     </div>
                     
-                    <div class="recurring-details" style="display: none;">
+                    <!-- Recurring Options - Only show after item is selected -->
+                    <div class="recurring-options">
+                        <h3>Recurring Options</h3>
                         <div class="form-group">
-                            <label>Days of Week</label>
-                            <div class="days-checkboxes">
-                                <label><input type="checkbox" name="recurring-days" value="0"> Sunday</label>
-                                <label><input type="checkbox" name="recurring-days" value="1"> Monday</label>
-                                <label><input type="checkbox" name="recurring-days" value="2"> Tuesday</label>
-                                <label><input type="checkbox" name="recurring-days" value="3"> Wednesday</label>
-                                <label><input type="checkbox" name="recurring-days" value="4"> Thursday</label>
-                                <label><input type="checkbox" name="recurring-days" value="5"> Friday</label>
-                                <label><input type="checkbox" name="recurring-days" value="6"> Saturday</label>
-                            </div>
+                            <label>
+                                <input type="checkbox" id="make-recurring"> Make this a recurring item
+                            </label>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="recurring-end-date">End Date (optional)</label>
-                            <input type="date" id="recurring-end-date" placeholder="Leave blank for indefinite">
-                            <small>Leave blank to recur indefinitely</small>
+                        <div class="recurring-details" style="display: none;">
+                            <div class="form-group">
+                                <label>Days of Week</label>
+                                <div class="days-checkboxes">
+                                    <label><input type="checkbox" name="recurring-days" value="0"> Sunday</label>
+                                    <label><input type="checkbox" name="recurring-days" value="1"> Monday</label>
+                                    <label><input type="checkbox" name="recurring-days" value="2"> Tuesday</label>
+                                    <label><input type="checkbox" name="recurring-days" value="3"> Wednesday</label>
+                                    <label><input type="checkbox" name="recurring-days" value="4"> Thursday</label>
+                                    <label><input type="checkbox" name="recurring-days" value="5"> Friday</label>
+                                    <label><input type="checkbox" name="recurring-days" value="6"> Saturday</label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="recurring-end-date">End Date (optional)</label>
+                                <input type="date" id="recurring-end-date" placeholder="Leave blank for indefinite">
+                                <small>Leave blank to recur indefinitely</small>
+                            </div>
                         </div>
                     </div>
-                </div>
                 </div>
                 
                 <div class="form-actions">

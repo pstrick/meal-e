@@ -210,6 +210,12 @@ function openMealPlanModal(slot) {
     if (selectedItemDiv) selectedItemDiv.style.display = 'none';
     if (submitButton) submitButton.disabled = true;
     
+    // Hide recurring options initially - they will show when item is selected
+    const recurringOptions = selectedItemDiv.querySelector('.recurring-options');
+    if (recurringOptions) {
+        recurringOptions.style.display = 'none';
+    }
+    
     // Store the slot reference in a data attribute
     mealPlanForm.dataset.currentSlot = `${slot.dataset.day}-${slot.dataset.meal}`;
     console.log('Stored slot reference:', mealPlanForm.dataset.currentSlot);
@@ -363,6 +369,33 @@ function selectItem(item) {
     selectedItemDiv.querySelector('.carbs').textContent = Math.round(nutrition.carbs * 100);
     selectedItemDiv.querySelector('.fat').textContent = Math.round(nutrition.fat * 100);
     
+    // Show recurring options now that item is selected
+    const recurringOptions = selectedItemDiv.querySelector('.recurring-options');
+    if (recurringOptions) {
+        recurringOptions.style.display = 'block';
+    }
+    
+    // Reset recurring form
+    const makeRecurringCheckbox = selectedItemDiv.querySelector('#make-recurring');
+    if (makeRecurringCheckbox) {
+        makeRecurringCheckbox.checked = false;
+    }
+    
+    const recurringDetails = selectedItemDiv.querySelector('.recurring-details');
+    if (recurringDetails) {
+        recurringDetails.style.display = 'none';
+    }
+    
+    // Clear all day checkboxes
+    const dayCheckboxes = selectedItemDiv.querySelectorAll('input[name="recurring-days"]');
+    dayCheckboxes.forEach(checkbox => checkbox.checked = false);
+    
+    // Clear end date
+    const endDateInput = selectedItemDiv.querySelector('#recurring-end-date');
+    if (endDateInput) {
+        endDateInput.value = '';
+    }
+    
     // Enable submit button and ensure it's visible
     submitButton.disabled = false;
     submitButton.style.display = 'block';
@@ -515,44 +548,6 @@ function initializeRecurringModalOptions() {
     }
 }
 
-// Update the openMealPlanModal function to show recurring options
-function openMealPlanModal(slot) {
-    console.log('Opening meal plan modal for slot:', slot);
-    selectedSlot = slot;
-    
-    // Show recurring options
-    const recurringOptions = document.querySelector('.recurring-options');
-    if (recurringOptions) {
-        recurringOptions.style.display = 'block';
-    }
-    
-    // Reset recurring form
-    const makeRecurringCheckbox = document.getElementById('make-recurring');
-    if (makeRecurringCheckbox) {
-        makeRecurringCheckbox.checked = false;
-    }
-    
-    const recurringDetails = document.querySelector('.recurring-details');
-    if (recurringDetails) {
-        recurringDetails.style.display = 'none';
-    }
-    
-    // Clear all day checkboxes
-    const dayCheckboxes = document.querySelectorAll('input[name="recurring-days"]');
-    dayCheckboxes.forEach(checkbox => checkbox.checked = false);
-    
-    // Clear end date
-    const endDateInput = document.getElementById('recurring-end-date');
-    if (endDateInput) {
-        endDateInput.value = '';
-    }
-    
-    // Show modal
-    const modal = document.getElementById('meal-plan-modal');
-    if (modal) {
-        modal.classList.add('active');
-    }
-}
 
 // Make recurring functions globally available
 window.deleteRecurringItem = deleteRecurringItem;
