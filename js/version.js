@@ -1,9 +1,8 @@
 // Static version - only updated by update-version.js script
 export const version = {
-    year: 2025,
-    month: 9,
-    build: 41,
+    major: 2025,
+    minor: 1,
     toString: function() {
-        return `${this.year}.${this.month}.${this.build}`;
+        return `${this.major}.${this.minor}`;
     }
 };
