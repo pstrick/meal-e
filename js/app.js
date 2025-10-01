@@ -1087,32 +1087,21 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Ingredient Search Functions
+// Inline Ingredient Search Functions
 function openIngredientSearch(ingredientInput) {
-    // Check if we're on a page with the ingredient search modal
-    const searchModal = document.getElementById('ingredient-search-modal');
-    if (!searchModal) {
-        console.log('Not on a page with ingredient search, skipping modal open');
-        return;
-    }
-
     // Store reference to the input being edited
     currentIngredientInput = ingredientInput;
     
-    // Show modal
-    searchModal.classList.add('active');
-    
-    // Clear and focus search input
-    const searchInput = document.getElementById('ingredient-search-input');
-    if (searchInput) {
-        searchInput.value = '';
-        searchInput.focus();
-    }
-    
-    // Clear previous search results
-    const searchResults = document.getElementById('search-results');
-    if (searchResults) {
-        searchResults.innerHTML = '';
+    // Make the input editable and focus it
+    const nameInput = ingredientInput.querySelector('.ingredient-name');
+    if (nameInput) {
+        nameInput.readOnly = false;
+        nameInput.focus();
+        nameInput.placeholder = 'Type to search ingredients...';
+        
+        // Add event listeners for inline search
+        nameInput.addEventListener('input', handleInlineSearch);
+        nameInput.addEventListener('blur', handleIngredientBlur);
     }
 }
 
@@ -1124,6 +1113,143 @@ function closeIngredientSearch() {
     }
     searchModal.classList.remove('active');
     currentIngredientInput = null;
+}
+
+// Inline search handlers
+let searchTimeout;
+let currentSearchDropdown = null;
+
+function handleInlineSearch(event) {
+    const query = event.target.value.trim();
+    
+    // Clear previous timeout
+    clearTimeout(searchTimeout);
+    
+    // Remove existing dropdown
+    removeSearchDropdown();
+    
+    if (query.length < 2) {
+        return;
+    }
+    
+    // Debounce search
+    searchTimeout = setTimeout(async () => {
+        try {
+            const results = await searchAllIngredients(query);
+            if (results.length > 0) {
+                showInlineSearchResults(event.target, results);
+            }
+        } catch (error) {
+            console.error('Error searching ingredients:', error);
+        }
+    }, 300);
+}
+
+function handleIngredientBlur(event) {
+    // Delay hiding dropdown to allow clicking on results
+    setTimeout(() => {
+        removeSearchDropdown();
+    }, 200);
+}
+
+function showInlineSearchResults(input, results) {
+    // Remove existing dropdown
+    removeSearchDropdown();
+    
+    // Create dropdown container
+    const dropdown = document.createElement('div');
+    dropdown.className = 'ingredient-search-dropdown';
+    dropdown.style.cssText = `
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+    `;
+    
+    // Add results
+    results.slice(0, 5).forEach(result => {
+        const item = document.createElement('div');
+        item.className = 'search-result-item';
+        item.style.cssText = `
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        `;
+        item.innerHTML = `
+            <div style="font-weight: 600;">${result.name}</div>
+            <div style="font-size: 0.8em; color: #666;">${result.brandOwner || 'Custom Ingredient'}</div>
+        `;
+        
+        item.addEventListener('click', () => {
+            selectIngredient(result);
+            removeSearchDropdown();
+        });
+        
+        item.addEventListener('mouseenter', () => {
+            item.style.backgroundColor = '#f5f5f5';
+        });
+        
+        item.addEventListener('mouseleave', () => {
+            item.style.backgroundColor = 'white';
+        });
+        
+        dropdown.appendChild(item);
+    });
+    
+    // Position dropdown relative to input
+    const inputRect = input.getBoundingClientRect();
+    const container = input.closest('.ingredient-item');
+    container.style.position = 'relative';
+    container.appendChild(dropdown);
+    
+    currentSearchDropdown = dropdown;
+}
+
+function removeSearchDropdown() {
+    if (currentSearchDropdown) {
+        currentSearchDropdown.remove();
+        currentSearchDropdown = null;
+    }
+}
+
+function selectIngredient(ingredient) {
+    if (!currentIngredientInput) return;
+    
+    const nameInput = currentIngredientInput.querySelector('.ingredient-name');
+    const amountInput = currentIngredientInput.querySelector('.ingredient-amount');
+    
+    if (nameInput && amountInput) {
+        // Generate unique ID for this ingredient
+        const fdcId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        nameInput.dataset.fdcId = fdcId;
+        nameInput.value = ingredient.name;
+        nameInput.readOnly = true;
+        nameInput.placeholder = 'Search for ingredient';
+        
+        // Store ingredient data
+        const ingredientData = {
+            name: ingredient.name,
+            amount: parseFloat(amountInput.value) || 0,
+            nutrition: ingredient.nutrition,
+            source: ingredient.source || 'custom'
+        };
+        selectedIngredients.set(fdcId, ingredientData);
+        
+        // Update nutrition display
+        updateIngredientMacros(currentIngredientInput, ingredientData);
+        updateServingSizeDefault();
+        
+        // Remove event listeners
+        nameInput.removeEventListener('input', handleInlineSearch);
+        nameInput.removeEventListener('blur', handleIngredientBlur);
+    }
 }
 
 // Unified Ingredient Search Functions
