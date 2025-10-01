@@ -45,6 +45,19 @@
                 </button>
             </div>
 
+            <!-- Recurring Items Section -->
+            <div class="recurring-items-section">
+                <div class="section-header">
+                    <h3>Recurring Items</h3>
+                    <button id="add-recurring-item" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Recurring Item
+                    </button>
+                </div>
+                <div id="recurring-items-list" class="recurring-items-list">
+                    <!-- Recurring items will be populated here -->
+                </div>
+            </div>
+
             <div class="meal-plan-grid">
                 <!-- Meal plan will be populated here -->
             </div>
@@ -121,6 +134,62 @@
             <div id="search-results" class="search-results">
                 <!-- Search results will be added here -->
             </div>
+        </div>
+    </div>
+
+    <!-- Recurring Item Modal -->
+    <div id="recurring-item-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Recurring Item</h2>
+            <form id="recurring-item-form">
+                <div class="form-group">
+                    <label for="recurring-item-name">Item Name</label>
+                    <input type="text" id="recurring-item-name" placeholder="Enter item name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="recurring-item-type">Item Type</label>
+                    <select id="recurring-item-type" required>
+                        <option value="">Select type...</option>
+                        <option value="meal">Recipe</option>
+                        <option value="ingredient">Custom Ingredient</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="recurring-item-amount">Amount (grams)</label>
+                    <input type="number" id="recurring-item-amount" min="1" step="1" value="100" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="recurring-meal-type">Meal Type</label>
+                    <select id="recurring-meal-type" required>
+                        <option value="breakfast">Breakfast</option>
+                        <option value="lunch">Lunch</option>
+                        <option value="dinner">Dinner</option>
+                        <option value="snacks">Snacks</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Days of Week</label>
+                    <div class="days-checkboxes">
+                        <label><input type="checkbox" name="recurring-days" value="0"> Sunday</label>
+                        <label><input type="checkbox" name="recurring-days" value="1"> Monday</label>
+                        <label><input type="checkbox" name="recurring-days" value="2"> Tuesday</label>
+                        <label><input type="checkbox" name="recurring-days" value="3"> Wednesday</label>
+                        <label><input type="checkbox" name="recurring-days" value="4"> Thursday</label>
+                        <label><input type="checkbox" name="recurring-days" value="5"> Friday</label>
+                        <label><input type="checkbox" name="recurring-days" value="6"> Saturday</label>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-recurring">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Recurring Item</button>
+                </div>
+            </form>
         </div>
     </div>
 </body>

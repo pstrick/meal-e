@@ -2335,6 +2335,135 @@ footer {
     background-color: #3a3a3a;
 }
 
+/* Recurring Items Section */
+.recurring-items-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid #f1f3f4;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.section-header h3 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.recurring-items-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.recurring-item-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.recurring-item-card:hover {
+    background: #e9ecef;
+    border-color: var(--primary-color);
+}
+
+.recurring-item-info {
+    flex: 1;
+}
+
+.recurring-item-name {
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 0.25rem;
+}
+
+.recurring-item-details {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.recurring-item-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.recurring-item-actions .btn {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* Days checkboxes styling */
+.days-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.days-checkboxes label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.days-checkboxes label:hover {
+    background-color: #f8f9fa;
+}
+
+.days-checkboxes input[type="checkbox"] {
+    margin: 0;
+}
+
+/* Dark mode support for recurring items */
+:root.dark-mode .recurring-items-section {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+:root.dark-mode .recurring-item-card {
+    background-color: #2a2a2a;
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+:root.dark-mode .recurring-item-card:hover {
+    background-color: #3a3a3a;
+    border-color: var(--primary-color);
+}
+
+:root.dark-mode .recurring-item-name {
+    color: var(--text-color);
+}
+
+:root.dark-mode .recurring-item-details {
+    color: var(--text-secondary);
+}
+
+:root.dark-mode .days-checkboxes label:hover {
+    background-color: #3a3a3a;
+}
+
 /* Home Page Specific Styles */
 
 /* Section Management */
