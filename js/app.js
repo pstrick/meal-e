@@ -313,7 +313,11 @@ async function handleRecipeSubmit(e) {
     );
     console.log('Visible ingredient items:', visibleIngredientItems.length);
     
-    if (ingredientItems.length === 0) {
+    // Check if ingredients exist in the DOM even if not visible
+    const hasIngredients = ingredientItems.length > 0;
+    console.log('Has ingredients in DOM:', hasIngredients);
+    
+    if (!hasIngredients) {
         alert('Please add at least one ingredient to your recipe');
         return;
     }
@@ -1074,6 +1078,7 @@ function editRecipe(id) {
         });
         ingredientsList.appendChild(ingredientItem);
         updateIngredientMacros(ingredientItem, ingredientData);
+        console.log('Added ingredient item to DOM:', ing.name, 'Total items now:', ingredientsList.children.length);
     });
     // Set the global edit ID
     currentEditRecipeId = id;
