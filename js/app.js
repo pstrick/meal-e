@@ -296,7 +296,9 @@ async function handleRecipeSubmit(e) {
     }
 
     // Validate that we have at least one ingredient
-    if (selectedIngredients.size === 0) {
+    const ingredientsList = document.getElementById('ingredients-list');
+    const ingredientItems = ingredientsList.querySelectorAll('.ingredient-item');
+    if (ingredientItems.length === 0) {
         alert('Please add at least one ingredient to your recipe');
         return;
     }
