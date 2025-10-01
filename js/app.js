@@ -777,6 +777,12 @@ function initializeApp() {
             categoryFilter.addEventListener('change', updateRecipeList);
         }
 
+        // Initialize recipe search
+        const recipeSearch = document.getElementById('recipe-search');
+        if (recipeSearch) {
+            recipeSearch.addEventListener('input', updateRecipeList);
+        }
+
         // Initialize cancel recipe button
         const cancelRecipeBtn = document.getElementById('cancel-recipe');
         if (cancelRecipeBtn) {
@@ -1368,10 +1374,20 @@ function updateRecipeList() {
 
     recipeList.innerHTML = '';
     const selectedCategory = categoryFilter ? categoryFilter.value : 'all';
+    const searchTerm = document.getElementById('recipe-search') ? document.getElementById('recipe-search').value.toLowerCase().trim() : '';
     
-    const filteredRecipes = selectedCategory === 'all' 
+    let filteredRecipes = selectedCategory === 'all' 
         ? recipes 
         : recipes.filter(recipe => recipe.category === selectedCategory);
+
+    // Apply search filter if search term is provided
+    if (searchTerm) {
+        filteredRecipes = filteredRecipes.filter(recipe => {
+            return recipe.name.toLowerCase().includes(searchTerm) ||
+                   recipe.ingredients.some(ing => ing.name.toLowerCase().includes(searchTerm)) ||
+                   (recipe.steps && recipe.steps.toLowerCase().includes(searchTerm));
+        });
+    }
 
     filteredRecipes.forEach(recipe => {
         recipeList.appendChild(createRecipeCard(recipe));
