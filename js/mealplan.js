@@ -318,10 +318,10 @@ async function updateUnifiedList() {
             <p>Category: ${item.category}</p>
             ${item.type === 'meal' ? `<p>Serving Size: ${item.servingSize}g</p>` : ''}
             <div class="item-nutrition">
-                <span>Cal: ${Math.round(item.nutrition.calories * 100)}</span>
-                <span>P: ${Math.round(item.nutrition.protein * 100)}g</span>
-                <span>C: ${Math.round(item.nutrition.carbs * 100)}g</span>
-                <span>F: ${Math.round(item.nutrition.fat * 100)}g</span>
+                <span>Cal: ${Math.round(item.nutrition.calories)}</span>
+                <span>P: ${Math.round(item.nutrition.protein)}g</span>
+                <span>C: ${Math.round(item.nutrition.carbs)}g</span>
+                <span>F: ${Math.round(item.nutrition.fat)}g</span>
             </div>
         `;
         
@@ -362,12 +362,18 @@ function selectItem(item) {
     selectedItemDiv.style.display = 'block';
     selectedItemDiv.querySelector('.item-name').textContent = item.name;
     
+    // Set default serving size in amount input
+    const amountInput = selectedItemDiv.querySelector('#item-amount');
+    if (amountInput && item.servingSize) {
+        amountInput.value = item.servingSize;
+    }
+    
     // Handle nutrition display - ensure we have nutrition data
     const nutrition = item.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
-    selectedItemDiv.querySelector('.calories').textContent = Math.round(nutrition.calories * 100);
-    selectedItemDiv.querySelector('.protein').textContent = Math.round(nutrition.protein * 100);
-    selectedItemDiv.querySelector('.carbs').textContent = Math.round(nutrition.carbs * 100);
-    selectedItemDiv.querySelector('.fat').textContent = Math.round(nutrition.fat * 100);
+    selectedItemDiv.querySelector('.calories').textContent = Math.round(nutrition.calories);
+    selectedItemDiv.querySelector('.protein').textContent = Math.round(nutrition.protein);
+    selectedItemDiv.querySelector('.carbs').textContent = Math.round(nutrition.carbs);
+    selectedItemDiv.querySelector('.fat').textContent = Math.round(nutrition.fat);
     
     // Show recurring options now that item is selected
     const recurringOptions = selectedItemDiv.querySelector('.recurring-options');
