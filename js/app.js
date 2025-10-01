@@ -297,7 +297,22 @@ async function handleRecipeSubmit(e) {
 
     // Validate that we have at least one ingredient
     const ingredientsList = document.getElementById('ingredients-list');
+    if (!ingredientsList) {
+        console.error('ingredients-list element not found');
+        alert('Please add at least one ingredient to your recipe');
+        return;
+    }
+    
     const ingredientItems = ingredientsList.querySelectorAll('.ingredient-item');
+    console.log('Found ingredient items:', ingredientItems.length);
+    console.log('Ingredients list innerHTML length:', ingredientsList.innerHTML.length);
+    
+    // Also check if there are any visible ingredient items (not just in DOM)
+    const visibleIngredientItems = Array.from(ingredientItems).filter(item => 
+        item.style.display !== 'none' && item.offsetParent !== null
+    );
+    console.log('Visible ingredient items:', visibleIngredientItems.length);
+    
     if (ingredientItems.length === 0) {
         alert('Please add at least one ingredient to your recipe');
         return;
