@@ -435,133 +435,11 @@ function saveRecurringItems() {
     }
 }
 
-function openRecurringItemModal() {
-    const modal = document.getElementById('recurring-item-modal');
-    if (modal) {
-        modal.classList.add('active');
-        // Reset form
-        document.getElementById('recurring-item-form').reset();
-        document.getElementById('recurring-item-amount').value = 100;
-    }
-}
-
-function closeRecurringItemModal() {
-    const modal = document.getElementById('recurring-item-modal');
-    if (modal) {
-        modal.classList.remove('active');
-    }
-}
-
-function handleRecurringItemSubmit(e) {
-    e.preventDefault();
-    
-    const name = document.getElementById('recurring-item-name').value.trim();
-    const type = document.getElementById('recurring-item-type').value;
-    const amount = parseInt(document.getElementById('recurring-item-amount').value);
-    const mealType = document.getElementById('recurring-meal-type').value;
-    
-    // Get selected days
-    const selectedDays = Array.from(document.querySelectorAll('input[name="recurring-days"]:checked'))
-        .map(checkbox => parseInt(checkbox.value));
-    
-    if (selectedDays.length === 0) {
-        alert('Please select at least one day of the week.');
-        return;
-    }
-    
-    // Find the item (recipe or ingredient)
-    let item = null;
-    if (type === 'meal') {
-        item = window.recipes.find(r => r.name === name);
-        if (!item) {
-            alert('Recipe not found. Please make sure the name matches exactly.');
-            return;
-        }
-    } else if (type === 'ingredient') {
-        const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
-        item = customIngredients.find(i => i.name === name);
-        if (!item) {
-            alert('Custom ingredient not found. Please make sure the name matches exactly.');
-            return;
-        }
-    }
-    
-    if (!item) {
-        alert('Item not found. Please check the name and try again.');
-        return;
-    }
-    
-    // Create recurring item
-    const recurringItem = {
-        id: Date.now(),
-        name: name,
-        type: type,
-        amount: amount,
-        mealType: mealType,
-        days: selectedDays,
-        itemId: item.id,
-        nutrition: item.nutrition,
-        servingSize: item.servingSize || 100
-    };
-    
-    recurringItems.push(recurringItem);
-    saveRecurringItems();
-    updateRecurringItemsDisplay();
-    closeRecurringItemModal();
-    
-    // Apply recurring items to current week
-    applyRecurringItems();
-    
-    console.log('Recurring item added:', recurringItem);
-}
-
-function updateRecurringItemsDisplay() {
-    const container = document.getElementById('recurring-items-list');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    if (recurringItems.length === 0) {
-        container.innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">No recurring items yet. Click "Add Recurring Item" to get started.</p>';
-        return;
-    }
-    
-    recurringItems.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'recurring-item-card';
-        
-        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const selectedDays = item.days.map(day => dayNames[day]).join(', ');
-        
-        card.innerHTML = `
-            <div class="recurring-item-info">
-                <div class="recurring-item-name">${item.name}</div>
-                <div class="recurring-item-details">
-                    <span>${item.type === 'meal' ? 'Recipe' : 'Ingredient'}</span>
-                    <span>${item.mealType}</span>
-                    <span>${item.amount}g</span>
-                    <span>${selectedDays}</span>
-                </div>
-            </div>
-            <div class="recurring-item-actions">
-                <button class="btn btn-secondary" onclick="editRecurringItem(${item.id})">
-                    <i class="fas fa-edit"></i> Edit
-                </button>
-                <button class="btn btn-danger" onclick="deleteRecurringItem(${item.id})">
-                    <i class="fas fa-trash"></i> Delete
-                </button>
-            </div>
-        `;
-        
-        container.appendChild(card);
-    });
-}
 
 function deleteRecurringItem(id) {
     if (confirm('Are you sure you want to delete this recurring item?')) {
         recurringItems = recurringItems.filter(item => item.id !== id);
         saveRecurringItems();
-        updateRecurringItemsDisplay();
         applyRecurringItems();
         console.log('Recurring item deleted:', id);
     }
@@ -577,9 +455,17 @@ function applyRecurringItems() {
     
     // Apply recurring items to current week
     const week = getWeekDates(currentWeekOffset);
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const currentDate = new Date();
     
     recurringItems.forEach(recurringItem => {
+        // Check if recurring item has ended
+        if (recurringItem.endDate) {
+            const endDate = new Date(recurringItem.endDate);
+            if (currentDate > endDate) {
+                return; // Skip this recurring item as it has ended
+            }
+        }
+        
         recurringItem.days.forEach(dayIndex => {
             const date = week.dates[dayIndex];
             const mealKey = getMealKey(date, recurringItem.mealType);
@@ -608,41 +494,67 @@ function initializeRecurringItems() {
     // Load recurring items
     loadRecurringItems();
     
-    // Add event listeners
-    const addRecurringBtn = document.getElementById('add-recurring-item');
-    const recurringForm = document.getElementById('recurring-item-form');
-    const cancelRecurringBtn = document.getElementById('cancel-recurring');
-    const recurringModal = document.getElementById('recurring-item-modal');
-    
-    if (addRecurringBtn) {
-        addRecurringBtn.addEventListener('click', openRecurringItemModal);
-    }
-    
-    if (recurringForm) {
-        recurringForm.addEventListener('submit', handleRecurringItemSubmit);
-    }
-    
-    if (cancelRecurringBtn) {
-        cancelRecurringBtn.addEventListener('click', closeRecurringItemModal);
-    }
-    
-    if (recurringModal) {
-        const closeBtn = recurringModal.querySelector('.close');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', closeRecurringItemModal);
-        }
-    }
-    
-    // Update display
-    updateRecurringItemsDisplay();
-    
     // Apply recurring items to current week
     applyRecurringItems();
 }
 
+// Initialize recurring modal options
+function initializeRecurringModalOptions() {
+    const makeRecurringCheckbox = document.getElementById('make-recurring');
+    const recurringDetails = document.querySelector('.recurring-details');
+    const recurringOptions = document.querySelector('.recurring-options');
+    
+    if (makeRecurringCheckbox && recurringDetails) {
+        makeRecurringCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                recurringDetails.style.display = 'block';
+            } else {
+                recurringDetails.style.display = 'none';
+            }
+        });
+    }
+}
+
+// Update the openMealPlanModal function to show recurring options
+function openMealPlanModal(slot) {
+    console.log('Opening meal plan modal for slot:', slot);
+    selectedSlot = slot;
+    
+    // Show recurring options
+    const recurringOptions = document.querySelector('.recurring-options');
+    if (recurringOptions) {
+        recurringOptions.style.display = 'block';
+    }
+    
+    // Reset recurring form
+    const makeRecurringCheckbox = document.getElementById('make-recurring');
+    if (makeRecurringCheckbox) {
+        makeRecurringCheckbox.checked = false;
+    }
+    
+    const recurringDetails = document.querySelector('.recurring-details');
+    if (recurringDetails) {
+        recurringDetails.style.display = 'none';
+    }
+    
+    // Clear all day checkboxes
+    const dayCheckboxes = document.querySelectorAll('input[name="recurring-days"]');
+    dayCheckboxes.forEach(checkbox => checkbox.checked = false);
+    
+    // Clear end date
+    const endDateInput = document.getElementById('recurring-end-date');
+    if (endDateInput) {
+        endDateInput.value = '';
+    }
+    
+    // Show modal
+    const modal = document.getElementById('meal-plan-modal');
+    if (modal) {
+        modal.classList.add('active');
+    }
+}
+
 // Make recurring functions globally available
-window.openRecurringItemModal = openRecurringItemModal;
-window.closeRecurringItemModal = closeRecurringItemModal;
 window.deleteRecurringItem = deleteRecurringItem;
 
 function createMealItem(item, amount, itemIndex, slot) {
@@ -950,6 +862,9 @@ async function continueInitialization() {
         // Initialize recurring items
         initializeRecurringItems();
         
+        // Initialize recurring options in modal
+        initializeRecurringModalOptions();
+        
         // Initialize cancel meal button
         if (cancelMeal) {
             cancelMeal.addEventListener('click', closeMealPlanModal);
@@ -992,18 +907,55 @@ async function handleMealPlanSubmit(e) {
         console.error('No slot or item selected');
         return;
     }
+    
     const amount = parseInt(document.getElementById('item-amount').value) || 100;
-    const mealKey = getMealKey(selectedSlot.dataset.day, selectedSlot.dataset.meal);
-    if (!mealPlan[mealKey]) mealPlan[mealKey] = [];
-    mealPlan[mealKey].push({
-        type: selectedItem.type,
-        id: selectedItem.id,
-        amount: amount,
-        name: selectedItem.name,
-        nutrition: selectedItem.nutrition,
-        servingSize: selectedItem.servingSize
-    });
-    saveMealPlan();
+    const isRecurring = document.getElementById('make-recurring').checked;
+    
+    if (isRecurring) {
+        // Handle recurring item
+        const selectedDays = Array.from(document.querySelectorAll('input[name="recurring-days"]:checked'))
+            .map(checkbox => parseInt(checkbox.value));
+        const endDate = document.getElementById('recurring-end-date').value;
+        
+        if (selectedDays.length === 0) {
+            alert('Please select at least one day of the week for recurring items.');
+            return;
+        }
+        
+        // Create recurring item
+        const recurringItem = {
+            id: Date.now(),
+            name: selectedItem.name,
+            type: selectedItem.type,
+            amount: amount,
+            mealType: selectedSlot.dataset.meal,
+            days: selectedDays,
+            itemId: selectedItem.id,
+            nutrition: selectedItem.nutrition,
+            servingSize: selectedItem.servingSize,
+            endDate: endDate || null
+        };
+        
+        recurringItems.push(recurringItem);
+        saveRecurringItems();
+        applyRecurringItems();
+        
+        console.log('Recurring item added:', recurringItem);
+    } else {
+        // Handle single item
+        const mealKey = getMealKey(selectedSlot.dataset.day, selectedSlot.dataset.meal);
+        if (!mealPlan[mealKey]) mealPlan[mealKey] = [];
+        mealPlan[mealKey].push({
+            type: selectedItem.type,
+            id: selectedItem.id,
+            amount: amount,
+            name: selectedItem.name,
+            nutrition: selectedItem.nutrition,
+            servingSize: selectedItem.servingSize
+        });
+        saveMealPlan();
+    }
+    
     await updateMealPlanDisplay();
     closeMealPlanModal();
 }
