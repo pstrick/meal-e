@@ -474,6 +474,7 @@ function deleteRecurringItem(id) {
         recurringItems = recurringItems.filter(item => item.id !== id);
         saveRecurringItems();
         applyRecurringItems();
+        updateMealPlanDisplay();
         console.log('Recurring item deleted:', id);
     }
 }
@@ -488,19 +489,22 @@ function applyRecurringItems() {
     
     // Apply recurring items to current week
     const week = getWeekDates(currentWeekOffset);
-    const currentDate = new Date();
     
     recurringItems.forEach(recurringItem => {
-        // Check if recurring item has ended
-        if (recurringItem.endDate) {
-            const endDate = new Date(recurringItem.endDate);
-            if (currentDate > endDate) {
-                return; // Skip this recurring item as it has ended
-            }
-        }
-        
         recurringItem.days.forEach(dayIndex => {
             const date = week.dates[dayIndex];
+            
+            // Check if recurring item has ended for this specific date
+            if (recurringItem.endDate) {
+                const endDate = new Date(recurringItem.endDate);
+                const mealDate = new Date(date);
+                // Set time to end of day for end date comparison
+                endDate.setHours(23, 59, 59, 999);
+                if (mealDate > endDate) {
+                    return; // Skip this specific date as it's after the end date
+                }
+            }
+            
             const mealKey = getMealKey(date, recurringItem.mealType);
             
             if (!mealPlan[mealKey]) mealPlan[mealKey] = [];
@@ -519,7 +523,8 @@ function applyRecurringItems() {
     });
     
     saveMealPlan();
-    updateMealPlanDisplay();
+    // Don't call updateMealPlanDisplay() here to avoid duplication
+    // The display will be updated by the calling function
 }
 
 // Initialize recurring items functionality
@@ -529,6 +534,7 @@ function initializeRecurringItems() {
     
     // Apply recurring items to current week
     applyRecurringItems();
+    updateMealPlanDisplay();
 }
 
 // Initialize recurring modal options
@@ -934,6 +940,7 @@ async function handleMealPlanSubmit(e) {
         recurringItems.push(recurringItem);
         saveRecurringItems();
         applyRecurringItems();
+        await updateMealPlanDisplay();
         
         console.log('Recurring item added:', recurringItem);
     } else {
@@ -1242,6 +1249,7 @@ function initializeWeekNavigation() {
             saveWeekOffset(currentWeekOffset);
             updateWeekDisplay();
             applyRecurringItems();
+            updateMealPlanDisplay();
         });
     }
     
@@ -1252,6 +1260,7 @@ function initializeWeekNavigation() {
             saveWeekOffset(currentWeekOffset);
             updateWeekDisplay();
             applyRecurringItems();
+            updateMealPlanDisplay();
         });
     }
 }
