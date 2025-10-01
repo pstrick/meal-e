@@ -672,7 +672,6 @@ function createMealItem(item, amount, itemIndex, slot) {
             if (mealPlan[mealKey].length === 0) delete mealPlan[mealKey];
             saveMealPlan();
             updateMealPlanDisplay();
-            updateNutritionSummary();
         }
     });
     return div;
@@ -728,7 +727,7 @@ async function calculateDayNutrition(date) {
         fat: 0
     };
 
-    const mealTypes = ['breakfast', 'lunch', 'dinner', 'snacks'];
+    const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
     
     for (const mealType of mealTypes) {
         const key = getMealKey(date, mealType);

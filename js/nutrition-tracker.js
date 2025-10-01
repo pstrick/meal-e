@@ -622,10 +622,11 @@ async function autoLogFromMealPlan() {
             if (!Array.isArray(mealItems)) return;
             
             // Map time slots to meals
-            let targetMeal = 'snacks'; // default
+            let targetMeal = 'snacks'; // default for nutrition tracker
             if (timeSlot === 'breakfast') targetMeal = 'breakfast';
             else if (timeSlot === 'lunch') targetMeal = 'lunch';
             else if (timeSlot === 'dinner') targetMeal = 'dinner';
+            else if (timeSlot === 'snack') targetMeal = 'snacks'; // map snack to snacks for nutrition tracker
             
             mealItems.forEach(item => {
                 if (item && item.name) {
