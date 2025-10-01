@@ -1503,26 +1503,90 @@ function duplicateRecipe(id) {
         return;
     }
 
-    // Create a deep copy of the recipe with a new ID and modified name
-    const duplicatedRecipe = {
-        id: Date.now(), // Generate new unique ID
-        name: `${originalRecipe.name} (Copy)`,
-        category: originalRecipe.category,
-        servingSize: originalRecipe.servingSize,
-        ingredients: originalRecipe.ingredients.map(ingredient => ({ ...ingredient })), // Deep copy ingredients
-        steps: originalRecipe.steps,
-        nutrition: { ...originalRecipe.nutrition } // Copy nutrition data
-    };
-
-    // Add the duplicated recipe to the recipes array
-    recipes.push(duplicatedRecipe);
+    // Reset form and clear previous data
+    recipeForm.reset();
+    ingredientsList.innerHTML = '';
+    selectedIngredients.clear();
     
-    // Update the display and save to localStorage
-    updateRecipeList();
-    saveToLocalStorage();
+    // Pre-fill form with duplicated recipe data
+    document.getElementById('recipe-name').value = `${originalRecipe.name} (Copy)`;
+    document.getElementById('recipe-category').value = originalRecipe.category;
+    document.getElementById('recipe-serving-size').value = originalRecipe.servingSize;
+    document.getElementById('recipe-steps').value = originalRecipe.steps || '';
     
-    // Show success message
-    console.log(`Recipe "${originalRecipe.name}" duplicated successfully`);
+    // Add ingredients to the form
+    originalRecipe.ingredients.forEach(ing => {
+        const ingredientItem = document.createElement('div');
+        ingredientItem.className = 'ingredient-item';
+        ingredientItem.innerHTML = `
+            <div class="ingredient-main">
+                <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${ing.name}">
+                <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="${ing.amount}">
+                <button type="button" class="remove-ingredient">&times;</button>
+            </div>
+            <div class="ingredient-macros">
+                <span class="macro-item">Calories: <span class="calories">0</span></span>
+                <span class="macro-item">Protein: <span class="protein">0</span>g</span>
+                <span class="macro-item">Carbs: <span class="carbs">0</span>g</span>
+                <span class="macro-item">Fat: <span class="fat">0</span>g</span>
+            </div>
+        `;
+        const nameInput = ingredientItem.querySelector('.ingredient-name');
+        const amountInput = ingredientItem.querySelector('.ingredient-amount');
+        
+        // Generate unique ID for the duplicated ingredient
+        const fdcId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        nameInput.dataset.fdcId = fdcId;
+        
+        const ingredientData = {
+            name: ing.name,
+            amount: parseFloat(ing.amount),
+            nutrition: ing.nutrition,
+            source: ing.source || 'custom'
+        };
+        selectedIngredients.set(fdcId, ingredientData);
+        
+        // Add event listeners
+        nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
+        amountInput.addEventListener('input', () => {
+            const fdcId = nameInput.dataset.fdcId;
+            if (fdcId && selectedIngredients.has(fdcId)) {
+                const ingredient = selectedIngredients.get(fdcId);
+                ingredient.amount = parseFloat(amountInput.value) || 0;
+                selectedIngredients.set(fdcId, ingredient);
+                updateIngredientMacros(ingredientItem, ingredient);
+                updateServingSizeDefault();
+            }
+        });
+        
+        ingredientItem.querySelector('.remove-ingredient').addEventListener('click', () => {
+            if (ingredientsList.children.length > 1) {
+                const fdcId = nameInput.dataset.fdcId;
+                if (fdcId) {
+                    selectedIngredients.delete(fdcId);
+                    updateServingSizeDefault();
+                }
+                ingredientItem.remove();
+            }
+        });
+        
+        ingredientsList.appendChild(ingredientItem);
+        updateIngredientMacros(ingredientItem, ingredientData);
+    });
+    
+    // Clear edit ID so it creates a new recipe instead of editing
+    currentEditRecipeId = null;
+    
+    // Set the form handler
+    recipeForm.onsubmit = handleRecipeSubmit;
+    
+    // Open the modal
+    recipeModal.classList.add('active');
+    
+    // Update nutrition display
+    updateTotalNutrition();
+    
+    console.log(`Recipe "${originalRecipe.name}" prepared for duplication`);
 }
 
 function updateRecipeList() {
