@@ -67,6 +67,7 @@ async function searchAllIngredients(query) {
             id: ingredient.id,
             name: ingredient.name,
             source: 'custom',
+            category: ingredient.category || 'ingredient',
             nutrition: {
                 calories: ingredient.nutrition.calories / servingSize,
                 protein: ingredient.nutrition.protein / servingSize,
@@ -280,14 +281,17 @@ async function updateUnifiedList() {
     try {
         const ingredientResults = await searchAllIngredients(searchTerm);
         for (const ingredient of ingredientResults) {
+            // Add ingredient with default category if none exists
+            const ingredientCategory = ingredient.category || 'ingredient';
+            
             // Only add if category matches or is 'all'
-            if (category === 'all' || ingredient.category === category) {
+            if (category === 'all' || ingredientCategory === category) {
                 results.push({
                     type: 'ingredient',
                     id: `custom-${ingredient.id}`,
                     name: ingredient.name,
-                    category: ingredient.category || 'ingredient',
-                    servingSize: ingredient.servingSize,
+                    category: ingredientCategory,
+                    servingSize: ingredient.servingSize || 100, // Default to 100g if not specified
                     nutrition: ingredient.nutrition,
                     source: ingredient.source,
                     icon: '🥩',
