@@ -269,6 +269,9 @@ function createRecipeCard(recipe) {
                 <button class="btn btn-edit" onclick="editRecipe(${recipe.id})">
                     <i class="fas fa-edit"></i> Edit
                 </button>
+                <button class="btn btn-duplicate" onclick="duplicateRecipe(${recipe.id})">
+                    <i class="fas fa-copy"></i> Duplicate
+                </button>
                 <button class="btn btn-print" onclick="printRecipe(${recipe.id})">
                     <i class="fas fa-print"></i> Print
                 </button>
@@ -1066,6 +1069,7 @@ function editRecipe(id) {
 // Make edit and delete functions globally available
 window.editRecipe = editRecipe;
 window.deleteRecipe = deleteRecipe;
+window.duplicateRecipe = duplicateRecipe;
 window.printRecipe = printRecipe;
 
 // Add some CSS for the new search result styling
@@ -1366,6 +1370,35 @@ function deleteRecipe(id) {
     }
 }
 
+function duplicateRecipe(id) {
+    const originalRecipe = recipes.find(recipe => recipe.id === id);
+    if (!originalRecipe) {
+        console.error('Recipe not found for duplication');
+        return;
+    }
+
+    // Create a deep copy of the recipe with a new ID and modified name
+    const duplicatedRecipe = {
+        id: Date.now(), // Generate new unique ID
+        name: `${originalRecipe.name} (Copy)`,
+        category: originalRecipe.category,
+        servingSize: originalRecipe.servingSize,
+        ingredients: originalRecipe.ingredients.map(ingredient => ({ ...ingredient })), // Deep copy ingredients
+        steps: originalRecipe.steps,
+        nutrition: { ...originalRecipe.nutrition } // Copy nutrition data
+    };
+
+    // Add the duplicated recipe to the recipes array
+    recipes.push(duplicatedRecipe);
+    
+    // Update the display and save to localStorage
+    updateRecipeList();
+    saveToLocalStorage();
+    
+    // Show success message
+    console.log(`Recipe "${originalRecipe.name}" duplicated successfully`);
+}
+
 function updateRecipeList() {
     if (!recipeList) {
         console.log('Recipe list element not found, skipping update');
@@ -1398,4 +1431,5 @@ function updateRecipeList() {
 window.recipes = recipes;
 window.addRecipe = addRecipe;
 window.editRecipe = editRecipe;
+window.duplicateRecipe = duplicateRecipe;
 window.deleteRecipe = deleteRecipe; 

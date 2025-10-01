@@ -465,6 +465,11 @@
     color: white !important;
 }
 
+:root.dark-mode .recipe-card .btn-duplicate:hover {
+    background-color: #6f42c1 !important;
+    color: white !important;
+}
+
 :root.dark-mode #add-recipe-btn:hover {
     background-color: var(--secondary-color) !important;
 }
@@ -1560,6 +1565,17 @@ footer {
 
 .recipe-card .btn-print:hover {
     background: linear-gradient(135deg, #138496, #117a8b);
+    transform: translateY(-1px);
+}
+
+.recipe-card .btn-duplicate {
+    background: linear-gradient(135deg, #6f42c1, #5a32a3);
+    color: white;
+    border: none;
+}
+
+.recipe-card .btn-duplicate:hover {
+    background: linear-gradient(135deg, #5a32a3, #4c2a8a);
     transform: translateY(-1px);
 }
 
