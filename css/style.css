@@ -2449,6 +2449,41 @@ footer {
 
 :root.dark-mode .recurring-item-card:hover {
     background-color: #3a3a3a;
+}
+
+/* Settings page recurring items styles */
+.recurring-item-info h4 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text-color);
+    font-size: 1.1rem;
+}
+
+.recurring-item-info p {
+    margin: 0.25rem 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.no-items {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 2rem;
+}
+
+/* Dark mode styles for settings recurring items */
+:root.dark-mode .recurring-item-info h4 {
+    color: var(--dark-text-color);
+}
+
+:root.dark-mode .recurring-item-info p {
+    color: var(--dark-text-muted);
+}
+
+:root.dark-mode .no-items {
+    color: var(--dark-text-muted);
+}
+    background-color: #3a3a3a;
     border-color: var(--primary-color);
 }
 

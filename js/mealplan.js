@@ -487,12 +487,21 @@ function applyRecurringItems() {
         }
     }
     
+    // Load deleted instances
+    const deletedInstances = JSON.parse(localStorage.getItem('meale-deleted-recurring-instances') || '[]');
+    
     // Apply recurring items to current week
     const week = getWeekDates(currentWeekOffset);
     
     recurringItems.forEach(recurringItem => {
         recurringItem.days.forEach(dayIndex => {
             const date = week.dates[dayIndex];
+            
+            // Check if this specific instance was manually deleted
+            const deletedKey = `${recurringItem.id}-${date}-${recurringItem.mealType}`;
+            if (deletedInstances.includes(deletedKey)) {
+                return; // Skip this specific instance as it was manually deleted
+            }
             
             // Check if recurring item has ended for this specific date
             if (recurringItem.endDate) {
@@ -646,6 +655,19 @@ function createMealItem(item, amount, itemIndex, slot) {
         // Remove this item from the slot
         const mealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
         if (mealPlan[mealKey] && Array.isArray(mealPlan[mealKey])) {
+            const item = mealPlan[mealKey][itemIndex];
+            
+            // If it's a recurring item, mark this specific instance as deleted
+            if (item.isRecurring && item.recurringId) {
+                // Store the deleted instance info to prevent re-adding
+                const deletedKey = `${item.recurringId}-${slot.dataset.day}-${slot.dataset.meal}`;
+                let deletedInstances = JSON.parse(localStorage.getItem('meale-deleted-recurring-instances') || '[]');
+                if (!deletedInstances.includes(deletedKey)) {
+                    deletedInstances.push(deletedKey);
+                    localStorage.setItem('meale-deleted-recurring-instances', JSON.stringify(deletedInstances));
+                }
+            }
+            
             mealPlan[mealKey].splice(itemIndex, 1);
             if (mealPlan[mealKey].length === 0) delete mealPlan[mealKey];
             saveMealPlan();
@@ -1036,12 +1058,24 @@ async function addAddMealButton(slot) {
     });
 }
 
+// Add flag to prevent multiple simultaneous updates
+let isUpdatingDisplay = false;
+
 async function updateMealPlanDisplay() {
     const mealPlanGrid = document.querySelector('.meal-plan-grid');
     if (!mealPlanGrid) return;
     
-    // Clear existing content
-    mealPlanGrid.innerHTML = '';
+    // Prevent multiple simultaneous updates
+    if (isUpdatingDisplay) {
+        console.log('Display update already in progress, skipping...');
+        return;
+    }
+    
+    isUpdatingDisplay = true;
+    
+    try {
+        // Clear existing content
+        mealPlanGrid.innerHTML = '';
     
     // Add header row
     const headerRow = document.createElement('div');
@@ -1217,6 +1251,12 @@ async function updateMealPlanDisplay() {
             fillPath.classList.toggle('over-goal', isOverGoal);
         });
     }, 100);
+    
+    } catch (error) {
+        console.error('Error updating meal plan display:', error);
+    } finally {
+        isUpdatingDisplay = false;
+    }
 }
 
 // Function to refresh meal plan when settings change

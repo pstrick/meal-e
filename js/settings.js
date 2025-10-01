@@ -129,11 +129,83 @@ async function saveNutritionGoals() {
     }
 }
 
+// Recurring Items Management
+function loadRecurringItems() {
+    try {
+        const saved = localStorage.getItem('meale-recurring-items');
+        return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+        console.error('Error loading recurring items:', error);
+        return [];
+    }
+}
+
+function updateRecurringItemsDisplay() {
+    const recurringItemsList = document.getElementById('recurring-items-list');
+    if (!recurringItemsList) return;
+    
+    const recurringItems = loadRecurringItems();
+    
+    if (recurringItems.length === 0) {
+        recurringItemsList.innerHTML = '<div class="no-items">No recurring items yet</div>';
+        return;
+    }
+    
+    recurringItemsList.innerHTML = recurringItems.map(item => {
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const selectedDays = item.days.map(dayIndex => days[dayIndex]).join(', ');
+        const endDateText = item.endDate ? ` (ends ${new Date(item.endDate).toLocaleDateString()})` : ' (indefinite)';
+        
+        return `
+            <div class="recurring-item-card">
+                <div class="recurring-item-info">
+                    <h4>${item.name}</h4>
+                    <p><strong>Days:</strong> ${selectedDays}</p>
+                    <p><strong>Meal:</strong> ${item.mealType}</p>
+                    <p><strong>Amount:</strong> ${item.amount}g</p>
+                    <p><strong>Duration:</strong> ${endDateText}</p>
+                </div>
+                <div class="recurring-item-actions">
+                    <button class="btn btn-danger btn-sm" onclick="deleteRecurringItem(${item.id})">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function clearDeletedInstances() {
+    if (confirm('Are you sure you want to restore all manually deleted recurring item instances? This will bring back any recurring items you previously removed from specific days.')) {
+        localStorage.removeItem('meale-deleted-recurring-instances');
+        alert('Deleted instances have been cleared. Recurring items will now appear on all their scheduled days.');
+    }
+}
+
+// Make functions globally available
+window.deleteRecurringItem = function(id) {
+    if (confirm('Are you sure you want to delete this recurring item? This will remove it from all days.')) {
+        let recurringItems = loadRecurringItems();
+        recurringItems = recurringItems.filter(item => item.id !== id);
+        localStorage.setItem('meale-recurring-items', JSON.stringify(recurringItems));
+        updateRecurringItemsDisplay();
+    }
+};
+
 // Add event listeners
 document.addEventListener('DOMContentLoaded', () => {
     initializeForm();
     // Apply dark mode on page load
     applyDarkMode();
+    
+    // Initialize recurring items display
+    updateRecurringItemsDisplay();
+    
+    // Add event listener for clear deleted instances button
+    const clearDeletedBtn = document.getElementById('clear-deleted-instances');
+    if (clearDeletedBtn) {
+        clearDeletedBtn.addEventListener('click', clearDeletedInstances);
+    }
 });
 
 // Export settings and save function
