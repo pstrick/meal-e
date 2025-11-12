@@ -43,25 +43,32 @@
 
     <!-- Shopping List Modal -->
     <div id="shopping-list-modal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2 id="list-modal-title">Create New Shopping List</h2>
-            <form id="shopping-list-form">
-                <div class="form-group">
-                    <label for="list-name">List Name</label>
-                    <input type="text" id="list-name" required placeholder="Enter list name...">
-                </div>
-                
-                <div class="form-group">
-                    <label for="list-description">Description (Optional)</label>
-                    <textarea id="list-description" rows="3" placeholder="Enter description..."></textarea>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancel-list">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save List</button>
-                </div>
-            </form>
+        <div class="modal-content shopping-list-modal-content">
+            <div class="shopping-list-modal-header">
+                <button type="button" class="close">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back to lists</span>
+                </button>
+                <h2 id="list-modal-title">Create New Shopping List</h2>
+            </div>
+            <div class="shopping-list-modal-body">
+                <form id="shopping-list-form">
+                    <div class="form-group">
+                        <label for="list-name">List Name</label>
+                        <input type="text" id="list-name" required placeholder="Enter list name...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="list-description">Description (Optional)</label>
+                        <textarea id="list-description" rows="3" placeholder="Enter description..."></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancel-list">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save List</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
