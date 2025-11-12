@@ -743,13 +743,14 @@ async function loadMealPlan() {
     }
 }
 
-async function calculateDayNutrition(date) {
+async function calculateDayNutrition(date, customIngredientsMap = new Map()) {
     console.log('Calculating nutrition for date:', date);
-    const nutrition = {
+    const totals = {
         calories: 0,
         protein: 0,
         carbs: 0,
-        fat: 0
+        fat: 0,
+        cost: 0
     };
 
     const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -760,6 +761,9 @@ async function calculateDayNutrition(date) {
         console.log(`Items for ${mealType}:`, items);
         
         for (const itemData of items) {
+            const amount = parseFloat(itemData.amount) || 0;
+            if (amount <= 0) continue;
+
             if (itemData.type === 'meal') {
                 const recipe = window.recipes.find(r => r.id === itemData.id);
                 if (recipe && recipe.nutrition) {
@@ -772,20 +776,21 @@ async function calculateDayNutrition(date) {
                         fat: recipe.nutrition.fat / servingSize
                     };
                     
-                    nutrition.calories += nutritionPerGram.calories * itemData.amount;
-                    nutrition.protein += nutritionPerGram.protein * itemData.amount;
-                    nutrition.carbs += nutritionPerGram.carbs * itemData.amount;
-                    nutrition.fat += nutritionPerGram.fat * itemData.amount;
+                    totals.calories += nutritionPerGram.calories * amount;
+                    totals.protein += nutritionPerGram.protein * amount;
+                    totals.carbs += nutritionPerGram.carbs * amount;
+                    totals.fat += nutritionPerGram.fat * amount;
+
+                    const recipeCost = calculateRecipeItemCost(recipe, amount, customIngredientsMap);
+                    totals.cost += recipeCost;
                 }
             } else if (itemData.type === 'ingredient') {
                 // For ingredients, we need to get nutrition data
                 try {
                     let ingredientNutrition;
-                    if (itemData.id.startsWith('custom-')) {
-                        // Custom ingredient
-                        const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
+                    if (typeof itemData.id === 'string' && itemData.id.startsWith('custom-')) {
                         const customId = itemData.id.replace('custom-', '');
-                        const customIngredient = customIngredients.find(ing => ing.id === customId);
+                        const customIngredient = customIngredientsMap.get(customId);
                         if (customIngredient) {
                             const servingSize = customIngredient.servingSize || 100;
                             ingredientNutrition = {
@@ -801,10 +806,21 @@ async function calculateDayNutrition(date) {
                     }
                     
                     if (ingredientNutrition) {
-                        nutrition.calories += ingredientNutrition.calories * itemData.amount;
-                        nutrition.protein += ingredientNutrition.protein * itemData.amount;
-                        nutrition.carbs += ingredientNutrition.carbs * itemData.amount;
-                        nutrition.fat += ingredientNutrition.fat * itemData.amount;
+                        totals.calories += ingredientNutrition.calories * amount;
+                        totals.protein += ingredientNutrition.protein * amount;
+                        totals.carbs += ingredientNutrition.carbs * amount;
+                        totals.fat += ingredientNutrition.fat * amount;
+                    }
+
+                    let pricePerGram = null;
+                    if (typeof itemData.pricePerGram === 'number' && !Number.isNaN(itemData.pricePerGram)) {
+                        pricePerGram = itemData.pricePerGram;
+                    } else if (typeof itemData.id === 'string') {
+                        pricePerGram = resolveCustomIngredientPricePerGram(itemData.id, customIngredientsMap);
+                    }
+
+                    if (typeof pricePerGram === 'number' && !Number.isNaN(pricePerGram)) {
+                        totals.cost += pricePerGram * amount;
                     }
                 } catch (error) {
                     console.error('Error calculating ingredient nutrition:', error);
@@ -813,8 +829,71 @@ async function calculateDayNutrition(date) {
         }
     }
 
-    console.log('Calculated nutrition for', date, ':', nutrition);
-    return nutrition;
+    console.log('Calculated nutrition for', date, ':', totals);
+    return totals;
+}
+
+function resolveCustomIngredientPricePerGram(identifier, customIngredientsMap) {
+    if (!identifier) return null;
+    try {
+        const normalizedId = String(identifier).replace(/^custom-/, '');
+        if (!normalizedId) return null;
+        const customIngredient = customIngredientsMap.get(normalizedId);
+        if (customIngredient && typeof customIngredient.pricePerGram === 'number' && !Number.isNaN(customIngredient.pricePerGram)) {
+            return customIngredient.pricePerGram;
+        }
+    } catch (error) {
+        console.error('Error resolving custom ingredient price:', error);
+    }
+    return null;
+}
+
+function calculateRecipeItemCost(recipe, amount, customIngredientsMap) {
+    const parsedAmount = parseFloat(amount);
+    if (!recipe || !Array.isArray(recipe.ingredients) || !parsedAmount || parsedAmount <= 0) {
+        return 0;
+    }
+
+    let totalWeight = 0;
+    let totalCost = 0;
+
+    try {
+        recipe.ingredients.forEach(ingredient => {
+            const ingredientAmount = parseFloat(ingredient.amount) || 0;
+            if (ingredientAmount <= 0) {
+                return;
+            }
+
+            totalWeight += ingredientAmount;
+
+            let pricePerGram = null;
+            if (typeof ingredient.pricePerGram === 'number' && !Number.isNaN(ingredient.pricePerGram)) {
+                pricePerGram = ingredient.pricePerGram;
+            } else if (ingredient.fdcId) {
+                pricePerGram = resolveCustomIngredientPricePerGram(ingredient.fdcId, customIngredientsMap);
+            } else if (ingredient.id) {
+                pricePerGram = resolveCustomIngredientPricePerGram(ingredient.id, customIngredientsMap);
+            }
+
+            if (typeof pricePerGram === 'number' && !Number.isNaN(pricePerGram)) {
+                totalCost += pricePerGram * ingredientAmount;
+            }
+        });
+    } catch (error) {
+        console.error('Error calculating recipe cost:', error);
+        return 0;
+    }
+
+    if (totalWeight <= 0 || totalCost <= 0) {
+        return 0;
+    }
+
+    const scaleFactor = parsedAmount / totalWeight;
+    if (!Number.isFinite(scaleFactor) || scaleFactor <= 0) {
+        return 0;
+    }
+
+    return totalCost * scaleFactor;
 }
 
 
@@ -1152,10 +1231,27 @@ async function updateMealPlanDisplay() {
     }
     
     // Calculate daily nutrition data and add at the bottom
+    let customIngredientsList = [];
+    try {
+        const savedCustomIngredients = localStorage.getItem('meale-custom-ingredients');
+        if (savedCustomIngredients) {
+            customIngredientsList = JSON.parse(savedCustomIngredients);
+        }
+    } catch (error) {
+        console.error('Error loading custom ingredients for cost calculation:', error);
+    }
+
+    const customIngredientsMap = new Map();
+    customIngredientsList.forEach(ingredient => {
+        if (ingredient && ingredient.id !== undefined && ingredient.id !== null) {
+            customIngredientsMap.set(String(ingredient.id), ingredient);
+        }
+    });
+
     const dayNutritionData = [];
     for (const date of week.dates) {
-        const dayNutrition = await calculateDayNutrition(date);
-        dayNutritionData.push({ date, nutrition: dayNutrition });
+        const dayNutrition = await calculateDayNutrition(date, customIngredientsMap);
+        dayNutritionData.push({ date, totals: dayNutrition });
     }
     
     // Add daily nutrition row at the bottom
@@ -1176,29 +1272,40 @@ async function updateMealPlanDisplay() {
         fat: window.settings?.nutritionGoals?.fat || 65
     };
     
-    dayNutritionData.forEach(({ date, nutrition }) => {
+    const formatNumber = (num) => Number(num || 0).toLocaleString();
+    const formatCurrency = (value) => {
+        const numericValue = Number(value);
+        if (!Number.isFinite(numericValue)) {
+            return '$0.00';
+        }
+        return numericValue.toLocaleString(undefined, {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    };
+
+    dayNutritionData.forEach(({ date, totals }) => {
         const dayNutritionCell = document.createElement('div');
         dayNutritionCell.className = 'daily-nutrition-cell';
         
-        const caloriesConsumed = Math.round(nutrition.calories);
-        const caloriesRemaining = Math.max(0, dailyGoals.calories - caloriesConsumed);
-        const calorieProgressPercentage = Math.min(100, (caloriesConsumed / dailyGoals.calories) * 100);
+        const caloriesConsumed = Math.round(totals.calories);
+        const caloriesRemaining = dailyGoals.calories ? Math.max(0, dailyGoals.calories - caloriesConsumed) : 0;
+        const calorieProgressPercentage = dailyGoals.calories ? Math.min(100, (caloriesConsumed / dailyGoals.calories) * 100) : 0;
         const isCalorieOverGoal = caloriesConsumed > dailyGoals.calories;
         
-        const proteinConsumed = Math.round(nutrition.protein);
-        const proteinProgressPercentage = Math.min(100, (proteinConsumed / dailyGoals.protein) * 100);
+        const proteinConsumed = Math.round(totals.protein);
+        const proteinProgressPercentage = dailyGoals.protein ? Math.min(100, (proteinConsumed / dailyGoals.protein) * 100) : 0;
         const isProteinOverGoal = proteinConsumed > dailyGoals.protein;
         
-        const carbsConsumed = Math.round(nutrition.carbs);
-        const carbsProgressPercentage = Math.min(100, (carbsConsumed / dailyGoals.carbs) * 100);
+        const carbsConsumed = Math.round(totals.carbs);
+        const carbsProgressPercentage = dailyGoals.carbs ? Math.min(100, (carbsConsumed / dailyGoals.carbs) * 100) : 0;
         const isCarbsOverGoal = carbsConsumed > dailyGoals.carbs;
         
-        const fatConsumed = Math.round(nutrition.fat);
-        const fatProgressPercentage = Math.min(100, (fatConsumed / dailyGoals.fat) * 100);
+        const fatConsumed = Math.round(totals.fat);
+        const fatProgressPercentage = dailyGoals.fat ? Math.min(100, (fatConsumed / dailyGoals.fat) * 100) : 0;
         const isFatOverGoal = fatConsumed > dailyGoals.fat;
-        
-        // Format numbers with commas
-        const formatNumber = (num) => num.toLocaleString();
         
         dayNutritionCell.innerHTML = `
             <div class="daily-totals">
@@ -1261,6 +1368,32 @@ async function updateMealPlanDisplay() {
     });
     
     mealPlanGrid.appendChild(dailyNutritionRow);
+
+    // Add total cost row
+    const weeklyCostTotal = dayNutritionData.reduce((sum, data) => {
+        const cost = Number(data?.totals?.cost);
+        return sum + (Number.isFinite(cost) ? cost : 0);
+    }, 0);
+
+    const dailyCostRow = document.createElement('div');
+    dailyCostRow.className = 'daily-cost-row';
+
+    const costSummaryCell = document.createElement('div');
+    costSummaryCell.className = 'daily-cost-cell daily-cost-summary';
+    costSummaryCell.innerHTML = `
+        <div class="cost-label">Total Cost</div>
+        <div class="cost-week-total">Week: ${formatCurrency(weeklyCostTotal)}</div>
+    `;
+    dailyCostRow.appendChild(costSummaryCell);
+
+    dayNutritionData.forEach(({ totals }) => {
+        const costCell = document.createElement('div');
+        costCell.className = 'daily-cost-cell';
+        costCell.textContent = formatCurrency(totals.cost);
+        dailyCostRow.appendChild(costCell);
+    });
+
+    mealPlanGrid.appendChild(dailyCostRow);
     
     // Animate circular progress bars
     setTimeout(() => {
@@ -1773,6 +1906,36 @@ function printMealPlan() {
                     width: 120px;
                     font-weight: bold;
                     background: #e0e0e0;
+                }
+                
+                .daily-cost-row {
+                    display: table-row;
+                    page-break-inside: avoid;
+                }
+                
+                .daily-cost-cell {
+                    background: #ffffff;
+                    border: 1px solid #000;
+                    padding: 4px;
+                    text-align: center;
+                    font-size: 9pt;
+                    display: table-cell;
+                    vertical-align: middle;
+                }
+                
+                .daily-cost-cell:first-child {
+                    font-weight: bold;
+                    text-align: left;
+                    background: #f0f0f0;
+                }
+                
+                .daily-cost-summary .cost-label {
+                    display: block;
+                    margin-bottom: 2px;
+                }
+                
+                .daily-cost-summary .cost-week-total {
+                    font-weight: 600;
                 }
                 
                 .daily-totals {

@@ -3585,6 +3585,69 @@ main {
     min-width: 120px;
 }
 
+.daily-cost-row {
+    display: table-row;
+    background-color: #ffffff;
+}
+
+.daily-cost-cell {
+    display: table-cell;
+    padding: 0.75rem;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 500;
+    vertical-align: middle;
+    border-top: 1px solid #e9ecef;
+    border-right: 1px solid #e9ecef;
+    background-color: #ffffff;
+    min-width: 120px;
+}
+
+.daily-cost-cell:last-child {
+    border-right: none;
+}
+
+.daily-cost-summary {
+    text-align: left;
+    font-weight: 600;
+    background-color: #f3f6fb;
+}
+
+.daily-cost-summary .cost-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #1a1a1a;
+    margin-bottom: 0.2rem;
+}
+
+.daily-cost-summary .cost-week-total {
+    font-size: 0.85rem;
+    color: #2e7d32;
+    font-weight: 600;
+}
+
+:root.dark-mode .daily-cost-row {
+    background-color: #1f1f1f;
+}
+
+:root.dark-mode .daily-cost-cell {
+    background-color: #1f1f1f;
+    border-color: #333;
+    color: var(--text-color);
+}
+
+:root.dark-mode .daily-cost-summary {
+    background-color: #252525;
+}
+
+:root.dark-mode .daily-cost-summary .cost-label {
+    color: var(--text-color);
+}
+
+:root.dark-mode .daily-cost-summary .cost-week-total {
+    color: #81c784;
+}
+
 /* Calorie Progress Bar Styles */
 .calorie-progress-container {
     margin-bottom: 0.5rem;
