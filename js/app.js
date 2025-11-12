@@ -224,7 +224,7 @@ function createRecipeCard(recipe) {
     card.className = 'recipe-card';
     
     const ingredients = recipe.ingredients
-        .map(ing => `${ing.name} (${ing.amount}g)`)
+        .map(ing => `${ing.emoji ? `${ing.emoji} ` : ''}${ing.name} (${ing.amount}g)`)
         .join(', ');
 
     const totalWeight = recipe.ingredients.reduce((sum, ing) => sum + ing.amount, 0);
@@ -355,8 +355,9 @@ async function handleRecipeSubmit(e) {
                 name: ingredientData.name,
                 amount: parseFloat(item.querySelector('.ingredient-amount').value) || 0,
                 nutrition: ingredientData.nutrition,
-            source: ingredientData.source || 'usda', // Default to usda for backward compatibility
-            storeSection: ingredientData.storeSection || ''
+                source: ingredientData.source || 'usda', // Default to usda for backward compatibility
+                storeSection: ingredientData.storeSection || '',
+                emoji: ingredientData.emoji || ''
             };
         })
         .filter(ing => ing !== null && ing.amount > 0);
@@ -1032,9 +1033,10 @@ function editRecipe(id) {
     recipe.ingredients.forEach(ing => {
         const ingredientItem = document.createElement('div');
         ingredientItem.className = 'ingredient-item';
+        const displayName = ing.emoji ? `${ing.emoji} ${ing.name}` : ing.name;
         ingredientItem.innerHTML = `
             <div class="ingredient-main">
-                <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${ing.name}">
+                <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${displayName}">
                 <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="${ing.amount}">
                 <button type="button" class="remove-ingredient">&times;</button>
             </div>
@@ -1051,12 +1053,14 @@ function editRecipe(id) {
         let fdcId = ing.fdcId ? ing.fdcId.toString() : `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         nameInput.dataset.fdcId = fdcId;
         nameInput.dataset.storeSection = ing.storeSection || '';
+        nameInput.dataset.emoji = ing.emoji || '';
         const ingredientData = {
             name: ing.name,
             amount: parseFloat(ing.amount),
             nutrition: ing.nutrition,
             source: ing.source || 'usda', // Default to usda for backward compatibility
-            storeSection: ing.storeSection || ''
+            storeSection: ing.storeSection || '',
+            emoji: ing.emoji || ''
         };
         selectedIngredients.set(fdcId, ingredientData);
         nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
@@ -1256,7 +1260,9 @@ function selectIngredient(ingredient) {
         const fdcId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         nameInput.dataset.fdcId = fdcId;
         nameInput.dataset.storeSection = ingredient.storeSection || '';
-        nameInput.value = ingredient.name;
+        nameInput.dataset.emoji = ingredient.emoji || '';
+        const displayName = ingredient.emoji ? `${ingredient.emoji} ${ingredient.name}` : ingredient.name;
+        nameInput.value = displayName;
         nameInput.readOnly = true;
         nameInput.placeholder = 'Search for ingredient';
         
@@ -1266,7 +1272,8 @@ function selectIngredient(ingredient) {
             amount: parseFloat(amountInput.value) || 0,
             nutrition: ingredient.nutrition,
             source: ingredient.source || 'custom',
-            storeSection: ingredient.storeSection || ''
+            storeSection: ingredient.storeSection || '',
+            emoji: ingredient.emoji || ''
         };
         selectedIngredients.set(fdcId, ingredientData);
         
@@ -1306,7 +1313,8 @@ async function searchAllIngredients(query) {
             },
             servingSize: ingredient.servingSize,
             brandOwner: 'Custom Ingredient',
-            storeSection: ingredient.storeSection || ''
+            storeSection: ingredient.storeSection || '',
+            emoji: ingredient.emoji || ''
         });
     });
     
@@ -1339,7 +1347,7 @@ async function displaySearchResults(results) {
                 <span class="source-indicator ${ingredient.source}">
                     ${sourceIcon} ${sourceLabel}
                 </span>
-                <h4>${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
+                <h4>${ingredient.emoji ? `<span class="ingredient-emoji">${ingredient.emoji}</span> ` : ''}${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
             </div>
             <p>${ingredient.brandOwner}</p>
         `;
@@ -1358,7 +1366,8 @@ async function displaySearchResults(results) {
                     nutrition: ingredient.nutrition,
                     source: 'custom',
                     id: ingredient.id,
-                    storeSection: ingredient.storeSection || ''
+                    storeSection: ingredient.storeSection || '',
+                    emoji: ingredient.emoji || ''
                 };
                 
                 // Store in selectedIngredients with custom ID
@@ -1367,9 +1376,11 @@ async function displaySearchResults(results) {
                 // Update the input field
                 const nameField = currentIngredientInput.querySelector('.ingredient-name');
                 if (nameField) {
-                    nameField.value = ingredient.name;
+                    const displayName = ingredient.emoji ? `${ingredient.emoji} ${ingredient.name}` : ingredient.name;
+                    nameField.value = displayName;
                     nameField.dataset.fdcId = `custom-${ingredient.id}`;
                     nameField.dataset.storeSection = ingredient.storeSection || '';
+                    nameField.dataset.emoji = ingredient.emoji || '';
                 }
                 
                 // Update ingredient macros
@@ -1552,9 +1563,10 @@ function duplicateRecipe(id) {
     originalRecipe.ingredients.forEach(ing => {
         const ingredientItem = document.createElement('div');
         ingredientItem.className = 'ingredient-item';
+        const displayName = ing.emoji ? `${ing.emoji} ${ing.name}` : ing.name;
         ingredientItem.innerHTML = `
             <div class="ingredient-main">
-                <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${ing.name}">
+                <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${displayName}">
                 <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="${ing.amount}">
                 <button type="button" class="remove-ingredient">&times;</button>
             </div>
@@ -1572,13 +1584,15 @@ function duplicateRecipe(id) {
         const fdcId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         nameInput.dataset.fdcId = fdcId;
         nameInput.dataset.storeSection = ing.storeSection || '';
+        nameInput.dataset.emoji = ing.emoji || '';
         
         const ingredientData = {
             name: ing.name,
             amount: parseFloat(ing.amount),
             nutrition: ing.nutrition,
             source: ing.source || 'custom',
-            storeSection: ing.storeSection || ''
+            storeSection: ing.storeSection || '',
+            emoji: ing.emoji || ''
         };
         selectedIngredients.set(fdcId, ingredientData);
         

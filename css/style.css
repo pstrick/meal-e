@@ -1,3 +1,104 @@
+#print-options-modal .modal-content {
+    max-width: 560px;
+}
+
+#print-options-modal .print-options-description {
+    margin-bottom: 16px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+#print-options-modal .select-all-recipes {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    margin-bottom: 12px;
+}
+
+#print-options-modal .select-all-recipes input {
+    margin: 0;
+}
+
+#print-options-modal .recipe-selection-list {
+    max-height: 280px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    background: var(--card-bg);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#print-options-modal .recipe-selection-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    border: 1px solid transparent;
+    background-color: rgba(255, 255, 255, 0.9);
+}
+
+#print-options-modal .recipe-selection-item:hover {
+    background-color: rgba(76, 175, 80, 0.08);
+    border-color: rgba(76, 175, 80, 0.24);
+}
+
+#print-options-modal .recipe-selection-item input[type="checkbox"] {
+    margin-top: 3px;
+}
+
+#print-options-modal .recipe-selection-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#print-options-modal .recipe-selection-name {
+    font-weight: 600;
+    color: var(--text-color);
+    line-height: 1.4;
+}
+
+#print-options-modal .recipe-selection-meta {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+#print-options-modal .recipe-selection-empty {
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: 20px 12px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.03);
+}
+
+#print-options-modal .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+#print-options-modal .btn-primary {
+    min-width: 96px;
+}
+
+@media (max-width: 600px) {
+    #print-options-modal .modal-content {
+        width: calc(100% - 32px);
+    }
+    
+    #print-options-modal .recipe-selection-list {
+        max-height: 220px;
+    }
+}
 /* Base Styles and Variables */
 :root {
     --primary-color: #4CAF50;

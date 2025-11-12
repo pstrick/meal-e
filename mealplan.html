@@ -41,7 +41,7 @@
                     <i class="fas fa-print"></i> Print Meal Plan
                 </button>
                 <button id="generate-shopping-list" class="btn btn-secondary">
-                    <i class="fas fa-shopping-cart"></i> Generate Shopping List
+                    <i class="fas fa-shopping-cart"></i> Add to Shopping List
                 </button>
             </div>
 
@@ -131,6 +131,66 @@
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" id="cancel-meal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Add Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Shopping List Selection Modal -->
+    <div id="shopping-list-selection-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add to Shopping List</h2>
+            <form id="shopping-list-selection-form">
+                <div class="form-group existing-list-section">
+                    <label class="radio-label">
+                        <input type="radio" name="shopping-list-option" value="existing" checked>
+                        Add to an existing list
+                    </label>
+                    <div class="existing-list-controls">
+                        <label for="existing-shopping-list">Select list</label>
+                        <select id="existing-shopping-list">
+                            <option value="">Loading lists...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group new-list-section">
+                    <label class="radio-label">
+                        <input type="radio" name="shopping-list-option" value="new">
+                        Create a new list
+                    </label>
+                    <input type="text" id="new-shopping-list-name" placeholder="List name">
+                    <textarea id="new-shopping-list-description" placeholder="Optional description"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-shopping-list-selection">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Items</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Print Options Modal -->
+    <div id="print-options-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Print Options</h2>
+            <form id="print-options-form">
+                <p class="print-options-description">
+                    Choose which recipes from this week's meal plan to include in your printout.
+                </p>
+                <div class="form-group select-all-recipes">
+                    <label>
+                        <input type="checkbox" id="select-all-recipes">
+                        Select all recipes
+                    </label>
+                </div>
+                <div class="recipe-selection-list">
+                    <!-- Recipe options populated dynamically -->
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-print-options">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Print</button>
                 </div>
             </form>
         </div>

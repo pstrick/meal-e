@@ -13,6 +13,7 @@ let editingIngredientId = null;
 const form = document.getElementById('custom-ingredient-form');
 const ingredientsList = document.getElementById('custom-ingredients-list');
 const searchInput = document.getElementById('ingredient-search');
+const emojiInput = document.getElementById('ingredient-emoji');
 const addIngredientBtn = document.getElementById('add-ingredient-btn');
 const ingredientModal = document.getElementById('ingredient-modal');
 const cancelIngredientBtn = document.getElementById('cancel-ingredient');
@@ -26,7 +27,8 @@ function loadCustomIngredients() {
         if (savedIngredients) {
             customIngredients = JSON.parse(savedIngredients).map(ingredient => ({
                 ...ingredient,
-                storeSection: ingredient.storeSection || ''
+                storeSection: ingredient.storeSection || '',
+                emoji: ingredient.emoji || ''
             }));
             console.log('Loaded custom ingredients:', customIngredients.length);
         } else {
@@ -77,8 +79,16 @@ function openIngredientModal(ingredient = null) {
         if (storeSectionInput) {
             storeSectionInput.value = ingredient.storeSection || '';
         }
-    } else if (storeSectionInput) {
-        storeSectionInput.value = '';
+        if (emojiInput) {
+            emojiInput.value = ingredient.emoji || '';
+        }
+    } else {
+        if (storeSectionInput) {
+            storeSectionInput.value = '';
+        }
+        if (emojiInput) {
+            emojiInput.value = '';
+        }
     }
     
     // Show modal
@@ -101,6 +111,7 @@ function saveCustomIngredient(event) {
         console.log('Saving custom ingredient...');
         
         const storeSectionInput = document.getElementById('store-section');
+        const emojiValue = emojiInput ? emojiInput.value.trim() : '';
         const ingredient = {
             id: editingIngredientId || Date.now().toString(),
             name: document.getElementById('ingredient-name').value,
@@ -114,7 +125,8 @@ function saveCustomIngredient(event) {
                 protein: parseFloat(document.getElementById('protein').value)
             },
             isCustom: true,
-            storeSection: storeSectionInput ? storeSectionInput.value.trim() : ''
+            storeSection: storeSectionInput ? storeSectionInput.value.trim() : '',
+            emoji: emojiValue
         };
         
         // Calculate price per gram
@@ -172,7 +184,7 @@ function renderIngredientsList(filteredIngredients = null) {
         ingredients.forEach(ingredient => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${ingredient.name}</td>
+                <td>${ingredient.emoji ? `<span class="ingredient-emoji">${ingredient.emoji}</span> ` : ''}${ingredient.name}</td>
                 <td>${ingredient.storeSection || 'Uncategorized'}</td>
                 <td>$${ingredient.totalPrice.toFixed(2)} (${ingredient.totalWeight}g)</td>
                 <td>${ingredient.nutrition.calories}</td>

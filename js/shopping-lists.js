@@ -276,6 +276,7 @@ function updateShoppingItemsDisplay() {
     const groupedItems = list.items.reduce((groups, item) => {
         const section = normalizeStoreSection(item.storeSection);
         item.storeSection = section;
+        item.emoji = (item.emoji || '').trim();
         if (!groups[section]) {
             groups[section] = [];
         }
@@ -315,14 +316,17 @@ function createShoppingItemElement(item) {
     div.dataset.itemId = item.id;
     const normalizedSection = normalizeStoreSection(item.storeSection);
     div.dataset.storeSection = normalizedSection;
+    const emoji = (item.emoji || '').trim();
+    div.dataset.itemEmoji = emoji;
     
     const amountText = formatItemAmount(item);
     const showCategory = normalizedSection && normalizedSection !== DEFAULT_STORE_SECTION;
+    const displayName = emoji ? `${emoji} ${item.name}` : item.name;
     
     div.innerHTML = `
         <div class="item-info">
             <div class="item-main">
-                <span class="item-name">${item.name}</span>
+                <span class="item-name">${displayName}</span>
                 ${amountText ? `<span class="item-amount">${amountText}</span>` : ''}
             </div>
             ${showCategory ? `<div class="item-category">${normalizedSection}</div>` : ''}
@@ -346,6 +350,7 @@ function openAddItemModal(itemId = null) {
     const modal = document.getElementById('add-item-modal');
     const form = document.getElementById('add-item-form');
     const storeSectionInput = document.getElementById('item-store-section');
+    const emojiInput = document.getElementById('item-emoji');
     
     if (itemId) {
         // Edit existing item
@@ -360,6 +365,9 @@ function openAddItemModal(itemId = null) {
                 const normalized = normalizeStoreSection(item.storeSection);
                 storeSectionInput.value = normalized === DEFAULT_STORE_SECTION ? '' : normalized;
             }
+            if (emojiInput) {
+                emojiInput.value = item.emoji || '';
+            }
         }
     } else {
         // Add new item
@@ -367,6 +375,9 @@ function openAddItemModal(itemId = null) {
         document.getElementById('item-amount').value = '';
         if (storeSectionInput) {
             storeSectionInput.value = '';
+        }
+        if (emojiInput) {
+            emojiInput.value = '';
         }
     }
     
@@ -431,6 +442,8 @@ function handleAddItemSubmit(e) {
     const notes = document.getElementById('item-notes').value.trim();
     const storeSectionInput = document.getElementById('item-store-section');
     const storeSection = normalizeStoreSection(storeSectionInput ? storeSectionInput.value : '');
+    const emojiInput = document.getElementById('item-emoji');
+    const emoji = (emojiInput ? emojiInput.value : '').trim();
     
     const parsedAmount = amountInput === '' ? null : parseFloat(amountInput);
     
@@ -457,7 +470,8 @@ function handleAddItemSubmit(e) {
                 amount: parsedAmount,
                 unit,
                 notes,
-                storeSection
+                storeSection,
+                emoji
             };
         }
     } else {
@@ -469,6 +483,7 @@ function handleAddItemSubmit(e) {
             unit,
             notes,
             storeSection,
+            emoji,
             addedAt: new Date().toISOString()
         };
         shoppingLists[listIndex].items.push(newItem);
@@ -630,12 +645,14 @@ function printShoppingList() {
             .sort((a, b) => a.name.localeCompare(b.name));
         const sectionItemsHtml = sectionItems.map(item => {
             const amountText = formatItemAmount(item);
+            const emoji = (item.emoji || '').trim();
+            const displayName = emoji ? `${emoji} ${item.name}` : item.name;
             return `
                     <div class="shopping-item">
                         <div class="checkbox"></div>
                         <div class="item-info">
                             <div class="item-main">
-                                <span class="item-name">${item.name}</span>
+                                <span class="item-name">${displayName}</span>
                                 ${amountText ? `<span class="item-amount">${amountText}</span>` : ''}
                             </div>
                             ${item.notes ? `<div class="item-notes">${item.notes}</div>` : ''}
@@ -791,7 +808,8 @@ function loadShoppingLists() {
                 items: Array.isArray(list.items)
                     ? list.items.map(item => ({
                         ...item,
-                        storeSection: normalizeStoreSection(item.storeSection)
+                        storeSection: normalizeStoreSection(item.storeSection),
+                        emoji: (item.emoji || '').trim()
                     }))
                     : []
             }));
