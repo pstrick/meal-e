@@ -28,7 +28,10 @@ function loadCustomIngredients() {
             customIngredients = JSON.parse(savedIngredients).map(ingredient => ({
                 ...ingredient,
                 storeSection: ingredient.storeSection || '',
-                emoji: ingredient.emoji || ''
+                emoji: (() => {
+                    const trimmed = (ingredient.emoji || '').trim();
+                    return trimmed ? Array.from(trimmed).slice(0, 2).join('') : '';
+                })()
             }));
             console.log('Loaded custom ingredients:', customIngredients.length);
         } else {
@@ -112,6 +115,7 @@ function saveCustomIngredient(event) {
         
         const storeSectionInput = document.getElementById('store-section');
         const emojiValue = emojiInput ? emojiInput.value.trim() : '';
+        const normalizedEmoji = emojiValue ? Array.from(emojiValue).slice(0, 2).join('') : '';
         const ingredient = {
             id: editingIngredientId || Date.now().toString(),
             name: document.getElementById('ingredient-name').value,
@@ -126,7 +130,7 @@ function saveCustomIngredient(event) {
             },
             isCustom: true,
             storeSection: storeSectionInput ? storeSectionInput.value.trim() : '',
-            emoji: emojiValue
+            emoji: normalizedEmoji
         };
         
         // Calculate price per gram

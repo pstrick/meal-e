@@ -358,7 +358,11 @@ async function updateUnifiedList() {
 
 function selectItem(item) {
     console.log('Selecting item:', item);
-    selectedItem = item;
+    const sanitizedEmoji = (item.emoji || '').trim();
+    selectedItem = {
+        ...item,
+        emoji: sanitizedEmoji
+    };
     
     // Get elements from the form
     const selectedItemDiv = mealPlanForm.querySelector('.selected-item');
@@ -371,7 +375,7 @@ function selectItem(item) {
     
     // Update selected item display
     selectedItemDiv.style.display = 'block';
-    const displayName = item.emoji ? `${item.emoji} ${item.name}` : item.name;
+    const displayName = sanitizedEmoji ? `${sanitizedEmoji} ${item.name}` : item.name;
     selectedItemDiv.querySelector('.item-name').textContent = displayName;
     
     // Set default serving size in amount input
@@ -1054,12 +1058,13 @@ async function addAddMealButton(slot) {
             } else if (itemData.type === 'ingredient') {
                 // For ingredients, we need to get the nutrition data
                 // This will be handled in the display function
+                const emoji = (itemData.emoji || '').trim();
                 item = {
                     type: 'ingredient',
                     id: itemData.id,
                     name: itemData.name || 'Ingredient', // We'll need to store name
                     nutrition: itemData.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 },
-                    emoji: itemData.emoji || '',
+                    emoji: emoji,
                     storeSection: itemData.storeSection || ''
                 };
             }
@@ -1562,20 +1567,36 @@ function generateShoppingListFromMealPlan() {
         // Use the week data already calculated above
         const listName = `Meal Plan Shopping List - Week of ${startDate}`;
         
+        const DEFAULT_SECTION = 'Uncategorized';
+        const aggregatedItems = Array.from(ingredients.values());
+        aggregatedItems.sort((a, b) => {
+            const sectionA = (a.storeSection || DEFAULT_SECTION).toLowerCase();
+            const sectionB = (b.storeSection || DEFAULT_SECTION).toLowerCase();
+            if (sectionA !== sectionB) {
+                if (sectionA === DEFAULT_SECTION.toLowerCase()) return 1;
+                if (sectionB === DEFAULT_SECTION.toLowerCase()) return -1;
+                return sectionA.localeCompare(sectionB);
+            }
+            return a.name.localeCompare(b.name);
+        });
+        
         const newList = {
             id: Date.now(),
             name: listName,
             description: `Generated from meal plan for week of ${startDate} to ${endDate}`,
-            items: Array.from(ingredients.values()).map(ing => ({
-                id: Date.now() + Math.random(),
-                name: ing.name,
-                amount: Math.round(ing.amount * 10) / 10, // Round to 1 decimal
-                unit: ing.unit,
-                notes: ing.notes,
-                storeSection: ing.storeSection || 'Uncategorized',
-                emoji: ing.emoji || '',
-                addedAt: new Date().toISOString()
-            })),
+            items: aggregatedItems.map(ing => {
+                const emoji = (ing.emoji || '').trim();
+                return {
+                    id: Date.now() + Math.random(),
+                    name: ing.name,
+                    amount: Math.round(ing.amount * 10) / 10, // Round to 1 decimal
+                    unit: ing.unit,
+                    notes: ing.notes,
+                    storeSection: ing.storeSection || 'Uncategorized',
+                    emoji: emoji ? Array.from(emoji).slice(0, 2).join('') : '',
+                    addedAt: new Date().toISOString()
+                };
+            }),
             createdAt: new Date().toISOString()
         };
         
@@ -1599,8 +1620,305 @@ function generateShoppingListFromMealPlan() {
     }
 }
 
+function initializePrintOptionsModal() {
+    printOptionsModal = document.getElementById('print-options-modal');
+    
+    if (!printOptionsModal) {
+        return;
+    }
+    
+    printOptionsForm = document.getElementById('print-options-form');
+    printRecipeSelectionList = printOptionsModal.querySelector('.recipe-selection-list');
+    selectAllRecipesCheckbox = document.getElementById('select-all-recipes');
+    cancelPrintOptionsButton = document.getElementById('cancel-print-options');
+    
+    const closeBtn = printOptionsModal.querySelector('.close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closePrintOptionsModal);
+    }
+    
+    if (cancelPrintOptionsButton) {
+        cancelPrintOptionsButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            closePrintOptionsModal();
+        });
+    }
+    
+    if (printOptionsForm) {
+        printOptionsForm.addEventListener('submit', handlePrintOptionsSubmit);
+    }
+    
+    if (selectAllRecipesCheckbox) {
+        selectAllRecipesCheckbox.addEventListener('change', handleSelectAllRecipesChange);
+    }
+    
+    printOptionsModal.addEventListener('click', (event) => {
+        if (event.target === printOptionsModal) {
+            closePrintOptionsModal();
+        }
+    });
+}
+
+function openPrintOptionsModal() {
+    if (!printOptionsModal) {
+        printMealPlan();
+        return;
+    }
+    
+    const weeklyRecipes = getCurrentWeekRecipesSummary();
+    renderPrintRecipeSelectionList(weeklyRecipes);
+    
+    printOptionsModal.style.display = 'block';
+    printOptionsModal.classList.add('active');
+}
+
+function closePrintOptionsModal() {
+    if (!printOptionsModal) return;
+    
+    printOptionsModal.classList.remove('active');
+    printOptionsModal.style.display = 'none';
+}
+
+function getCurrentWeekRecipesSummary() {
+    const summaryMap = new Map();
+    const week = getWeekDates(currentWeekOffset);
+    const recipesList = Array.isArray(window.recipes) ? window.recipes : [];
+    
+    Object.entries(mealPlan || {}).forEach(([key, items]) => {
+        if (!Array.isArray(items) || items.length === 0) return;
+        
+        const parts = key.split('-');
+        if (parts.length < 4) return;
+        
+        const mealDate = `${parts[0]}-${parts[1]}-${parts[2]}`;
+        if (mealDate < week.startDate || mealDate > week.endDate) {
+            return;
+        }
+        
+        const mealType = parts.slice(3).join('-');
+        
+        items.forEach(item => {
+            if (!item || item.type !== 'meal') return;
+            
+            const recipe = recipesList.find(r => r.id === item.id);
+            if (!recipe) return;
+            
+            if (!summaryMap.has(recipe.id)) {
+                summaryMap.set(recipe.id, {
+                    id: recipe.id,
+                    name: recipe.name,
+                    category: recipe.category || 'Uncategorized',
+                    occurrences: 0,
+                    mealTypes: new Set()
+                });
+            }
+            
+            const entry = summaryMap.get(recipe.id);
+            entry.occurrences += 1;
+            if (mealType) {
+                const formattedMealType = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+                entry.mealTypes.add(formattedMealType);
+            }
+        });
+    });
+    
+    return Array.from(summaryMap.values())
+        .map(entry => ({
+            ...entry,
+            mealTypes: Array.from(entry.mealTypes).sort((a, b) => a.localeCompare(b))
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function renderPrintRecipeSelectionList(recipes = []) {
+    if (!printRecipeSelectionList) return;
+    
+    printRecipeSelectionList.innerHTML = '';
+    
+    const selectAllContainer = selectAllRecipesCheckbox?.closest('.select-all-recipes');
+    
+    if (!recipes.length) {
+        if (selectAllContainer) {
+            selectAllContainer.style.display = 'none';
+        }
+        
+        const emptyState = document.createElement('div');
+        emptyState.className = 'recipe-selection-empty';
+        emptyState.textContent = 'No recipes found on this week\'s meal plan. You can still print the calendar.';
+        printRecipeSelectionList.appendChild(emptyState);
+        
+        if (selectAllRecipesCheckbox) {
+            selectAllRecipesCheckbox.checked = false;
+            selectAllRecipesCheckbox.indeterminate = false;
+            selectAllRecipesCheckbox.disabled = true;
+        }
+        return;
+    }
+    
+    if (selectAllContainer) {
+        selectAllContainer.style.display = 'flex';
+    }
+    
+    recipes.forEach(recipe => {
+        const label = document.createElement('label');
+        label.className = 'recipe-selection-item';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.name = 'print-recipes';
+        checkbox.value = recipe.id;
+        checkbox.checked = true;
+        checkbox.addEventListener('change', updateSelectAllRecipesState);
+        
+        const details = document.createElement('div');
+        details.className = 'recipe-selection-details';
+        
+        const nameEl = document.createElement('span');
+        nameEl.className = 'recipe-selection-name';
+        nameEl.textContent = recipe.name;
+        
+        const metaEl = document.createElement('span');
+        metaEl.className = 'recipe-selection-meta';
+        const metaParts = [];
+        if (recipe.category) metaParts.push(recipe.category);
+        if (recipe.mealTypes && recipe.mealTypes.length) {
+            metaParts.push(`Used for ${recipe.mealTypes.join(', ')}`);
+        }
+        if (recipe.occurrences > 1) {
+            metaParts.push(`${recipe.occurrences} times this week`);
+        }
+        metaEl.textContent = metaParts.join(' • ');
+        
+        details.appendChild(nameEl);
+        if (metaEl.textContent) {
+            details.appendChild(metaEl);
+        }
+        
+        label.appendChild(checkbox);
+        label.appendChild(details);
+        printRecipeSelectionList.appendChild(label);
+    });
+    
+    if (selectAllRecipesCheckbox) {
+        selectAllRecipesCheckbox.disabled = false;
+        selectAllRecipesCheckbox.checked = true;
+        selectAllRecipesCheckbox.indeterminate = false;
+    }
+    
+    updateSelectAllRecipesState();
+}
+
+function updateSelectAllRecipesState() {
+    if (!selectAllRecipesCheckbox || !printRecipeSelectionList) return;
+    
+    const checkboxes = Array.from(printRecipeSelectionList.querySelectorAll('input[name="print-recipes"]'));
+    if (!checkboxes.length) {
+        selectAllRecipesCheckbox.checked = false;
+        selectAllRecipesCheckbox.indeterminate = false;
+        selectAllRecipesCheckbox.disabled = true;
+        return;
+    }
+    
+    const checkedCount = checkboxes.filter(box => box.checked).length;
+    selectAllRecipesCheckbox.disabled = false;
+    selectAllRecipesCheckbox.checked = checkedCount === checkboxes.length;
+    selectAllRecipesCheckbox.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+}
+
+function handleSelectAllRecipesChange(event) {
+    if (!printRecipeSelectionList) return;
+    const checkboxes = Array.from(printRecipeSelectionList.querySelectorAll('input[name="print-recipes"]'));
+    checkboxes.forEach(box => {
+        box.checked = event.target.checked;
+    });
+    updateSelectAllRecipesState();
+}
+
+function handlePrintOptionsSubmit(event) {
+    event.preventDefault();
+    
+    if (!printOptionsForm) {
+        printMealPlan();
+        return;
+    }
+    
+    const formData = new FormData(printOptionsForm);
+    const selectedRecipeIds = formData.getAll('print-recipes')
+        .map(id => Number(id))
+        .filter(id => Number.isInteger(id));
+    
+    closePrintOptionsModal();
+    printMealPlan(selectedRecipeIds);
+}
+
+function buildRecipePrintSection(recipe) {
+    if (!recipe) return '';
+    
+    const ingredientsList = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+    const steps = typeof recipe.steps === 'string' ? recipe.steps.trim() : '';
+    const nutrition = recipe.nutrition || {};
+    
+    const totalWeight = ingredientsList.reduce((sum, ingredient) => {
+        const amount = parseFloat(ingredient.amount);
+        return sum + (Number.isFinite(amount) ? amount : 0);
+    }, 0);
+    const servingSize = parseFloat(recipe.servingSize);
+    const servings = Number.isFinite(totalWeight) && Number.isFinite(servingSize) && servingSize > 0
+        ? Math.round((totalWeight / servingSize) * 10) / 10
+        : null;
+    
+    const ingredientItems = ingredientsList.map(ingredient => {
+        const amount = parseFloat(ingredient.amount);
+        const displayAmount = Number.isFinite(amount) ? `${Math.round(amount * 10) / 10}g` : '';
+        const ingredientName = ingredient.name || 'Ingredient';
+        const ingredientDetails = [displayAmount].filter(Boolean).join(' ');
+        return `
+            <li>
+                <span class="recipe-ingredient-name">${ingredientName}</span>
+                ${ingredientDetails ? `<span class="recipe-ingredient-amount">${ingredientDetails}</span>` : ''}
+            </li>
+        `;
+    }).join('');
+    
+    const sanitizedSteps = steps ? steps.replace(/\n/g, '<br>') : '';
+    
+    return `
+        <article class="print-recipe">
+            <header class="print-recipe-header">
+                <h2 class="print-recipe-title">${recipe.name}</h2>
+                <div class="print-recipe-meta">
+                    <span class="print-recipe-category">${recipe.category || 'Recipe'}</span>
+                    ${servings ? `<span class="print-recipe-servings">Approx. ${servings} servings</span>` : ''}
+                </div>
+            </header>
+            <section class="print-recipe-body">
+                <div class="print-recipe-summary">
+                    <div><strong>Calories:</strong> ${Number.isFinite(nutrition.calories) ? nutrition.calories : '—'}</div>
+                    <div><strong>Protein:</strong> ${Number.isFinite(nutrition.protein) ? `${nutrition.protein}g` : '—'}</div>
+                    <div><strong>Carbs:</strong> ${Number.isFinite(nutrition.carbs) ? `${nutrition.carbs}g` : '—'}</div>
+                    <div><strong>Fat:</strong> ${Number.isFinite(nutrition.fat) ? `${nutrition.fat}g` : '—'}</div>
+                </div>
+                <div class="print-recipe-content">
+                    <div class="print-recipe-ingredients">
+                        <h3>Ingredients</h3>
+                        <ul>
+                            ${ingredientItems || '<li>No ingredients listed.</li>'}
+                        </ul>
+                    </div>
+                    ${sanitizedSteps ? `
+                        <div class="print-recipe-instructions">
+                            <h3>Instructions</h3>
+                            <p>${sanitizedSteps}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            </section>
+        </article>
+    `;
+}
+
 // Print meal plan function
-function printMealPlan() {
+function printMealPlan(selectedRecipeIds = []) {
     console.log('Printing meal plan...');
     
     // Create a print-friendly version of the page

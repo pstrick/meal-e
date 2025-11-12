@@ -224,7 +224,10 @@ function createRecipeCard(recipe) {
     card.className = 'recipe-card';
     
     const ingredients = recipe.ingredients
-        .map(ing => `${ing.emoji ? `${ing.emoji} ` : ''}${ing.name} (${ing.amount}g)`)
+        .map(ing => {
+            const emoji = (ing.emoji || '').trim();
+            return `${emoji ? `${emoji} ` : ''}${ing.name} (${ing.amount}g)`;
+        })
         .join(', ');
 
     const totalWeight = recipe.ingredients.reduce((sum, ing) => sum + ing.amount, 0);
@@ -985,7 +988,7 @@ function printRecipe(id) {
                 <ul class="ingredients-list">
                     ${recipe.ingredients.map(ing => `
                         <li class="ingredient-item">
-                            <span class="ingredient-name">${ing.name}</span>
+                            <span class="ingredient-name">${((ing.emoji || '').trim()) ? `${(ing.emoji || '').trim()} ${ing.name}` : ing.name}</span>
                             <div class="ingredient-details">
                                 <div>${ing.amount}g</div>
                                 <div style="font-size: 0.9rem;">
@@ -1033,7 +1036,8 @@ function editRecipe(id) {
     recipe.ingredients.forEach(ing => {
         const ingredientItem = document.createElement('div');
         ingredientItem.className = 'ingredient-item';
-        const displayName = ing.emoji ? `${ing.emoji} ${ing.name}` : ing.name;
+        const emoji = (ing.emoji || '').trim();
+        const displayName = emoji ? `${emoji} ${ing.name}` : ing.name;
         ingredientItem.innerHTML = `
             <div class="ingredient-main">
                 <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${displayName}">
@@ -1053,14 +1057,14 @@ function editRecipe(id) {
         let fdcId = ing.fdcId ? ing.fdcId.toString() : `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         nameInput.dataset.fdcId = fdcId;
         nameInput.dataset.storeSection = ing.storeSection || '';
-        nameInput.dataset.emoji = ing.emoji || '';
+        nameInput.dataset.emoji = emoji;
         const ingredientData = {
             name: ing.name,
             amount: parseFloat(ing.amount),
             nutrition: ing.nutrition,
             source: ing.source || 'usda', // Default to usda for backward compatibility
             storeSection: ing.storeSection || '',
-            emoji: ing.emoji || ''
+            emoji: emoji
         };
         selectedIngredients.set(fdcId, ingredientData);
         nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
@@ -1258,10 +1262,11 @@ function selectIngredient(ingredient) {
     if (nameInput && amountInput) {
         // Generate unique ID for this ingredient
         const fdcId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const emoji = (ingredient.emoji || '').trim();
         nameInput.dataset.fdcId = fdcId;
         nameInput.dataset.storeSection = ingredient.storeSection || '';
-        nameInput.dataset.emoji = ingredient.emoji || '';
-        const displayName = ingredient.emoji ? `${ingredient.emoji} ${ingredient.name}` : ingredient.name;
+        nameInput.dataset.emoji = emoji;
+        const displayName = emoji ? `${emoji} ${ingredient.name}` : ingredient.name;
         nameInput.value = displayName;
         nameInput.readOnly = true;
         nameInput.placeholder = 'Search for ingredient';
@@ -1273,7 +1278,7 @@ function selectIngredient(ingredient) {
             nutrition: ingredient.nutrition,
             source: ingredient.source || 'custom',
             storeSection: ingredient.storeSection || '',
-            emoji: ingredient.emoji || ''
+            emoji: emoji
         };
         selectedIngredients.set(fdcId, ingredientData);
         
@@ -1301,6 +1306,7 @@ async function searchAllIngredients(query) {
     customMatches.forEach(ingredient => {
         // Convert nutrition from total serving size to per-gram values
         const servingSize = ingredient.servingSize || 100; // Default to 100g if not specified
+        const emoji = (ingredient.emoji || '').trim();
         results.push({
             id: ingredient.id,
             name: ingredient.name,
@@ -1314,7 +1320,7 @@ async function searchAllIngredients(query) {
             servingSize: ingredient.servingSize,
             brandOwner: 'Custom Ingredient',
             storeSection: ingredient.storeSection || '',
-            emoji: ingredient.emoji || ''
+            emoji: emoji
         });
     });
     
@@ -1342,12 +1348,13 @@ async function displaySearchResults(results) {
         const sourceLabel = 'Custom Ingredient';
         
         const [mainName, ...details] = ingredient.name.split(',');
+        const emoji = (ingredient.emoji || '').trim();
         div.innerHTML = `
             <div class="search-result-header">
                 <span class="source-indicator ${ingredient.source}">
                     ${sourceIcon} ${sourceLabel}
                 </span>
-                <h4>${ingredient.emoji ? `<span class="ingredient-emoji">${ingredient.emoji}</span> ` : ''}${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
+                <h4>${emoji ? `<span class="ingredient-emoji">${emoji}</span> ` : ''}${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
             </div>
             <p>${ingredient.brandOwner}</p>
         `;
@@ -1367,7 +1374,7 @@ async function displaySearchResults(results) {
                     source: 'custom',
                     id: ingredient.id,
                     storeSection: ingredient.storeSection || '',
-                    emoji: ingredient.emoji || ''
+                    emoji: emoji
                 };
                 
                 // Store in selectedIngredients with custom ID
@@ -1376,11 +1383,11 @@ async function displaySearchResults(results) {
                 // Update the input field
                 const nameField = currentIngredientInput.querySelector('.ingredient-name');
                 if (nameField) {
-                    const displayName = ingredient.emoji ? `${ingredient.emoji} ${ingredient.name}` : ingredient.name;
+                    const displayName = emoji ? `${emoji} ${ingredient.name}` : ingredient.name;
                     nameField.value = displayName;
                     nameField.dataset.fdcId = `custom-${ingredient.id}`;
                     nameField.dataset.storeSection = ingredient.storeSection || '';
-                    nameField.dataset.emoji = ingredient.emoji || '';
+                    nameField.dataset.emoji = emoji;
                 }
                 
                 // Update ingredient macros
@@ -1563,7 +1570,8 @@ function duplicateRecipe(id) {
     originalRecipe.ingredients.forEach(ing => {
         const ingredientItem = document.createElement('div');
         ingredientItem.className = 'ingredient-item';
-        const displayName = ing.emoji ? `${ing.emoji} ${ing.name}` : ing.name;
+        const emoji = (ing.emoji || '').trim();
+        const displayName = emoji ? `${emoji} ${ing.name}` : ing.name;
         ingredientItem.innerHTML = `
             <div class="ingredient-main">
                 <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${displayName}">
@@ -1584,7 +1592,7 @@ function duplicateRecipe(id) {
         const fdcId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         nameInput.dataset.fdcId = fdcId;
         nameInput.dataset.storeSection = ing.storeSection || '';
-        nameInput.dataset.emoji = ing.emoji || '';
+        nameInput.dataset.emoji = emoji;
         
         const ingredientData = {
             name: ing.name,
@@ -1592,7 +1600,7 @@ function duplicateRecipe(id) {
             nutrition: ing.nutrition,
             source: ing.source || 'custom',
             storeSection: ing.storeSection || '',
-            emoji: ing.emoji || ''
+            emoji: emoji
         };
         selectedIngredients.set(fdcId, ingredientData);
         

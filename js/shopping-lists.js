@@ -276,7 +276,8 @@ function updateShoppingItemsDisplay() {
     const groupedItems = list.items.reduce((groups, item) => {
         const section = normalizeStoreSection(item.storeSection);
         item.storeSection = section;
-        item.emoji = (item.emoji || '').trim();
+        const trimmedEmoji = (item.emoji || '').trim();
+        item.emoji = trimmedEmoji ? Array.from(trimmedEmoji).slice(0, 2).join('') : '';
         if (!groups[section]) {
             groups[section] = [];
         }
@@ -444,6 +445,7 @@ function handleAddItemSubmit(e) {
     const storeSection = normalizeStoreSection(storeSectionInput ? storeSectionInput.value : '');
     const emojiInput = document.getElementById('item-emoji');
     const emoji = (emojiInput ? emojiInput.value : '').trim();
+    const normalizedEmoji = emoji ? Array.from(emoji).slice(0, 2).join('') : '';
     
     const parsedAmount = amountInput === '' ? null : parseFloat(amountInput);
     
@@ -471,7 +473,7 @@ function handleAddItemSubmit(e) {
                 unit,
                 notes,
                 storeSection,
-                emoji
+                emoji: normalizedEmoji
             };
         }
     } else {
@@ -483,7 +485,7 @@ function handleAddItemSubmit(e) {
             unit,
             notes,
             storeSection,
-            emoji,
+            emoji: normalizedEmoji,
             addedAt: new Date().toISOString()
         };
         shoppingLists[listIndex].items.push(newItem);
@@ -754,6 +756,11 @@ function printShoppingList() {
                     font-size: 0.9rem;
                     color: #666;
                     font-style: italic;
+                }
+                .item-category {
+                    font-size: 0.85rem;
+                    color: #666;
+                    margin-bottom: 4px;
                 }
                 .checkbox {
                     width: 20px;
