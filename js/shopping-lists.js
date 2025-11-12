@@ -1,7 +1,5 @@
 // Shopping Lists Management
 import { settings, applyDarkMode } from './settings.js';
-import { showAlert } from './alert.js';
-
 let shoppingLists = [];
 let currentListId = null;
 let currentEditItemId = null;
@@ -15,6 +13,30 @@ const sortStoreSections = (a, b) => {
     if (a === DEFAULT_STORE_SECTION) return 1;
     if (b === DEFAULT_STORE_SECTION) return -1;
     return a.localeCompare(b);
+};
+
+const notifyUser = (message, options = {}) => {
+    const type = options?.type;
+    try {
+        if (typeof window !== 'undefined' && typeof window.showAlert === 'function') {
+            window.showAlert(message, options);
+            return;
+        }
+    } catch (error) {
+        console.warn('Fallback notification due to showAlert error:', error);
+    }
+
+    if (type === 'error') {
+        console.error(message);
+    } else if (type === 'warning') {
+        console.warn(message);
+    } else {
+        console.log(message);
+    }
+
+    if (typeof alert === 'function') {
+        alert(message);
+    }
 };
 
 // DOM Elements (will be initialized when DOM is ready)
@@ -171,7 +193,7 @@ function handleShoppingListSubmit(e) {
     console.log('Form data:', { name, description, currentListId });
     
     if (!name) {
-        showAlert('Please enter a list name', { type: 'warning' });
+        notifyUser('Please enter a list name', { type: 'warning' });
         return;
     }
     
@@ -373,7 +395,7 @@ function handleSaveListDetails() {
     console.log('New list details:', { listName, listDescription });
     
     if (!listName) {
-        showAlert('Please enter a list name', { type: 'warning' });
+        notifyUser('Please enter a list name', { type: 'warning' });
         return;
     }
     
@@ -398,7 +420,7 @@ function handleSaveListDetails() {
     const title = document.getElementById('items-modal-title');
     title.textContent = `Edit Shopping List: ${listName}`;
     
-    showAlert('List details saved successfully!', { type: 'success' });
+    notifyUser('List details saved successfully!', { type: 'success' });
 }
 
 function handleAddItemSubmit(e) {
@@ -416,12 +438,12 @@ function handleAddItemSubmit(e) {
     const parsedAmount = amountInput === '' ? null : parseFloat(amountInput);
     
     if (!name) {
-        showAlert('Please enter an item name', { type: 'warning' });
+        notifyUser('Please enter an item name', { type: 'warning' });
         return;
     }
     
     if (amountInput !== '' && (isNaN(parsedAmount) || parsedAmount <= 0)) {
-        showAlert('Please enter a valid amount greater than 0, or leave it blank', { type: 'warning' });
+        notifyUser('Please enter a valid amount greater than 0, or leave it blank', { type: 'warning' });
         return;
     }
     
@@ -670,6 +692,16 @@ function printShoppingList() {
                 .items-section {
                     margin-bottom: 30px;
                 }
+                .print-shopping-section {
+                    margin-bottom: 25px;
+                }
+                .print-section-subtitle {
+                    font-size: 1.25rem;
+                    color: #4CAF50;
+                    border-bottom: 1px solid #4CAF50;
+                    padding-bottom: 8px;
+                    margin-bottom: 15px;
+                }
                 .section-title {
                     font-size: 1.5rem;
                     color: #4CAF50;
@@ -719,7 +751,8 @@ function printShoppingList() {
                 @media print {
                     body { margin: 0; padding: 15px; }
                     .list-header { border-bottom-color: #000; }
-                    .section-title { border-bottom-color: #000; color: #000; }
+                    .section-title,
+                    .print-section-subtitle { border-bottom-color: #000; color: #000; }
                     .item-amount { color: #000; }
                     .list-title { color: #000; }
                 }
