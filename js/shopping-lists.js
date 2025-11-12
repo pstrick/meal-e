@@ -17,6 +17,36 @@ let addItemBtn;
 let printListBtn;
 let shoppingItemsList;
 
+function parseOptionalAmount(value) {
+    if (value === null || value === undefined) return null;
+    if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : null;
+    }
+    const trimmed = String(value).trim();
+    if (trimmed === '') return null;
+    const numeric = parseFloat(trimmed);
+    return Number.isFinite(numeric) ? numeric : null;
+}
+
+function formatItemAmount(item) {
+    const amount = parseOptionalAmount(item?.amount);
+    const unit = (item?.unit || '').trim();
+
+    if (amount !== null && unit) {
+        return `${amount} ${unit}`.trim();
+    }
+
+    if (amount !== null) {
+        return `${amount}`;
+    }
+
+    if (unit) {
+        return unit;
+    }
+
+    return '';
+}
+
 // Initialize shopping lists
 function initializeShoppingLists() {
     console.log('Initializing shopping lists...');
@@ -188,7 +218,7 @@ function openManageListModal(listId) {
     const listNameInput = document.getElementById('manage-list-name');
     const listDescriptionInput = document.getElementById('manage-list-description');
     
-    title.textContent = `Manage Shopping List: ${list.name}`;
+    title.textContent = `Edit Shopping List: ${list.name}`;
     listNameInput.value = list.name;
     listDescriptionInput.value = list.description || '';
     
@@ -227,11 +257,13 @@ function createShoppingItemElement(item) {
     div.className = 'shopping-item';
     div.dataset.itemId = item.id;
     
+    const amountText = formatItemAmount(item);
+    
     div.innerHTML = `
         <div class="item-info">
             <div class="item-main">
                 <span class="item-name">${item.name}</span>
-                <span class="item-amount">${item.amount} ${item.unit}</span>
+                ${amountText ? `<span class="item-amount">${amountText}</span>` : ''}
             </div>
             ${item.notes ? `<div class="item-notes">${item.notes}</div>` : ''}
         </div>
@@ -259,13 +291,14 @@ function openAddItemModal(itemId = null) {
         const item = list?.items.find(i => i.id === itemId);
         if (item) {
             document.getElementById('item-name').value = item.name;
-            document.getElementById('item-amount').value = item.amount;
+            document.getElementById('item-amount').value = parseOptionalAmount(item.amount) ?? '';
             document.getElementById('item-unit').value = item.unit;
             document.getElementById('item-notes').value = item.notes || '';
         }
     } else {
         // Add new item
         form.reset();
+        document.getElementById('item-amount').value = '';
     }
     
     modal.classList.add('active');
@@ -313,7 +346,7 @@ function handleSaveListDetails() {
     
     // Update the modal title
     const title = document.getElementById('items-modal-title');
-    title.textContent = `Manage Shopping List: ${listName}`;
+    title.textContent = `Edit Shopping List: ${listName}`;
     
     alert('List details saved successfully!');
 }
@@ -324,12 +357,19 @@ function handleAddItemSubmit(e) {
     if (!currentListId) return;
     
     const name = document.getElementById('item-name').value.trim();
-    const amount = parseFloat(document.getElementById('item-amount').value);
+    const amountInput = document.getElementById('item-amount').value.trim();
     const unit = document.getElementById('item-unit').value;
     const notes = document.getElementById('item-notes').value.trim();
     
-    if (!name || isNaN(amount) || amount <= 0) {
-        alert('Please enter valid item details');
+    const parsedAmount = amountInput === '' ? null : parseFloat(amountInput);
+    
+    if (!name) {
+        alert('Please enter an item name');
+        return;
+    }
+    
+    if (amountInput !== '' && (isNaN(parsedAmount) || parsedAmount <= 0)) {
+        alert('Please enter a valid amount greater than 0, or leave it blank');
         return;
     }
     
@@ -343,7 +383,7 @@ function handleAddItemSubmit(e) {
             shoppingLists[listIndex].items[itemIndex] = {
                 ...shoppingLists[listIndex].items[itemIndex],
                 name,
-                amount,
+                amount: parsedAmount,
                 unit,
                 notes
             };
@@ -353,7 +393,7 @@ function handleAddItemSubmit(e) {
         const newItem = {
             id: Date.now(),
             name,
-            amount,
+            amount: parsedAmount,
             unit,
             notes,
             addedAt: new Date().toISOString()
@@ -403,7 +443,10 @@ function createShoppingListElement(list) {
     div.className = 'shopping-list-card';
     
     const itemCount = list.items.length;
-    const totalItems = list.items.reduce((sum, item) => sum + item.amount, 0);
+    const totalItems = list.items.reduce((sum, item) => {
+        const amount = parseOptionalAmount(item.amount);
+        return sum + (amount ?? 0);
+    }, 0);
     
     div.innerHTML = `
         <div class="list-header">
@@ -497,6 +540,21 @@ function printShoppingList() {
     if (!list) return;
     
     const printWindow = window.open('', '_blank');
+    const itemsHtml = list.items.map(item => {
+        const amountText = formatItemAmount(item);
+        return `
+                <div class="shopping-item">
+                    <div class="checkbox"></div>
+                    <div class="item-info">
+                        <div class="item-main">
+                            <span class="item-name">${item.name}</span>
+                            ${amountText ? `<span class="item-amount">${amountText}</span>` : ''}
+                        </div>
+                        ${item.notes ? `<div class="item-notes">${item.notes}</div>` : ''}
+                    </div>
+                </div>
+        `;
+    }).join('');
     
     printWindow.document.write(`
         <!DOCTYPE html>
@@ -602,18 +660,7 @@ function printShoppingList() {
             
             <div class="items-section">
                 <h2 class="section-title">Shopping Items</h2>
-                ${list.items.map(item => `
-                    <div class="shopping-item">
-                        <div class="checkbox"></div>
-                        <div class="item-info">
-                            <div class="item-main">
-                                <span class="item-name">${item.name}</span>
-                                <span class="item-amount">${item.amount} ${item.unit}</span>
-                            </div>
-                            ${item.notes ? `<div class="item-notes">${item.notes}</div>` : ''}
-                        </div>
-                    </div>
-                `).join('')}
+                ${itemsHtml}
             </div>
         </body>
         </html>
