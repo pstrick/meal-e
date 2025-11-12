@@ -1749,6 +1749,80 @@ function printMealPlan() {
                     display: inline-block;
                     margin-right: 6px;
                 }
+
+                .macro-progress-container {
+                    display: flex;
+                    justify-content: space-around;
+                    align-items: center;
+                    gap: 0.3rem;
+                    margin-top: 4px;
+                }
+
+                .macro-progress-item {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    flex: 1;
+                }
+
+                .circular-progress {
+                    position: relative;
+                    width: 36px;
+                    height: 36px;
+                    margin-bottom: 4px;
+                }
+
+                .circular-progress-svg {
+                    width: 100%;
+                    height: 100%;
+                    transform: rotate(-90deg);
+                }
+
+                .circular-progress-bg {
+                    fill: none;
+                    stroke: #e0e0e0;
+                    stroke-width: 2;
+                }
+
+                .circular-progress-fill {
+                    fill: none;
+                    stroke: #4caf50;
+                    stroke-width: 2;
+                    stroke-linecap: round;
+                    transition: none;
+                }
+
+                .circular-progress-fill.over-goal {
+                    stroke: #f44336;
+                }
+
+                .circular-progress-text {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    text-align: center;
+                    font-size: 0.7rem;
+                    font-weight: 600;
+                    line-height: 1;
+                }
+
+                .macro-value {
+                    display: block;
+                    color: #000;
+                }
+
+                .macro-unit {
+                    font-size: 0.6rem;
+                    color: #555;
+                }
+
+                .macro-label {
+                    font-size: 0.65rem;
+                    color: #555;
+                    font-weight: 500;
+                    text-align: center;
+                }
                 
                 .empty-slot {
                     background: #f9f9f9;
