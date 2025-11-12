@@ -429,6 +429,14 @@ function createShoppingListElement(list) {
         </div>
     `;
     
+    // Make entire card clickable (excluding buttons)
+    div.addEventListener('click', (event) => {
+        if (event.target.closest('button')) {
+            return;
+        }
+        openManageListModal(list.id);
+    });
+    
     return div;
 }
 

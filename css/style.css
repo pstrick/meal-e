@@ -2483,9 +2483,6 @@ footer {
 :root.dark-mode .no-items {
     color: var(--dark-text-muted);
 }
-    background-color: #3a3a3a;
-    border-color: var(--primary-color);
-}
 
 :root.dark-mode .recurring-item-name {
     color: var(--text-color);
@@ -3758,6 +3755,7 @@ main {
     border: 1px solid #f1f3f4;
     position: relative;
     margin-bottom: 1.5rem;
+    cursor: pointer;
 }
 
 .shopping-list-card:hover {
@@ -4533,7 +4531,7 @@ main {
     /* Reset page margins and background */
     * {
         -webkit-print-color-adjust: exact !important;
-        color-adjust: exact !important;
+    print-color-adjust: exact !important;
     }
     
     body {
