@@ -418,7 +418,7 @@ function createShoppingListElement(list) {
         
         <div class="list-actions">
             <button class="btn btn-primary" onclick="openManageListModal(${list.id})">
-                <i class="fas fa-cog"></i> Manage List
+                <i class="fas fa-pen"></i> Edit
             </button>
             <button class="btn btn-secondary" onclick="duplicateShoppingList(${list.id})">
                 <i class="fas fa-copy"></i> Duplicate
