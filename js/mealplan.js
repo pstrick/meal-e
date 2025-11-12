@@ -1,3 +1,5 @@
+import { showAlert } from './alert.js';
+
 // Meal Planning functionality
 let currentWeekOffset = 0;  // Track week offset instead of modifying date directly
 let baseStartOfWeekTimestamp = null; // Anchor for week navigation as timestamp
@@ -15,6 +17,30 @@ let printOptionsForm = null;
 let printRecipeSelectionList = null;
 let selectAllRecipesCheckbox = null;
 let cancelPrintOptionsButton = null;
+let shoppingListSelectionModal = null;
+let shoppingListSelectionForm = null;
+let existingShoppingListSelect = null;
+let shoppingListOptionRadios = [];
+let newShoppingListNameInput = null;
+let newShoppingListDescriptionInput = null;
+let cancelShoppingListSelectionButton = null;
+let pendingShoppingListData = null;
+
+const DEFAULT_STORE_SECTION = 'Uncategorized';
+
+function normalizeStoreSection(section) {
+    const trimmed = (section || '').trim();
+    return trimmed ? trimmed : DEFAULT_STORE_SECTION;
+}
+
+function sanitizeEmoji(value) {
+    const trimmed = (value || '').trim();
+    if (!trimmed) {
+        return '';
+    }
+    const chars = Array.from(trimmed);
+    return chars.slice(0, 2).join('');
+}
 
 // Initialize meal plan data
 let mealPlan = {};
@@ -59,7 +85,14 @@ async function searchAllIngredients(query) {
     const results = [];
     
     // Search custom ingredients only (no USDA API search)
-    const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
+    const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]').map(ingredient => ({
+        ...ingredient,
+        storeSection: ingredient.storeSection || '',
+        emoji: (ingredient.emoji || '').trim(),
+        pricePerGram: typeof ingredient.pricePerGram === 'number' ? ingredient.pricePerGram : null,
+        totalPrice: typeof ingredient.totalPrice === 'number' ? ingredient.totalPrice : null,
+        totalWeight: typeof ingredient.totalWeight === 'number' ? ingredient.totalWeight : null
+    }));
     const customMatches = customIngredients.filter(ingredient => 
         ingredient.name.toLowerCase().includes(query.toLowerCase())
     );
@@ -80,7 +113,12 @@ async function searchAllIngredients(query) {
                 fat: ingredient.nutrition.fat / servingSize
             },
             servingSize: ingredient.servingSize,
-            brandOwner: 'Custom Ingredient'
+            brandOwner: 'Custom Ingredient',
+            storeSection: ingredient.storeSection || '',
+            pricePerGram: ingredient.pricePerGram,
+            totalPrice: ingredient.totalPrice,
+            totalWeight: ingredient.totalWeight,
+            emoji: ingredient.emoji
         });
     });
     
@@ -909,6 +947,7 @@ async function continueInitialization() {
         initializeSearchHandlers();
         
         // Initialize print and shopping list buttons
+        initializeShoppingListSelectionModal();
         initializePrintOptionsModal();
         initializePrintButton();
         initializeShoppingListButton();
@@ -1386,19 +1425,21 @@ function initializeShoppingListButton() {
     
     if (generateButton) {
         generateButton.addEventListener('click', () => {
-            generateShoppingListFromMealPlan();
+            const shoppingListData = buildShoppingListData();
+            if (shoppingListData) {
+                openShoppingListSelectionModal(shoppingListData);
+            }
         });
     }
 }
 
-// Generate shopping list from meal plan
-function generateShoppingListFromMealPlan() {
+function buildShoppingListData() {
     try {
         // Load meal plan data from localStorage
         const mealPlanData = localStorage.getItem('mealPlan');
         if (!mealPlanData) {
-            alert('No meal plan found. Please add some meals to your plan first.');
-            return;
+            showAlert('No meal plan found. Please add some meals to your plan first.', { type: 'info' });
+            return null;
         }
         
         const mealPlan = JSON.parse(mealPlanData);
@@ -1422,7 +1463,7 @@ function generateShoppingListFromMealPlan() {
         const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]').map(ing => ({
             ...ing,
             storeSection: ing.storeSection || '',
-            emoji: ing.emoji || ''
+            emoji: sanitizeEmoji(ing.emoji)
         }));
         const resolveStoreSection = (name, section = '') => {
             const trimmed = (section || '').trim();
@@ -1435,7 +1476,7 @@ function generateShoppingListFromMealPlan() {
             return 'Uncategorized';
         };
         const resolveEmoji = (name, emoji = '') => {
-            const trimmed = (emoji || '').trim();
+            const trimmed = sanitizeEmoji(emoji);
             if (trimmed) return trimmed;
             const match = customIngredients.find(ing => ing.name.toLowerCase() === name.toLowerCase());
             if (match && match.emoji) {
@@ -1548,24 +1589,9 @@ function generateShoppingListFromMealPlan() {
         console.log('DEBUG: Found', ingredients.size, 'unique ingredients for current week');
         
         if (ingredients.size === 0) {
-            alert(`No ingredients found in your meal plan for the week of ${startDate} to ${endDate}. Please add meals to this week first.`);
-            return;
+            showAlert(`No ingredients found in your meal plan for the week of ${startDate} to ${endDate}. Please add meals to this week first.`, { type: 'info' });
+            return null;
         }
-        
-        // Load existing shopping lists
-        let shoppingLists = [];
-        try {
-            const shoppingListsData = localStorage.getItem('shoppingLists');
-            if (shoppingListsData) {
-                shoppingLists = JSON.parse(shoppingListsData);
-            }
-        } catch (error) {
-            console.error('Error loading shopping lists:', error);
-        }
-        
-        // Create new shopping list
-        // Use the week data already calculated above
-        const listName = `Meal Plan Shopping List - Week of ${startDate}`;
         
         const DEFAULT_SECTION = 'Uncategorized';
         const aggregatedItems = Array.from(ingredients.values());
@@ -1580,44 +1606,363 @@ function generateShoppingListFromMealPlan() {
             return a.name.localeCompare(b.name);
         });
         
-        const newList = {
-            id: Date.now(),
-            name: listName,
+        return {
+            week,
+            startDate,
+            endDate,
+            listName: `Meal Plan Shopping List - Week of ${startDate}`,
             description: `Generated from meal plan for week of ${startDate} to ${endDate}`,
-            items: aggregatedItems.map(ing => {
-                const emoji = (ing.emoji || '').trim();
-                return {
-                    id: Date.now() + Math.random(),
-                    name: ing.name,
-                    amount: Math.round(ing.amount * 10) / 10, // Round to 1 decimal
-                    unit: ing.unit,
-                    notes: ing.notes,
-                    storeSection: ing.storeSection || 'Uncategorized',
-                    emoji: emoji ? Array.from(emoji).slice(0, 2).join('') : '',
-                    addedAt: new Date().toISOString()
-                };
-            }),
-            createdAt: new Date().toISOString()
+            items: aggregatedItems.map(ing => ({
+                name: ing.name,
+                amount: Math.round(ing.amount * 10) / 10,
+                unit: ing.unit,
+                notes: ing.notes,
+                storeSection: ing.storeSection || DEFAULT_SECTION,
+                emoji: sanitizeEmoji(ing.emoji)
+            }))
         };
-        
-        shoppingLists.push(newList);
-        
-        // Save to localStorage
-        try {
-            localStorage.setItem('shoppingLists', JSON.stringify(shoppingLists));
-        } catch (error) {
-            console.error('Error saving shopping list:', error);
-            alert('Error saving shopping list. Please try again.');
+    } catch (error) {
+        console.error('Error generating shopping list from meal plan:', error);
+        showAlert('Error generating shopping list. Please try again.', { type: 'error' });
+        return null;
+    }
+}
+
+function initializeShoppingListSelectionModal() {
+    shoppingListSelectionModal = document.getElementById('shopping-list-selection-modal');
+    
+    if (!shoppingListSelectionModal) {
+        return;
+    }
+    
+    shoppingListSelectionForm = document.getElementById('shopping-list-selection-form');
+    existingShoppingListSelect = document.getElementById('existing-shopping-list');
+    shoppingListOptionRadios = Array.from(document.querySelectorAll('input[name="shopping-list-option"]'));
+    newShoppingListNameInput = document.getElementById('new-shopping-list-name');
+    newShoppingListDescriptionInput = document.getElementById('new-shopping-list-description');
+    cancelShoppingListSelectionButton = document.getElementById('cancel-shopping-list-selection');
+    
+    if (shoppingListSelectionForm) {
+        shoppingListSelectionForm.addEventListener('submit', handleShoppingListSelectionSubmit);
+    }
+    
+    shoppingListOptionRadios.forEach((radio) => {
+        radio.addEventListener('change', updateShoppingListOptionState);
+    });
+    
+    const closeBtn = shoppingListSelectionModal.querySelector('.close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeShoppingListSelectionModal);
+    }
+    
+    if (cancelShoppingListSelectionButton) {
+        cancelShoppingListSelectionButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            closeShoppingListSelectionModal();
+        });
+    }
+    
+    shoppingListSelectionModal.addEventListener('click', (event) => {
+        if (event.target === shoppingListSelectionModal) {
+            closeShoppingListSelectionModal();
+        }
+    });
+    
+    updateShoppingListOptionState();
+}
+
+function openShoppingListSelectionModal(shoppingListData) {
+    if (!shoppingListSelectionModal || !shoppingListSelectionForm) {
+        // If modal not available, fall back to creating new list immediately
+        createShoppingList(shoppingListData);
+        return;
+    }
+    
+    pendingShoppingListData = shoppingListData;
+    shoppingListSelectionForm.reset();
+    
+    const hasExistingLists = populateExistingShoppingLists();
+    
+    if (newShoppingListNameInput) {
+        newShoppingListNameInput.value = shoppingListData.listName || '';
+    }
+    if (newShoppingListDescriptionInput) {
+        newShoppingListDescriptionInput.value = shoppingListData.description || '';
+    }
+    
+    if (hasExistingLists) {
+        const existingOption = shoppingListOptionRadios.find(radio => radio.value === 'existing');
+        if (existingOption) {
+            existingOption.checked = true;
+        }
+    } else {
+        shoppingListOptionRadios.forEach(radio => {
+            radio.checked = radio.value === 'new';
+        });
+    }
+    
+    updateShoppingListOptionState();
+    
+    shoppingListSelectionModal.style.display = 'block';
+    shoppingListSelectionModal.classList.add('active');
+}
+
+function closeShoppingListSelectionModal() {
+    if (shoppingListSelectionModal) {
+        shoppingListSelectionModal.classList.remove('active');
+        shoppingListSelectionModal.style.display = 'none';
+    }
+    pendingShoppingListData = null;
+}
+
+function populateExistingShoppingLists() {
+    if (!existingShoppingListSelect) {
+        return false;
+    }
+    
+    const shoppingLists = loadExistingShoppingLists();
+    existingShoppingListSelect.innerHTML = '';
+    
+    if (!shoppingLists.length) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No shopping lists available';
+        existingShoppingListSelect.appendChild(option);
+        existingShoppingListSelect.disabled = true;
+        return false;
+    }
+    
+    shoppingLists
+        .slice()
+        .sort((a, b) => {
+            const aDate = a.updatedAt || a.createdAt || '';
+            const bDate = b.updatedAt || b.createdAt || '';
+            return new Date(bDate).getTime() - new Date(aDate).getTime();
+        })
+        .forEach(list => {
+            const option = document.createElement('option');
+            option.value = list.id;
+            option.textContent = list.name || `Shopping List (${new Date(list.createdAt || Date.now()).toLocaleDateString()})`;
+            existingShoppingListSelect.appendChild(option);
+        });
+    
+    existingShoppingListSelect.disabled = false;
+    return true;
+}
+
+function getSelectedShoppingListOption() {
+    const selectedRadio = shoppingListOptionRadios.find(radio => radio.checked);
+    return selectedRadio ? selectedRadio.value : null;
+}
+
+function updateShoppingListOptionState() {
+    const selectedOption = getSelectedShoppingListOption();
+    const hasUsableExistingList = !!existingShoppingListSelect &&
+        !existingShoppingListSelect.disabled &&
+        existingShoppingListSelect.options.length > 0 &&
+        existingShoppingListSelect.value !== '';
+    
+    const useExisting = selectedOption === 'existing' && hasUsableExistingList;
+    
+    if (existingShoppingListSelect) {
+        existingShoppingListSelect.disabled = !useExisting;
+    }
+    
+    const disableNewInputs = selectedOption !== 'new';
+    if (newShoppingListNameInput) {
+        newShoppingListNameInput.disabled = disableNewInputs;
+    }
+    if (newShoppingListDescriptionInput) {
+        newShoppingListDescriptionInput.disabled = disableNewInputs;
+    }
+}
+
+function handleShoppingListSelectionSubmit(event) {
+    event.preventDefault();
+    
+    if (!pendingShoppingListData) {
+        showAlert('Unable to add items to a shopping list. Please try again.', { type: 'error' });
+        closeShoppingListSelectionModal();
+        return;
+    }
+    
+    const option = getSelectedShoppingListOption();
+    if (!option) {
+        showAlert('Please choose whether to add to an existing list or create a new one.', { type: 'warning' });
+        return;
+    }
+    
+    let shoppingLists = loadExistingShoppingLists();
+    const timestamp = new Date().toISOString();
+    
+    if (option === 'existing') {
+        const selectedId = existingShoppingListSelect?.value;
+        if (!selectedId) {
+            showAlert('Please select a shopping list to add to.', { type: 'warning' });
             return;
         }
         
-        // Redirect to shopping lists page
-        window.location.href = 'shopping-lists.html';
+        const numericId = Number(selectedId);
+        const targetList = shoppingLists.find(list => list.id === numericId);
+        if (!targetList) {
+            showAlert('Selected shopping list could not be found. Please try again.', { type: 'error' });
+            return;
+        }
         
-    } catch (error) {
-        console.error('Error generating shopping list from meal plan:', error);
-        alert('Error generating shopping list. Please try again.');
+        mergeItemsIntoList(targetList, pendingShoppingListData.items, timestamp);
+        targetList.updatedAt = timestamp;
+    } else {
+        const providedName = (newShoppingListNameInput?.value || '').trim();
+        const listName = providedName || pendingShoppingListData.listName;
+        
+        if (!listName) {
+            showAlert('Please provide a name for the new shopping list.', { type: 'warning' });
+            return;
+        }
+        
+        const description = (newShoppingListDescriptionInput?.value || '').trim() || pendingShoppingListData.description;
+        
+        const newList = {
+            id: Date.now(),
+            name: listName,
+            description,
+            items: pendingShoppingListData.items.map(item => createShoppingListItem(item, timestamp)),
+            createdAt: timestamp,
+            updatedAt: timestamp
+        };
+        
+        shoppingLists.push(newList);
     }
+    
+    if (!saveShoppingListsToStorage(shoppingLists)) {
+        showAlert('Error saving shopping list. Please try again.', { type: 'error' });
+        return;
+    }
+    
+    closeShoppingListSelectionModal();
+    window.location.href = 'shopping-lists.html';
+}
+
+function mergeItemsIntoList(list, items, timestamp) {
+    if (!Array.isArray(list.items)) {
+        list.items = [];
+    }
+    
+    items.forEach(item => {
+        const normalizedName = (item.name || '').trim().toLowerCase();
+        const normalizedUnit = (item.unit || 'g').trim().toLowerCase();
+        const normalizedSection = normalizeStoreSection(item.storeSection);
+        const normalizedEmoji = sanitizeEmoji(item.emoji);
+        
+        const existingItem = list.items.find(existing => 
+            (existing.name || '').trim().toLowerCase() === normalizedName &&
+            (existing.unit || 'g').trim().toLowerCase() === normalizedUnit &&
+            normalizeStoreSection(existing.storeSection) === normalizedSection
+        );
+        
+        if (existingItem) {
+            if (typeof existingItem.amount === 'number' && typeof item.amount === 'number') {
+                existingItem.amount = Math.round((existingItem.amount + item.amount) * 10) / 10;
+            } else if (typeof item.amount === 'number') {
+                existingItem.amount = Math.round(item.amount * 10) / 10;
+            }
+            
+            if (item.notes) {
+                if (existingItem.notes) {
+                    if (!existingItem.notes.includes(item.notes)) {
+                        existingItem.notes = `${existingItem.notes}; ${item.notes}`;
+                    }
+                } else {
+                    existingItem.notes = item.notes;
+                }
+            }
+            
+            if (normalizedEmoji && !existingItem.emoji) {
+                existingItem.emoji = normalizedEmoji;
+            }
+            
+            existingItem.updatedAt = timestamp;
+        } else {
+            list.items.push(createShoppingListItem({
+                ...item,
+                storeSection: normalizedSection,
+                emoji: normalizedEmoji
+            }, timestamp));
+        }
+    });
+}
+
+function createShoppingListItem(item, timestamp) {
+    return {
+        id: Date.now() + Math.random(),
+        name: item.name,
+        amount: Math.round((item.amount ?? 0) * 10) / 10,
+        unit: item.unit || 'g',
+        notes: item.notes,
+        storeSection: normalizeStoreSection(item.storeSection),
+        emoji: sanitizeEmoji(item.emoji),
+        addedAt: timestamp,
+        updatedAt: timestamp
+    };
+}
+
+function loadExistingShoppingLists() {
+    try {
+        const data = localStorage.getItem('shoppingLists');
+        if (!data) {
+            return [];
+        }
+        const parsed = JSON.parse(data);
+        if (!Array.isArray(parsed)) {
+            return [];
+        }
+        return parsed.map(list => ({
+            ...list,
+            items: Array.isArray(list.items)
+                ? list.items.map(item => ({
+                    ...item,
+                    storeSection: normalizeStoreSection(item.storeSection),
+                    emoji: sanitizeEmoji(item.emoji)
+                }))
+                : []
+        }));
+    } catch (error) {
+        console.error('Error loading shopping lists:', error);
+        return [];
+    }
+}
+
+function saveShoppingListsToStorage(shoppingLists) {
+    try {
+        localStorage.setItem('shoppingLists', JSON.stringify(shoppingLists));
+        return true;
+    } catch (error) {
+        console.error('Error saving shopping lists:', error);
+        return false;
+    }
+}
+
+function createShoppingList(shoppingListData) {
+    const timestamp = new Date().toISOString();
+    const shoppingLists = loadExistingShoppingLists();
+    
+    const newList = {
+        id: Date.now(),
+        name: shoppingListData.listName,
+        description: shoppingListData.description,
+        items: shoppingListData.items.map(item => createShoppingListItem(item, timestamp)),
+        createdAt: timestamp,
+        updatedAt: timestamp
+    };
+    
+    shoppingLists.push(newList);
+    
+    if (!saveShoppingListsToStorage(shoppingLists)) {
+        showAlert('Error saving shopping list. Please try again.', { type: 'error' });
+        return;
+    }
+    
+    window.location.href = 'shopping-lists.html';
 }
 
 function initializePrintOptionsModal() {
