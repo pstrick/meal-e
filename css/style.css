@@ -4584,6 +4584,10 @@ main {
         padding: 1.25rem;
         border-radius: 8px;
     }
+
+    .shopping-section {
+        margin-bottom: 1.25rem;
+    }
 }
 
 /* Nutrition Tracker Styles */
@@ -5308,3 +5312,35 @@ main {
         margin-top: 1rem !important;
     }
 } 
+
+.shopping-section {
+    margin-bottom: 2rem;
+}
+
+.shopping-section:last-child {
+    margin-bottom: 0;
+}
+
+.shopping-section-title {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.shopping-section-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.shopping-item .item-category {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    margin-bottom: 0.35rem;
+}

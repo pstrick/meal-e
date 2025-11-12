@@ -1,5 +1,6 @@
 // Shopping Lists Management
 import { settings, applyDarkMode } from './settings.js';
+import { showAlert } from './alert.js';
 let shoppingLists = [];
 let currentListId = null;
 let currentEditItemId = null;
@@ -16,26 +17,18 @@ const sortStoreSections = (a, b) => {
 };
 
 const notifyUser = (message, options = {}) => {
-    const type = options?.type;
     try {
-        if (typeof window !== 'undefined' && typeof window.showAlert === 'function') {
-            window.showAlert(message, options);
-            return;
-        }
+        showAlert(message, options);
     } catch (error) {
-        console.warn('Fallback notification due to showAlert error:', error);
-    }
-
-    if (type === 'error') {
-        console.error(message);
-    } else if (type === 'warning') {
-        console.warn(message);
-    } else {
-        console.log(message);
-    }
-
-    if (typeof alert === 'function') {
-        alert(message);
+        const type = options?.type;
+        if (type === 'error') {
+            console.error(message);
+        } else if (type === 'warning') {
+            console.warn(message);
+        } else {
+            console.log(message);
+        }
+        console.warn('showAlert failed, message logged instead:', error);
     }
 };
 
@@ -320,9 +313,11 @@ function createShoppingItemElement(item) {
     const div = document.createElement('div');
     div.className = 'shopping-item';
     div.dataset.itemId = item.id;
-    div.dataset.storeSection = normalizeStoreSection(item.storeSection);
+    const normalizedSection = normalizeStoreSection(item.storeSection);
+    div.dataset.storeSection = normalizedSection;
     
     const amountText = formatItemAmount(item);
+    const showCategory = normalizedSection && normalizedSection !== DEFAULT_STORE_SECTION;
     
     div.innerHTML = `
         <div class="item-info">
@@ -330,6 +325,7 @@ function createShoppingItemElement(item) {
                 <span class="item-name">${item.name}</span>
                 ${amountText ? `<span class="item-amount">${amountText}</span>` : ''}
             </div>
+            ${showCategory ? `<div class="item-category">${normalizedSection}</div>` : ''}
             ${item.notes ? `<div class="item-notes">${item.notes}</div>` : ''}
         </div>
         <div class="item-actions">
@@ -361,7 +357,8 @@ function openAddItemModal(itemId = null) {
             document.getElementById('item-unit').value = item.unit || 'g';
             document.getElementById('item-notes').value = item.notes || '';
             if (storeSectionInput) {
-                storeSectionInput.value = item.storeSection || '';
+                const normalized = normalizeStoreSection(item.storeSection);
+                storeSectionInput.value = normalized === DEFAULT_STORE_SECTION ? '' : normalized;
             }
         }
     } else {
