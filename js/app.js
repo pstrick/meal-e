@@ -3,6 +3,7 @@ import { version } from './version.js';
 import './mealplan.js';
 import { initializeMealPlanner } from './mealplan.js';
 import { settings } from './settings.js';
+import { showAlert } from './alert.js';
 
 // DOM Elements
 const navLinks = document.querySelectorAll('nav a');
@@ -299,7 +300,7 @@ async function handleRecipeSubmit(e) {
     const ingredientsList = document.getElementById('ingredients-list');
     if (!ingredientsList) {
         console.error('ingredients-list element not found');
-        alert('Please add at least one ingredient to your recipe');
+        showAlert('Please add at least one ingredient to your recipe', { type: 'warning' });
         return;
     }
     
@@ -318,7 +319,7 @@ async function handleRecipeSubmit(e) {
     console.log('Has ingredients in DOM:', hasIngredients);
     
     if (!hasIngredients) {
-        alert('Please add at least one ingredient to your recipe');
+        showAlert('Please add at least one ingredient to your recipe', { type: 'warning' });
         return;
     }
 
@@ -338,7 +339,7 @@ async function handleRecipeSubmit(e) {
     const steps = document.getElementById('recipe-steps').value.trim();
     
     if (!name || !servingSize || servingSize <= 0) {
-        alert('Please fill in all required fields');
+        showAlert('Please fill in all required fields', { type: 'warning' });
         return;
     }
 
@@ -354,7 +355,8 @@ async function handleRecipeSubmit(e) {
                 name: ingredientData.name,
                 amount: parseFloat(item.querySelector('.ingredient-amount').value) || 0,
                 nutrition: ingredientData.nutrition,
-                source: ingredientData.source || 'usda' // Default to usda for backward compatibility
+            source: ingredientData.source || 'usda', // Default to usda for backward compatibility
+            storeSection: ingredientData.storeSection || ''
             };
         })
         .filter(ing => ing !== null && ing.amount > 0);
@@ -411,7 +413,7 @@ async function handleRecipeSubmit(e) {
         currentEditRecipeId = null;
     } catch (error) {
         console.error('Error saving recipe:', error);
-        alert('There was an error saving your recipe. Please try again.');
+        showAlert('There was an error saving your recipe. Please try again.', { type: 'error' });
     }
 }
 
@@ -1048,11 +1050,13 @@ function editRecipe(id) {
         // Ensure fdcId is present, fallback to a unique id if missing
         let fdcId = ing.fdcId ? ing.fdcId.toString() : `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         nameInput.dataset.fdcId = fdcId;
+        nameInput.dataset.storeSection = ing.storeSection || '';
         const ingredientData = {
             name: ing.name,
             amount: parseFloat(ing.amount),
             nutrition: ing.nutrition,
-            source: ing.source || 'usda' // Default to usda for backward compatibility
+            source: ing.source || 'usda', // Default to usda for backward compatibility
+            storeSection: ing.storeSection || ''
         };
         selectedIngredients.set(fdcId, ingredientData);
         nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
@@ -1251,6 +1255,7 @@ function selectIngredient(ingredient) {
         // Generate unique ID for this ingredient
         const fdcId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         nameInput.dataset.fdcId = fdcId;
+        nameInput.dataset.storeSection = ingredient.storeSection || '';
         nameInput.value = ingredient.name;
         nameInput.readOnly = true;
         nameInput.placeholder = 'Search for ingredient';
@@ -1260,7 +1265,8 @@ function selectIngredient(ingredient) {
             name: ingredient.name,
             amount: parseFloat(amountInput.value) || 0,
             nutrition: ingredient.nutrition,
-            source: ingredient.source || 'custom'
+            source: ingredient.source || 'custom',
+            storeSection: ingredient.storeSection || ''
         };
         selectedIngredients.set(fdcId, ingredientData);
         
@@ -1299,7 +1305,8 @@ async function searchAllIngredients(query) {
                 fat: ingredient.nutrition.fat / servingSize
             },
             servingSize: ingredient.servingSize,
-            brandOwner: 'Custom Ingredient'
+            brandOwner: 'Custom Ingredient',
+            storeSection: ingredient.storeSection || ''
         });
     });
     
@@ -1340,7 +1347,7 @@ async function displaySearchResults(results) {
         div.addEventListener('click', async () => {
             try {
                 if (!currentIngredientInput) {
-                    alert('No ingredient input is currently selected. Please click an ingredient input field first.');
+                    showAlert('No ingredient input is currently selected. Please click an ingredient input field first.', { type: 'warning' });
                     return;
                 }
                 
@@ -1350,15 +1357,20 @@ async function displaySearchResults(results) {
                     amount: parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0,
                     nutrition: ingredient.nutrition,
                     source: 'custom',
-                    id: ingredient.id
+                    id: ingredient.id,
+                    storeSection: ingredient.storeSection || ''
                 };
                 
                 // Store in selectedIngredients with custom ID
                 selectedIngredients.set(`custom-${ingredient.id}`, ingredientData);
                 
                 // Update the input field
-                currentIngredientInput.querySelector('.ingredient-name').value = ingredient.name;
-                currentIngredientInput.querySelector('.ingredient-name').dataset.fdcId = `custom-${ingredient.id}`;
+                const nameField = currentIngredientInput.querySelector('.ingredient-name');
+                if (nameField) {
+                    nameField.value = ingredient.name;
+                    nameField.dataset.fdcId = `custom-${ingredient.id}`;
+                    nameField.dataset.storeSection = ingredient.storeSection || '';
+                }
                 
                 // Update ingredient macros
                 updateIngredientMacros(currentIngredientInput, ingredientData);
@@ -1368,7 +1380,7 @@ async function displaySearchResults(results) {
                 closeIngredientSearch();
             } catch (error) {
                 console.error('Error selecting ingredient:', error);
-                alert('Error selecting ingredient. Please try again.');
+                showAlert('Error selecting ingredient. Please try again.', { type: 'error' });
             }
         });
         
@@ -1559,12 +1571,14 @@ function duplicateRecipe(id) {
         // Generate unique ID for the duplicated ingredient
         const fdcId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         nameInput.dataset.fdcId = fdcId;
+        nameInput.dataset.storeSection = ing.storeSection || '';
         
         const ingredientData = {
             name: ing.name,
             amount: parseFloat(ing.amount),
             nutrition: ing.nutrition,
-            source: ing.source || 'custom'
+            source: ing.source || 'custom',
+            storeSection: ing.storeSection || ''
         };
         selectedIngredients.set(fdcId, ingredientData);
         

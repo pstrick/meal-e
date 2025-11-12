@@ -1,4 +1,5 @@
 import { version } from './version.js';
+import { showAlert } from './alert.js';
 
 // Initialize settings immediately
 let settings = {
@@ -178,7 +179,7 @@ function updateRecurringItemsDisplay() {
 function clearDeletedInstances() {
     if (confirm('Are you sure you want to restore all manually deleted recurring item instances? This will bring back any recurring items you previously removed from specific days.')) {
         localStorage.removeItem('meale-deleted-recurring-instances');
-        alert('Deleted instances have been cleared. Recurring items will now appear on all their scheduled days.');
+        showAlert('Deleted instances have been cleared. Recurring items will now appear on all their scheduled days.', { type: 'success' });
     }
 }
 

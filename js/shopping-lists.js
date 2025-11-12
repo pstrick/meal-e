@@ -5,6 +5,17 @@ import { showAlert } from './alert.js';
 let shoppingLists = [];
 let currentListId = null;
 let currentEditItemId = null;
+const DEFAULT_STORE_SECTION = 'Uncategorized';
+const normalizeStoreSection = (section) => {
+    const trimmed = (section || '').trim();
+    return trimmed ? trimmed : DEFAULT_STORE_SECTION;
+};
+const sortStoreSections = (a, b) => {
+    if (a === b) return 0;
+    if (a === DEFAULT_STORE_SECTION) return 1;
+    if (b === DEFAULT_STORE_SECTION) return -1;
+    return a.localeCompare(b);
+};
 
 // DOM Elements (will be initialized when DOM is ready)
 let addListBtn;
@@ -247,9 +258,39 @@ function updateShoppingItemsDisplay() {
         return;
     }
     
-    list.items.forEach(item => {
-        const itemElement = createShoppingItemElement(item);
-        shoppingItemsList.appendChild(itemElement);
+    const groupedItems = list.items.reduce((groups, item) => {
+        const section = normalizeStoreSection(item.storeSection);
+        item.storeSection = section;
+        if (!groups[section]) {
+            groups[section] = [];
+        }
+        groups[section].push(item);
+        return groups;
+    }, {});
+    
+    const sortedSections = Object.keys(groupedItems).sort(sortStoreSections);
+    
+    sortedSections.forEach(section => {
+        const sectionContainer = document.createElement('div');
+        sectionContainer.className = 'shopping-section';
+        
+        const sectionHeader = document.createElement('h4');
+        sectionHeader.className = 'shopping-section-title';
+        sectionHeader.textContent = section;
+        sectionContainer.appendChild(sectionHeader);
+        
+        const itemsContainer = document.createElement('div');
+        itemsContainer.className = 'shopping-section-items';
+        
+        groupedItems[section]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .forEach(item => {
+                const itemElement = createShoppingItemElement(item);
+                itemsContainer.appendChild(itemElement);
+            });
+        
+        sectionContainer.appendChild(itemsContainer);
+        shoppingItemsList.appendChild(sectionContainer);
     });
 }
 
@@ -257,6 +298,7 @@ function createShoppingItemElement(item) {
     const div = document.createElement('div');
     div.className = 'shopping-item';
     div.dataset.itemId = item.id;
+    div.dataset.storeSection = normalizeStoreSection(item.storeSection);
     
     const amountText = formatItemAmount(item);
     
@@ -285,6 +327,7 @@ function openAddItemModal(itemId = null) {
     currentEditItemId = itemId;
     const modal = document.getElementById('add-item-modal');
     const form = document.getElementById('add-item-form');
+    const storeSectionInput = document.getElementById('item-store-section');
     
     if (itemId) {
         // Edit existing item
@@ -293,13 +336,19 @@ function openAddItemModal(itemId = null) {
         if (item) {
             document.getElementById('item-name').value = item.name;
             document.getElementById('item-amount').value = parseOptionalAmount(item.amount) ?? '';
-            document.getElementById('item-unit').value = item.unit;
+            document.getElementById('item-unit').value = item.unit || 'g';
             document.getElementById('item-notes').value = item.notes || '';
+            if (storeSectionInput) {
+                storeSectionInput.value = item.storeSection || '';
+            }
         }
     } else {
         // Add new item
         form.reset();
         document.getElementById('item-amount').value = '';
+        if (storeSectionInput) {
+            storeSectionInput.value = '';
+        }
     }
     
     modal.classList.add('active');
@@ -361,6 +410,8 @@ function handleAddItemSubmit(e) {
     const amountInput = document.getElementById('item-amount').value.trim();
     const unit = document.getElementById('item-unit').value;
     const notes = document.getElementById('item-notes').value.trim();
+    const storeSectionInput = document.getElementById('item-store-section');
+    const storeSection = normalizeStoreSection(storeSectionInput ? storeSectionInput.value : '');
     
     const parsedAmount = amountInput === '' ? null : parseFloat(amountInput);
     
@@ -386,7 +437,8 @@ function handleAddItemSubmit(e) {
                 name,
                 amount: parsedAmount,
                 unit,
-                notes
+                notes,
+                storeSection
             };
         }
     } else {
@@ -397,6 +449,7 @@ function handleAddItemSubmit(e) {
             amount: parsedAmount,
             unit,
             notes,
+            storeSection,
             addedAt: new Date().toISOString()
         };
         shoppingLists[listIndex].items.push(newItem);
@@ -541,20 +594,43 @@ function printShoppingList() {
     if (!list) return;
     
     const printWindow = window.open('', '_blank');
-    const itemsHtml = list.items.map(item => {
-        const amountText = formatItemAmount(item);
-        return `
-                <div class="shopping-item">
-                    <div class="checkbox"></div>
-                    <div class="item-info">
-                        <div class="item-main">
-                            <span class="item-name">${item.name}</span>
-                            ${amountText ? `<span class="item-amount">${amountText}</span>` : ''}
+    const groupedItems = list.items.reduce((groups, item) => {
+        const section = normalizeStoreSection(item.storeSection);
+        if (!groups[section]) {
+            groups[section] = [];
+        }
+        groups[section].push(item);
+        return groups;
+    }, {});
+    
+    const sortedSections = Object.keys(groupedItems).sort(sortStoreSections);
+    
+    const itemsHtml = sortedSections.map(section => {
+        const sectionItems = groupedItems[section]
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name));
+        const sectionItemsHtml = sectionItems.map(item => {
+            const amountText = formatItemAmount(item);
+            return `
+                    <div class="shopping-item">
+                        <div class="checkbox"></div>
+                        <div class="item-info">
+                            <div class="item-main">
+                                <span class="item-name">${item.name}</span>
+                                ${amountText ? `<span class="item-amount">${amountText}</span>` : ''}
+                            </div>
+                            ${item.notes ? `<div class="item-notes">${item.notes}</div>` : ''}
                         </div>
-                        ${item.notes ? `<div class="item-notes">${item.notes}</div>` : ''}
                     </div>
+                `;
+        }).join('');
+        
+        return `
+                <div class="print-shopping-section">
+                    <h3 class="print-section-subtitle">${section}</h3>
+                    ${sectionItemsHtml}
                 </div>
-        `;
+            `;
     }).join('');
     
     printWindow.document.write(`
@@ -680,7 +756,15 @@ function loadShoppingLists() {
     try {
         const data = localStorage.getItem('shoppingLists');
         if (data) {
-            shoppingLists = JSON.parse(data);
+            shoppingLists = JSON.parse(data).map(list => ({
+                ...list,
+                items: Array.isArray(list.items)
+                    ? list.items.map(item => ({
+                        ...item,
+                        storeSection: normalizeStoreSection(item.storeSection)
+                    }))
+                    : []
+            }));
         }
     } catch (error) {
         console.error('Error loading shopping lists:', error);

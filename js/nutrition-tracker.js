@@ -1,5 +1,6 @@
 // Nutrition Tracker Module
 import { settings } from './settings.js';
+import { showAlert } from './alert.js';
 
 // Global variables
 let currentDate = new Date();
@@ -490,7 +491,7 @@ function addFoodToMeal() {
     const amount = parseFloat(foodAmount.value) || 0;
     
     if (amount <= 0) {
-        alert('Please enter a valid amount');
+        showAlert('Please enter a valid amount', { type: 'warning' });
         return;
     }
     
@@ -499,7 +500,7 @@ function addFoodToMeal() {
     const foodType = selectedFoodDetails.dataset.foodType;
     
     if (!foodDataStr) {
-        alert('Please select a food first');
+        showAlert('Please select a food first', { type: 'warning' });
         return;
     }
     
@@ -568,7 +569,7 @@ async function autoLogFromMealPlan() {
                 console.log('Recipes loaded from localStorage:', window.recipes);
             } else {
                 console.error('No recipes found in localStorage');
-                alert('No recipes found. Please add some recipes first.');
+                showAlert('No recipes found. Please add some recipes first.', { type: 'info' });
                 return;
             }
         }
@@ -701,10 +702,10 @@ async function autoLogFromMealPlan() {
         updateMealsDisplay();
         updateProgressDisplay();
         
-        alert('Successfully imported meal plan data for today!');
+        showAlert('Successfully imported meal plan data for today!', { type: 'success' });
         
     } catch (error) {
         console.error('Error auto-logging from meal plan:', error);
-        alert('Error importing meal plan data. Please try again.');
+        showAlert('Error importing meal plan data. Please try again.', { type: 'error' });
     }
 } 

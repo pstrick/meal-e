@@ -1,3 +1,5 @@
+import { showAlert } from './alert.js';
+
 // Meal Planning functionality
 let currentWeekOffset = 0;  // Track week offset instead of modifying date directly
 let baseStartOfWeekTimestamp = null; // Anchor for week navigation as timestamp
@@ -75,7 +77,11 @@ async function searchAllIngredients(query) {
                 fat: ingredient.nutrition.fat / servingSize
             },
             servingSize: ingredient.servingSize,
-            brandOwner: 'Custom Ingredient'
+            brandOwner: 'Custom Ingredient',
+            storeSection: ingredient.storeSection || '',
+            pricePerGram: typeof ingredient.pricePerGram === 'number' ? ingredient.pricePerGram : null,
+            totalPrice: typeof ingredient.totalPrice === 'number' ? ingredient.totalPrice : null,
+            totalWeight: typeof ingredient.totalWeight === 'number' ? ingredient.totalWeight : null
         });
     });
     
@@ -294,6 +300,7 @@ async function updateUnifiedList() {
                     servingSize: ingredient.servingSize || 100, // Default to 100g if not specified
                     nutrition: ingredient.nutrition,
                     source: ingredient.source,
+                    storeSection: ingredient.storeSection || '',
                     icon: '🥩',
                     label: 'Custom Ingredient'
                 });
@@ -322,6 +329,7 @@ async function updateUnifiedList() {
             </div>
             <p>Category: ${item.category}</p>
             <p>Serving Size: ${item.servingSize || 100}g</p>
+            ${typeof item.pricePerGram === 'number' && !Number.isNaN(item.pricePerGram) ? `<p class="item-price">Price: $${(item.pricePerGram * 100).toFixed(2)}/100g</p>` : ''}
             <div class="item-nutrition">
                 <span>Cal: ${Math.round(item.nutrition.calories * (item.servingSize || 100))}</span>
                 <span>P: ${Math.round(item.nutrition.protein * (item.servingSize || 100))}g</span>
@@ -462,7 +470,10 @@ function loadRecurringItems() {
     try {
         const saved = localStorage.getItem('meale-recurring-items');
         if (saved) {
-            recurringItems = JSON.parse(saved);
+            recurringItems = JSON.parse(saved).map(item => ({
+                ...item,
+                storeSection: item.storeSection || ''
+            }));
             console.log('Loaded recurring items:', recurringItems.length);
         }
     } catch (error) {
@@ -537,6 +548,8 @@ function applyRecurringItems() {
                 name: recurringItem.name,
                 nutrition: recurringItem.nutrition,
                 servingSize: recurringItem.servingSize,
+                storeSection: recurringItem.storeSection || '',
+                pricePerGram: typeof recurringItem.pricePerGram === 'number' ? recurringItem.pricePerGram : null,
                 isRecurring: true,
                 recurringId: recurringItem.id
             });
@@ -952,7 +965,7 @@ async function handleMealPlanSubmit(e) {
         const endDate = document.getElementById('recurring-end-date').value;
         
         if (selectedDays.length === 0) {
-            alert('Please select at least one day of the week for recurring items.');
+            showAlert('Please select at least one day of the week for recurring items.', { type: 'warning' });
             return;
         }
         
@@ -967,7 +980,9 @@ async function handleMealPlanSubmit(e) {
             itemId: selectedItem.id,
             nutrition: selectedItem.nutrition,
             servingSize: selectedItem.servingSize,
-            endDate: endDate || null
+            storeSection: selectedItem.storeSection || '',
+            endDate: endDate || null,
+            pricePerGram: typeof selectedItem.pricePerGram === 'number' ? selectedItem.pricePerGram : null
         };
         
         recurringItems.push(recurringItem);
@@ -986,7 +1001,9 @@ async function handleMealPlanSubmit(e) {
             amount: amount,
             name: selectedItem.name,
             nutrition: selectedItem.nutrition,
-            servingSize: selectedItem.servingSize
+            servingSize: selectedItem.servingSize,
+            storeSection: selectedItem.storeSection || '',
+            pricePerGram: typeof selectedItem.pricePerGram === 'number' ? selectedItem.pricePerGram : null
         });
         saveMealPlan();
     }
@@ -1366,7 +1383,7 @@ function generateShoppingListFromMealPlan() {
         // Load meal plan data from localStorage
         const mealPlanData = localStorage.getItem('mealPlan');
         if (!mealPlanData) {
-            alert('No meal plan found. Please add some meals to your plan first.');
+            showAlert('No meal plan found. Please add some meals to your plan first.', { type: 'info' });
             return;
         }
         
@@ -1388,6 +1405,20 @@ function generateShoppingListFromMealPlan() {
         
         const ingredients = new Map(); // Map to aggregate ingredients
         const currentWeekMeals = []; // Track meals from current week
+        const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]').map(ing => ({
+            ...ing,
+            storeSection: ing.storeSection || ''
+        }));
+        const resolveStoreSection = (name, section = '') => {
+            const trimmed = (section || '').trim();
+            if (trimmed) return trimmed;
+            const match = customIngredients.find(ing => ing.name.toLowerCase() === name.toLowerCase());
+            if (match && match.storeSection) {
+                const normalized = match.storeSection.trim();
+                return normalized || 'Uncategorized';
+            }
+            return 'Uncategorized';
+        };
         
         // Process only meals from the current week
         console.log('DEBUG: Processing', Object.keys(mealPlan).length, 'total meals from meal plan');
@@ -1429,7 +1460,8 @@ function generateShoppingListFromMealPlan() {
                                     recipe.ingredients.forEach(ingredient => {
                                         if (ingredient.name && ingredient.amount) {
                                             const scaledAmount = Math.round(ingredient.amount * scaleFactor);
-                                            const key = ingredient.name.toLowerCase();
+                                            const storeSection = resolveStoreSection(ingredient.name, ingredient.storeSection);
+                                            const key = `${storeSection.toLowerCase()}|${ingredient.name.toLowerCase()}`;
                                             
                                             if (ingredients.has(key)) {
                                                 const existing = ingredients.get(key);
@@ -1443,7 +1475,8 @@ function generateShoppingListFromMealPlan() {
                                                     name: ingredient.name,
                                                     amount: scaledAmount,
                                                     unit: 'g',
-                                                    notes: `From recipe: ${recipe.name}`
+                                                    notes: `From recipe: ${recipe.name}`,
+                                                    storeSection: storeSection
                                                 });
                                             }
                                         }
@@ -1453,7 +1486,8 @@ function generateShoppingListFromMealPlan() {
                                 }
                             } else if (item.type === 'ingredient') {
                                 // For ingredients, add directly
-                                const key = item.name.toLowerCase();
+                                const storeSection = resolveStoreSection(item.name, item.storeSection);
+                                const key = `${storeSection.toLowerCase()}|${item.name.toLowerCase()}`;
                                 if (ingredients.has(key)) {
                                     const existing = ingredients.get(key);
                                     existing.amount += item.amount;
@@ -1462,7 +1496,8 @@ function generateShoppingListFromMealPlan() {
                                         name: item.name,
                                         amount: item.amount,
                                         unit: 'g',
-                                        notes: `From meal plan: ${item.name}`
+                                        notes: `From meal plan: ${item.name}`,
+                                        storeSection: storeSection
                                     });
                                 }
                             }
@@ -1479,7 +1514,7 @@ function generateShoppingListFromMealPlan() {
         console.log('DEBUG: Found', ingredients.size, 'unique ingredients for current week');
         
         if (ingredients.size === 0) {
-            alert(`No ingredients found in your meal plan for the week of ${startDate} to ${endDate}. Please add meals to this week first.`);
+            showAlert(`No ingredients found in your meal plan for the week of ${startDate} to ${endDate}. Please add meals to this week first.`, { type: 'info' });
             return;
         }
         
@@ -1498,16 +1533,27 @@ function generateShoppingListFromMealPlan() {
         // Use the week data already calculated above
         const listName = `Meal Plan Shopping List - Week of ${startDate}`;
         
+        const aggregatedItems = Array.from(ingredients.values());
+        aggregatedItems.sort((a, b) => {
+            const sectionA = (a.storeSection || 'Uncategorized').toLowerCase();
+            const sectionB = (b.storeSection || 'Uncategorized').toLowerCase();
+            if (sectionA !== sectionB) {
+                return sectionA.localeCompare(sectionB);
+            }
+            return a.name.localeCompare(b.name);
+        });
+        
         const newList = {
             id: Date.now(),
             name: listName,
             description: `Generated from meal plan for week of ${startDate} to ${endDate}`,
-            items: Array.from(ingredients.values()).map(ing => ({
+            items: aggregatedItems.map(ing => ({
                 id: Date.now() + Math.random(),
                 name: ing.name,
                 amount: Math.round(ing.amount * 10) / 10, // Round to 1 decimal
                 unit: ing.unit,
                 notes: ing.notes,
+                storeSection: ing.storeSection || 'Uncategorized',
                 addedAt: new Date().toISOString()
             })),
             createdAt: new Date().toISOString()
@@ -1520,7 +1566,7 @@ function generateShoppingListFromMealPlan() {
             localStorage.setItem('shoppingLists', JSON.stringify(shoppingLists));
         } catch (error) {
             console.error('Error saving shopping list:', error);
-            alert('Error saving shopping list. Please try again.');
+            showAlert('Error saving shopping list. Please try again.', { type: 'error' });
             return;
         }
         
@@ -1529,7 +1575,7 @@ function generateShoppingListFromMealPlan() {
         
     } catch (error) {
         console.error('Error generating shopping list from meal plan:', error);
-        alert('Error generating shopping list. Please try again.');
+        showAlert('Error generating shopping list. Please try again.', { type: 'error' });
     }
 }
 

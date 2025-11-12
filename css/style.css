@@ -13,6 +13,133 @@
     --shadow-color: rgba(0, 0, 0, 0.1);
 }
 
+/* Application Alert Component */
+.app-alert {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    visibility: hidden;
+    z-index: 1000;
+}
+
+.app-alert--active {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+}
+
+.app-alert__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+}
+
+.app-alert__dialog {
+    position: relative;
+    background: var(--card-bg);
+    color: var(--text-color);
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+    padding: 24px 28px;
+    width: min(480px, calc(100% - 32px));
+    transform: translateY(12px);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.app-alert--active .app-alert__dialog {
+    transform: translateY(0);
+}
+
+.app-alert__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.app-alert__title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.app-alert__close {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.app-alert__close:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--text-color);
+}
+
+.app-alert__body {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.app-alert__actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.app-alert__confirm {
+    min-width: 96px;
+}
+
+.app-alert__dialog--info {
+    border-left: 6px solid var(--primary-color);
+}
+
+.app-alert__dialog--success {
+    border-left: 6px solid var(--success-color);
+}
+
+.app-alert__dialog--warning {
+    border-left: 6px solid #ff9800;
+}
+
+.app-alert__dialog--error {
+    border-left: 6px solid var(--error-color);
+}
+
+:root.dark-mode .app-alert__overlay {
+    background: rgba(0, 0, 0, 0.65);
+}
+
+:root.dark-mode .app-alert__dialog {
+    background: var(--card-bg);
+    color: var(--text-color);
+    border-color: var(--border-color);
+    box-shadow: 0 25px 40px rgba(0, 0, 0, 0.35);
+}
+
+:root.dark-mode .app-alert__body {
+    color: var(--text-color);
+}
+
+:root.dark-mode .app-alert__close:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
 /* Dark Mode Variables */
 :root.dark-mode {
     --primary-color: #66bb6a;

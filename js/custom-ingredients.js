@@ -24,7 +24,10 @@ function loadCustomIngredients() {
         console.log('Loading custom ingredients...');
         const savedIngredients = localStorage.getItem('meale-custom-ingredients');
         if (savedIngredients) {
-            customIngredients = JSON.parse(savedIngredients);
+            customIngredients = JSON.parse(savedIngredients).map(ingredient => ({
+                ...ingredient,
+                storeSection: ingredient.storeSection || ''
+            }));
             console.log('Loaded custom ingredients:', customIngredients.length);
         } else {
             console.log('No custom ingredients found');
@@ -60,6 +63,8 @@ function openIngredientModal(ingredient = null) {
     modalTitle.textContent = ingredient ? 'Edit Ingredient' : 'Add New Ingredient';
     
     // Fill form if editing
+    const storeSectionInput = document.getElementById('store-section');
+
     if (ingredient) {
         document.getElementById('ingredient-name').value = ingredient.name;
         document.getElementById('total-price').value = ingredient.totalPrice;
@@ -69,6 +74,11 @@ function openIngredientModal(ingredient = null) {
         document.getElementById('fat').value = ingredient.nutrition.fat;
         document.getElementById('carbs').value = ingredient.nutrition.carbs;
         document.getElementById('protein').value = ingredient.nutrition.protein;
+        if (storeSectionInput) {
+            storeSectionInput.value = ingredient.storeSection || '';
+        }
+    } else if (storeSectionInput) {
+        storeSectionInput.value = '';
     }
     
     // Show modal
@@ -90,6 +100,7 @@ function saveCustomIngredient(event) {
         event.preventDefault();
         console.log('Saving custom ingredient...');
         
+        const storeSectionInput = document.getElementById('store-section');
         const ingredient = {
             id: editingIngredientId || Date.now().toString(),
             name: document.getElementById('ingredient-name').value,
@@ -102,7 +113,8 @@ function saveCustomIngredient(event) {
                 carbs: parseFloat(document.getElementById('carbs').value),
                 protein: parseFloat(document.getElementById('protein').value)
             },
-            isCustom: true
+            isCustom: true,
+            storeSection: storeSectionInput ? storeSectionInput.value.trim() : ''
         };
         
         // Calculate price per gram
@@ -152,7 +164,7 @@ function renderIngredientsList(filteredIngredients = null) {
         if (ingredients.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="no-items">No custom ingredients found</td>
+                    <td colspan="6" class="no-items">No custom ingredients found</td>
                 </tr>`;
             return;
         }
@@ -161,6 +173,7 @@ function renderIngredientsList(filteredIngredients = null) {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${ingredient.name}</td>
+                <td>${ingredient.storeSection || 'Uncategorized'}</td>
                 <td>$${ingredient.totalPrice.toFixed(2)} (${ingredient.totalWeight}g)</td>
                 <td>${ingredient.nutrition.calories}</td>
                 <td>
