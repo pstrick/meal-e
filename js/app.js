@@ -543,9 +543,25 @@ function initializeSettings() {
             themeToggle.addEventListener('change', (e) => {
                 window.settings.theme = e.target.checked ? 'dark' : 'light';
                 localStorage.setItem('meale-settings', JSON.stringify(window.settings));
-                document.body.classList.toggle('dark-theme', e.target.checked);
+                const isDark = e.target.checked;
+                document.body.classList.toggle('dark-theme', isDark);
+                document.documentElement.classList.toggle('dark-mode', isDark);
+                document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+                if (isDark) {
+                    document.documentElement.style.backgroundColor = '#0f172a';
+                } else {
+                    document.documentElement.style.removeProperty('background-color');
+                }
             });
-            document.body.classList.toggle('dark-theme', window.settings.theme === 'dark');
+            const initialDark = window.settings.theme === 'dark';
+            document.body.classList.toggle('dark-theme', initialDark);
+            document.documentElement.classList.toggle('dark-mode', initialDark);
+            document.documentElement.style.colorScheme = initialDark ? 'dark' : 'light';
+            if (initialDark) {
+                document.documentElement.style.backgroundColor = '#0f172a';
+            } else {
+                document.documentElement.style.removeProperty('background-color');
+            }
         }
     } catch (error) {
         console.error('Error initializing settings:', error);
