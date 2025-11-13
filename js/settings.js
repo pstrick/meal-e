@@ -4,7 +4,8 @@ import { showAlert } from './alert.js';
 // Initialize settings immediately
 let settings = {
     mealPlanStartDay: 0,  // Default to Sunday
-    darkMode: false,      // Default to light mode
+    theme: 'light',
+    darkMode: false,      // Kept for backwards compatibility
     nutritionGoals: {
         calories: 2000,
         protein: 150,
@@ -13,24 +14,40 @@ let settings = {
     }
 };
 
+function normalizeThemeSettings(target) {
+    if (!target) return;
+    if (!target.theme) {
+        if (typeof target.darkMode === 'boolean') {
+            target.theme = target.darkMode ? 'dark' : 'light';
+        } else {
+            target.theme = 'light';
+        }
+    }
+    target.darkMode = target.theme === 'dark';
+    return target;
+}
+
 // Load settings from localStorage if available
 const savedSettings = localStorage.getItem('meale-settings');
 if (savedSettings) {
     try {
         const parsedSettings = JSON.parse(savedSettings);
-        settings = { ...settings, ...parsedSettings };
+        settings = normalizeThemeSettings({ ...settings, ...parsedSettings });
         console.log('Loaded settings from localStorage:', settings);
     } catch (e) {
         console.error('Error loading settings:', e);
     }
 }
 
+// Ensure defaults are normalized before exposing globally
+normalizeThemeSettings(settings);
+
 // Make settings available globally immediately
 window.settings = settings;
 
 // Apply dark mode to the document
 function applyDarkMode() {
-    if (settings.darkMode) {
+    if (settings.theme === 'dark') {
         document.documentElement.classList.add('dark-mode');
     } else {
         document.documentElement.classList.remove('dark-mode');
@@ -39,6 +56,7 @@ function applyDarkMode() {
 
 // Save settings to localStorage
 function saveToLocalStorage() {
+    normalizeThemeSettings(settings);
     localStorage.setItem('meale-settings', JSON.stringify(settings));
     // Update global settings
     window.settings = settings;
@@ -51,11 +69,12 @@ function initializeForm() {
     // Initialize dark mode toggle
     const darkModeToggle = document.getElementById('dark-mode-toggle');
     if (darkModeToggle) {
-        darkModeToggle.checked = settings.darkMode;
+        darkModeToggle.checked = settings.theme === 'dark';
         darkModeToggle.addEventListener('change', (event) => {
-            settings.darkMode = event.target.checked;
+            settings.theme = event.target.checked ? 'dark' : 'light';
+            settings.darkMode = settings.theme === 'dark';
             saveToLocalStorage();
-            console.log('Dark mode toggled:', settings.darkMode);
+            console.log('Dark mode toggled:', settings.theme);
         });
     }
 
@@ -209,5 +228,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Export settings and save function
-export { settings, saveToLocalStorage, applyDarkMode }; 
+// Export settings utilities
+export { settings, saveToLocalStorage, applyDarkMode, normalizeThemeSettings };

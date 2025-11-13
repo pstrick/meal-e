@@ -10,8 +10,18 @@
             const root = document.documentElement;
             root.classList.add('theme-preload');
             try {
-                const settings = JSON.parse(localStorage.getItem('meale-settings'));
-                if (settings && settings.theme === 'dark') {
+                const raw = localStorage.getItem('meale-settings');
+                const settings = raw ? JSON.parse(raw) : null;
+                if (settings && typeof settings.theme !== 'string' && typeof settings.darkMode === 'boolean') {
+                    settings.theme = settings.darkMode ? 'dark' : 'light';
+                    try {
+                        localStorage.setItem('meale-settings', JSON.stringify(settings));
+                    } catch (storageError) {
+                        console.warn('Unable to persist theme migration:', storageError);
+                    }
+                }
+                const isDark = settings ? (settings.theme === 'dark' || settings.darkMode === true) : false;
+                if (isDark) {
                     root.classList.add('dark-mode');
                     root.style.colorScheme = 'dark';
                     root.style.backgroundColor = '#0f172a';

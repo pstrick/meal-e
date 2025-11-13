@@ -679,7 +679,403 @@ if (scrapeModal && scrapeIngredientBtn && scrapeForm) {
         };
     };
 
-    const parseIngredientData = (html) => {
+    const findFirstMatching = (collection, predicate) => {
+        for (const item of collection) {
+            if (predicate(item)) {
+                return item;
+            }
+        }
+        return null;
+    };
+
+    const parseWegmansNutrition = (nutritionData) => {
+        if (!nutritionData || typeof nutritionData !== 'object') {
+            return {};
+        }
+
+        const nutrition = {};
+
+        const addValue = (key, value, unitHint = '') => {
+            if (value == null) return;
+            const numeric = extractNumber(value);
+            if (numeric == null) return;
+            if (unitHint === 'mg') {
+                nutrition[key] = numeric / 1000;
+            } else {
+                nutrition[key] = numeric;
+            }
+        };
+
+        const handleRow = (label, value) => {
+            if (!label) return;
+            const normalized = label.toLowerCase();
+            if (normalized.includes('calorie')) {
+                addValue('calories', value);
+            } else if (normalized.includes('total fat')) {
+                addValue('fat', value);
+            } else if (normalized.includes('saturated fat')) {
+                // ignore
+            } else if (normalized.includes('carbohydrate')) {
+                addValue('carbs', value);
+            } else if (normalized.includes('protein')) {
+                addValue('protein', value);
+            } else if (normalized.includes('serving size')) {
+                nutrition.servingSize = typeof value === 'string' ? value.trim() : value;
+                const parsed = parseServingSize(value);
+                if (parsed != null) {
+                    nutrition.servingSizeValue = parsed;
+                }
+            }
+        };
+
+        if (Array.isArray(nutritionData.sections)) {
+            nutritionData.sections.forEach((section) => {
+                if (!section) return;
+                if (Array.isArray(section.rows)) {
+                    section.rows.forEach((row) => {
+                        if (!row) return;
+                        const label = row.label || row.name || row.title;
+                        const value = row.value || row.amount || row.text;
+                        handleRow(label, value);
+                    });
+                }
+            });
+        }
+
+        if (nutritionData.servingSize && !nutrition.servingSize) {
+            nutrition.servingSize = String(nutritionData.servingSize).trim();
+            const parsedSize = parseServingSize(nutritionData.servingSize);
+            if (parsedSize != null) {
+                nutrition.servingSizeValue = parsedSize;
+            }
+        }
+
+        if (
+            nutritionData.calories != null ||
+            nutritionData.totalFat != null ||
+            nutritionData.totalCarbohydrate != null ||
+            nutritionData.protein != null
+        ) {
+            addValue('calories', nutritionData.calories);
+            addValue('fat', nutritionData.totalFat);
+            addValue('carbs', nutritionData.totalCarbohydrate);
+            addValue('protein', nutritionData.protein);
+        }
+
+        return nutrition;
+    };
+
+    const extractWegmansIngredients = (product) => {
+        const collected = [];
+
+        const addFromString = (value) => {
+            if (typeof value !== 'string') return;
+            const cleaned = value
+                .replace(/[\u2022•]/g, ',')
+                .replace(/Ingredients?:/i, '')
+                .split(/[,;]+/)
+                .map((entry) => entry.trim())
+                .filter(Boolean);
+            collected.push(...cleaned);
+        };
+
+        if (typeof product?.ingredientStatement === 'string') {
+            addFromString(product.ingredientStatement);
+        }
+
+        if (typeof product?.ingredientStatementHtml === 'string') {
+            addFromString(product.ingredientStatementHtml.replace(/<[^>]+>/g, ' '));
+        }
+
+        const arrayLikeKeys = ['ingredients', 'ingredientList', 'ingredientsList'];
+        arrayLikeKeys.forEach((key) => {
+            const value = product?.[key];
+            if (Array.isArray(value)) {
+                value.forEach((item) => {
+                    if (!item) return;
+                    if (typeof item === 'string') {
+                        addFromString(item);
+                    } else if (typeof item === 'object' && typeof item.name === 'string') {
+                        addFromString(item.name);
+                    }
+                });
+            } else if (typeof value === 'string') {
+                addFromString(value);
+            }
+        });
+
+        return [...new Set(collected)];
+    };
+
+    const parseWegmansDomSections = (doc) => {
+        if (!doc) return { ingredients: [], nutrition: {} };
+
+        const ingredients = [];
+        const ingredientSelectors = [
+            '[data-ui="product-ingredients"] li',
+            'section[id*="ingredient"] li',
+            'section[class*="ingredient"] li',
+            '.product-ingredients li',
+            '[data-testid="ingredients-list"] li'
+        ];
+
+        ingredientSelectors.forEach((selector) => {
+            doc.querySelectorAll(selector).forEach((node) => {
+                const text = node.textContent ? node.textContent.trim() : '';
+                if (text) {
+                    ingredients.push(text);
+                }
+            });
+        });
+
+        const normalizedIngredients = [...new Set(ingredients.filter(Boolean))];
+
+        const nutrition = {};
+        const nutritionRowSelectors = [
+            '[data-ui="product-nutrition"] table tr',
+            'section[id*="nutrition"] table tr',
+            '.nutrition-facts table tr',
+            '[data-testid="nutrition-facts"] tr'
+        ];
+
+        const tryAssignFromRow = (label, value) => {
+            if (!label || !value) return;
+            const normalized = label.toLowerCase();
+            if (normalized.includes('calorie')) {
+                const parsed = extractNumber(value);
+                if (parsed != null) nutrition.calories = parsed;
+            } else if (normalized.includes('total fat')) {
+                const parsed = extractNumber(value);
+                if (parsed != null) nutrition.fat = parsed;
+            } else if (normalized.includes('carbohydrate')) {
+                const parsed = extractNumber(value);
+                if (parsed != null) nutrition.carbs = parsed;
+            } else if (normalized.includes('protein')) {
+                const parsed = extractNumber(value);
+                if (parsed != null) nutrition.protein = parsed;
+            } else if (normalized.includes('serving size')) {
+                nutrition.servingSize = value.trim();
+                const parsed = parseServingSize(value);
+                if (parsed != null) {
+                    nutrition.servingSizeValue = parsed;
+                }
+            }
+        };
+
+        nutritionRowSelectors.forEach((selector) => {
+            doc.querySelectorAll(selector).forEach((row) => {
+                const cells = row.querySelectorAll('td, th');
+                if (cells.length >= 2) {
+                    const label = cells[0].textContent?.trim() || '';
+                    const value = cells[1].textContent?.trim() || '';
+                    tryAssignFromRow(label, value);
+                }
+            });
+        });
+
+        if (!nutrition.servingSize) {
+            const servingNode =
+                doc.querySelector('[data-ui="serving-size"]') || doc.querySelector('.serving-size');
+            if (servingNode) {
+                const text = servingNode.textContent?.trim();
+                if (text) {
+                    nutrition.servingSize = text;
+                    const parsed = parseServingSize(text);
+                    if (parsed != null) {
+                        nutrition.servingSizeValue = parsed;
+                    }
+                }
+            }
+        }
+
+        return {
+            ingredients: normalizedIngredients,
+            nutrition
+        };
+    };
+
+    const parseWegmansData = (doc) => {
+        if (!doc) return null;
+
+        const scripts = Array.from(doc.querySelectorAll('script'));
+        const candidateObjects = [];
+
+        const parseScriptContent = (text) => {
+            if (!text) return null;
+            let trimmed = text.trim();
+            if (!trimmed) return null;
+
+            const nuxtMatch = trimmed.match(/^window\.__NUXT__\s*=\s*(.+)$/s);
+            if (nuxtMatch) {
+                trimmed = nuxtMatch[1].trim();
+                if (trimmed.endsWith(';')) {
+                    trimmed = trimmed.slice(0, -1);
+                }
+            }
+
+            if (
+                (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+                (trimmed.startsWith('[') && trimmed.endsWith(']'))
+            ) {
+                try {
+                    return JSON.parse(trimmed);
+                } catch (error) {
+                    return null;
+                }
+            }
+            return null;
+        };
+
+        scripts.forEach((script) => {
+            const text = script.textContent || script.innerText || '';
+            if (!text || (!text.includes('displayName') && !text.includes('ingredient'))) {
+                return;
+            }
+            const parsed = parseScriptContent(text);
+            if (!parsed) return;
+            if (Array.isArray(parsed)) {
+                parsed.forEach((item) => {
+                    if (item && typeof item === 'object') {
+                        candidateObjects.push(item);
+                    }
+                });
+            } else if (typeof parsed === 'object') {
+                candidateObjects.push(parsed);
+            }
+        });
+
+        const visited = new Set();
+        const stack = [...candidateObjects];
+        let product = null;
+
+        const isProductCandidate = (value) => {
+            if (!value || typeof value !== 'object') return false;
+            const hasName =
+                typeof value.displayName === 'string' ||
+                typeof value.name === 'string' ||
+                typeof value.productName === 'string';
+            if (!hasName) return false;
+            const hasIngredients =
+                typeof value.ingredientStatement === 'string' ||
+                (Array.isArray(value.ingredients) && value.ingredients.length > 0) ||
+                (Array.isArray(value.ingredientList) && value.ingredientList.length > 0) ||
+                (Array.isArray(value.ingredientsList) && value.ingredientsList.length > 0);
+            const hasNutrition =
+                value.nutritionFacts ||
+                value.nutrition ||
+                value.nutritionInfo ||
+                value.nutritionalInformation;
+            return hasIngredients || Boolean(hasNutrition);
+        };
+
+        while (stack.length && !product) {
+            const current = stack.pop();
+            if (!current || typeof current !== 'object') continue;
+            if (visited.has(current)) continue;
+            visited.add(current);
+
+            if (isProductCandidate(current)) {
+                product = current;
+                break;
+            }
+
+            Object.keys(current).forEach((key) => {
+                const value = current[key];
+                if (value && typeof value === 'object') {
+                    stack.push(value);
+                }
+            });
+        }
+
+        const result = {
+            name: '',
+            description: '',
+            ingredients: [],
+            nutrition: {}
+        };
+
+        if (product) {
+            result.name =
+                product.displayName ||
+                product.name ||
+                product.productName ||
+                result.name ||
+                '';
+            result.description =
+                product.description ||
+                product.longDescription ||
+                product.shortDescription ||
+                result.description ||
+                '';
+            result.ingredients = extractWegmansIngredients(product);
+
+            const nutritionData =
+                product.nutritionFacts ||
+                product.nutrition ||
+                product.nutritionalInformation ||
+                product.nutritionInfo ||
+                null;
+
+            const nutrition = parseWegmansNutrition(nutritionData);
+
+            if (
+                !nutrition.servingSize &&
+                typeof product.servingSize === 'string' &&
+                product.servingSize.trim()
+            ) {
+                nutrition.servingSize = product.servingSize.trim();
+                const parsed = parseServingSize(product.servingSize);
+                if (parsed != null) {
+                    nutrition.servingSizeValue = parsed;
+                }
+            }
+
+            result.nutrition = nutrition;
+        }
+
+        const domData = parseWegmansDomSections(doc);
+        if (!result.name) {
+            const title =
+                doc.querySelector('[data-ui="product-name"]')?.textContent ||
+                doc.querySelector('h1')?.textContent ||
+                doc.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
+                '';
+            result.name = title ? title.trim() : '';
+        }
+        if (!result.description) {
+            const metaDescription =
+                doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+            result.description = metaDescription ? metaDescription.trim() : result.description;
+        }
+
+        if (result.ingredients.length === 0 && domData.ingredients.length > 0) {
+            result.ingredients = domData.ingredients;
+        }
+
+        const nutritionKeys = ['calories', 'fat', 'carbs', 'protein', 'servingSize', 'servingSizeValue'];
+        const hasNutritionValues = nutritionKeys.some((key) => result.nutrition[key] != null);
+        if (!hasNutritionValues) {
+            nutritionKeys.forEach((key) => {
+                if (domData.nutrition[key] != null) {
+                    result.nutrition[key] = domData.nutrition[key];
+                }
+            });
+        }
+
+        const hasMeaningfulData =
+            Boolean(result.name) ||
+            (Array.isArray(result.ingredients) && result.ingredients.length > 0) ||
+            Object.values(result.nutrition).some((value) => value != null);
+
+        if (!hasMeaningfulData) {
+            return null;
+        }
+
+        result.ingredients = normalizeStringArray(result.ingredients);
+        return result;
+    };
+
+    const parseIngredientData = (html, options = {}) => {
         if (!html) return null;
         try {
             const parser = new DOMParser();
@@ -693,7 +1089,19 @@ if (scrapeModal && scrapeIngredientBtn && scrapeForm) {
                 }
             }
 
-            return fallbackFromDom(doc);
+            const fallback = fallbackFromDom(doc);
+            if (fallback) {
+                return fallback;
+            }
+
+            if (options?.url && options.url.includes('wegmans.com')) {
+                const wegmansData = parseWegmansData(doc);
+                if (wegmansData) {
+                    return wegmansData;
+                }
+            }
+
+            return null;
         } catch (error) {
             console.error('Failed to parse scraped ingredient data:', error);
             return null;
@@ -948,7 +1356,7 @@ if (scrapeModal && scrapeIngredientBtn && scrapeForm) {
 
         try {
             const html = await fetchPageHtml(normalizedUrl);
-            const parsedData = parseIngredientData(html);
+            const parsedData = parseIngredientData(html, { url: normalizedUrl });
             if (!parsedData) {
                 throw new Error('We could not locate ingredient data on that page.');
             }

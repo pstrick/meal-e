@@ -2,7 +2,7 @@ import config from './config.js';
 import { version } from './version.js';
 import './mealplan.js';
 import { initializeMealPlanner } from './mealplan.js';
-import { settings } from './settings.js';
+import { settings, normalizeThemeSettings } from './settings.js';
 import { showAlert } from './alert.js';
 
 // DOM Elements
@@ -573,9 +573,11 @@ function initializeSettings() {
             const savedSettings = localStorage.getItem('meale-settings');
             window.settings = savedSettings ? JSON.parse(savedSettings) : {
                 mealPlanStartDay: 0, // Default to Sunday
-                theme: 'light'
+                theme: 'light',
+                darkMode: false
             };
         }
+        normalizeThemeSettings(window.settings);
 
         // Only initialize settings UI if we're on the settings page
         const startDaySelect = document.getElementById('meal-plan-start-day');
@@ -598,10 +600,12 @@ function initializeSettings() {
         // Only initialize theme if we're on a page with theme elements
         const themeToggle = document.getElementById('theme-toggle');
         if (themeToggle) {
-            themeToggle.checked = window.settings.theme === 'dark';
+            themeToggle.checked = window.settings.darkMode === true;
             themeToggle.addEventListener('change', (e) => {
                 applyThemePreload();
                 window.settings.theme = e.target.checked ? 'dark' : 'light';
+                window.settings.darkMode = e.target.checked;
+                normalizeThemeSettings(window.settings);
                 localStorage.setItem('meale-settings', JSON.stringify(window.settings));
                 const isDark = e.target.checked;
                 document.body.classList.toggle('dark-theme', isDark);
@@ -623,7 +627,7 @@ function initializeSettings() {
                     releaseThemePreload();
                 }, 80);
             });
-            const initialDark = window.settings.theme === 'dark';
+            const initialDark = window.settings.darkMode === true;
             document.body.classList.toggle('dark-theme', initialDark);
             document.documentElement.classList.toggle('dark-mode', initialDark);
             document.documentElement.style.colorScheme = initialDark ? 'dark' : 'light';
