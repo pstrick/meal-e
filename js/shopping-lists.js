@@ -595,12 +595,34 @@ function duplicateShoppingList(listId) {
     updateShoppingListsDisplay();
 }
 
-function deleteShoppingList(listId) {
-    if (!confirm('Are you sure you want to delete this shopping list?')) return;
-    
+async function deleteShoppingList(listId) {
+    const list = shoppingLists.find(l => l.id === listId);
+    const listName = list?.name ? `"${list.name}"` : 'this shopping list';
+
+    const confirmed = await showAlert(
+        `Are you sure you want to delete ${listName}? This action cannot be undone.`,
+        {
+            title: 'Delete Shopping List',
+            type: 'warning',
+            confirmText: 'Delete',
+            cancelText: 'Keep List',
+            confirmButtonClass: 'btn btn-delete app-alert__confirm',
+            cancelButtonClass: 'btn btn-secondary app-alert__cancel'
+        }
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    if (currentListId === listId) {
+        closeShoppingItemsModal();
+    }
+
     shoppingLists = shoppingLists.filter(l => l.id !== listId);
     saveShoppingLists();
     updateShoppingListsDisplay();
+    notifyUser('Shopping list deleted.', { type: 'success' });
 }
 
 function editShoppingItem(itemId) {
