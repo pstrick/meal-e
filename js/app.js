@@ -43,6 +43,20 @@ let selectedIngredients = new Map(); // Maps ingredient IDs to their nutrition d
 // Track the current recipe being edited
 let currentEditRecipeId = null;
 
+const DARK_THEME_VARS = {
+    '--color-bg': '#0f172a',
+    '--color-bg-muted': '#1e293b',
+    '--color-surface': '#101b2d',
+    '--color-surface-alt': '#152136',
+    '--color-surface-elevated': '#1c2b44',
+    '--color-text': '#e2e8f0',
+    '--color-text-muted': '#94a3b8',
+    '--color-text-subtle': '#c3d1e2',
+    '--color-border': 'rgba(148, 163, 184, 0.18)',
+    '--color-border-strong': 'rgba(148, 163, 184, 0.26)',
+    '--color-divider': 'rgba(71, 85, 105, 0.22)'
+};
+
 function addDarkModePreloadStyle() {
     if (typeof document === 'undefined') return;
     if (document.getElementById('dark-mode-preload')) return;
@@ -58,6 +72,22 @@ function removeDarkModePreloadStyle() {
     if (style) {
         style.remove();
     }
+}
+
+function applyInlineDarkThemeVars() {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    Object.entries(DARK_THEME_VARS).forEach(([key, value]) => {
+        root.style.setProperty(key, value);
+    });
+}
+
+function clearInlineDarkThemeVars() {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    Object.keys(DARK_THEME_VARS).forEach((key) => {
+        root.style.removeProperty(key);
+    });
 }
 
 // Modal Management
@@ -567,9 +597,11 @@ function initializeSettings() {
                 if (isDark) {
                     document.documentElement.style.backgroundColor = '#0f172a';
                     addDarkModePreloadStyle();
+                    applyInlineDarkThemeVars();
                 } else {
                     document.documentElement.style.removeProperty('background-color');
                     removeDarkModePreloadStyle();
+                    clearInlineDarkThemeVars();
                 }
             });
             const initialDark = window.settings.theme === 'dark';
@@ -579,9 +611,11 @@ function initializeSettings() {
             if (initialDark) {
                 document.documentElement.style.backgroundColor = '#0f172a';
                 addDarkModePreloadStyle();
+                applyInlineDarkThemeVars();
             } else {
                 document.documentElement.style.removeProperty('background-color');
                 removeDarkModePreloadStyle();
+                clearInlineDarkThemeVars();
             }
         }
     } catch (error) {
