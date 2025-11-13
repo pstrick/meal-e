@@ -1,24 +1,41 @@
-import { version } from './version.js';
 import { showAlert } from './alert.js';
 
+function normalizeThemePreference(settingsObj = {}) {
+    let isDark = false;
+
+    if (settingsObj.theme === 'dark') {
+        isDark = true;
+    } else if (settingsObj.theme === 'light') {
+        isDark = false;
+    } else if (typeof settingsObj.darkMode === 'boolean') {
+        isDark = settingsObj.darkMode;
+    }
+
+    settingsObj.theme = isDark ? 'dark' : 'light';
+    settingsObj.darkMode = isDark;
+
+    return settingsObj;
+}
+
 // Initialize settings immediately
-let settings = {
+let settings = normalizeThemePreference({
     mealPlanStartDay: 0,  // Default to Sunday
-    darkMode: false,      // Default to light mode
+    theme: 'light',
+    darkMode: false,
     nutritionGoals: {
         calories: 2000,
         protein: 150,
         carbs: 200,
         fat: 65
     }
-};
+});
 
 // Load settings from localStorage if available
 const savedSettings = localStorage.getItem('meale-settings');
 if (savedSettings) {
     try {
         const parsedSettings = JSON.parse(savedSettings);
-        settings = { ...settings, ...parsedSettings };
+        settings = normalizeThemePreference({ ...settings, ...parsedSettings });
         console.log('Loaded settings from localStorage:', settings);
     } catch (e) {
         console.error('Error loading settings:', e);
@@ -30,15 +47,26 @@ window.settings = settings;
 
 // Apply dark mode to the document
 function applyDarkMode() {
-    if (settings.darkMode) {
-        document.documentElement.classList.add('dark-mode');
+    const isDark = settings.theme === 'dark';
+    const root = document.documentElement;
+
+    root.classList.toggle('dark-mode', isDark);
+    root.style.colorScheme = isDark ? 'dark' : 'light';
+
+    if (isDark) {
+        root.style.backgroundColor = '#0f172a';
     } else {
-        document.documentElement.classList.remove('dark-mode');
+        root.style.removeProperty('background-color');
+    }
+
+    if (document.body) {
+        document.body.classList.toggle('dark-theme', isDark);
     }
 }
 
 // Save settings to localStorage
 function saveToLocalStorage() {
+    normalizeThemePreference(settings);
     localStorage.setItem('meale-settings', JSON.stringify(settings));
     // Update global settings
     window.settings = settings;
@@ -51,11 +79,12 @@ function initializeForm() {
     // Initialize dark mode toggle
     const darkModeToggle = document.getElementById('dark-mode-toggle');
     if (darkModeToggle) {
-        darkModeToggle.checked = settings.darkMode;
+        darkModeToggle.checked = settings.theme === 'dark';
         darkModeToggle.addEventListener('change', (event) => {
-            settings.darkMode = event.target.checked;
+            settings.theme = event.target.checked ? 'dark' : 'light';
+            settings.darkMode = settings.theme === 'dark';
             saveToLocalStorage();
-            console.log('Dark mode toggled:', settings.darkMode);
+            console.log('Theme toggled:', settings.theme);
         });
     }
 

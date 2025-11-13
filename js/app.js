@@ -57,6 +57,34 @@ const DARK_THEME_VARS = {
     '--color-divider': 'rgba(71, 85, 105, 0.22)'
 };
 
+function normalizeStoredSettings(settingsObj) {
+    if (!settingsObj || typeof settingsObj !== 'object') {
+        return {
+            mealPlanStartDay: 0,
+            theme: 'light',
+            darkMode: false
+        };
+    }
+
+    let isDark = false;
+    if (settingsObj.theme === 'dark') {
+        isDark = true;
+    } else if (settingsObj.theme === 'light') {
+        isDark = false;
+    } else if (typeof settingsObj.darkMode === 'boolean') {
+        isDark = settingsObj.darkMode;
+    }
+
+    settingsObj.theme = isDark ? 'dark' : 'light';
+    settingsObj.darkMode = isDark;
+
+    if (typeof settingsObj.mealPlanStartDay !== 'number') {
+        settingsObj.mealPlanStartDay = Number(settingsObj.mealPlanStartDay) || 0;
+    }
+
+    return settingsObj;
+}
+
 function addDarkModePreloadStyle() {
     if (typeof document === 'undefined') return;
     if (document.getElementById('dark-mode-preload')) return;
@@ -577,12 +605,15 @@ function initializeSettings() {
             };
         }
 
+        window.settings = normalizeStoredSettings(window.settings);
+
         // Only initialize settings UI if we're on the settings page
         const startDaySelect = document.getElementById('meal-plan-start-day');
         if (startDaySelect) {
-            startDaySelect.value = window.settings.mealPlanStartDay;
+            startDaySelect.value = String(window.settings.mealPlanStartDay ?? 0);
             startDaySelect.addEventListener('change', (e) => {
                 window.settings.mealPlanStartDay = parseInt(e.target.value);
+                normalizeStoredSettings(window.settings);
                 localStorage.setItem('meale-settings', JSON.stringify(window.settings));
                 // Reset week offset when start day changes
                 if (window.currentWeekOffset !== undefined) {
@@ -602,6 +633,8 @@ function initializeSettings() {
             themeToggle.addEventListener('change', (e) => {
                 applyThemePreload();
                 window.settings.theme = e.target.checked ? 'dark' : 'light';
+                window.settings.darkMode = window.settings.theme === 'dark';
+                normalizeStoredSettings(window.settings);
                 localStorage.setItem('meale-settings', JSON.stringify(window.settings));
                 const isDark = e.target.checked;
                 document.body.classList.toggle('dark-theme', isDark);
@@ -624,6 +657,7 @@ function initializeSettings() {
                 }, 80);
             });
             const initialDark = window.settings.theme === 'dark';
+            window.settings.darkMode = initialDark;
             document.body.classList.toggle('dark-theme', initialDark);
             document.documentElement.classList.toggle('dark-mode', initialDark);
             document.documentElement.style.colorScheme = initialDark ? 'dark' : 'light';
