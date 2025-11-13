@@ -2212,52 +2212,41 @@ function buildRecipePrintSection(recipe) {
         ? Math.round((totalWeight / servingSize) * 10) / 10
         : null;
     
-    const ingredientItems = ingredientsList.map(ingredient => {
+    const truncatedIngredients = ingredientsList.slice(0, 5).map(ingredient => {
         const amount = parseFloat(ingredient.amount);
         const displayAmount = Number.isFinite(amount) ? `${Math.round(amount * 10) / 10}g` : '';
         const ingredientName = ingredient.name || 'Ingredient';
-        const ingredientDetails = [displayAmount].filter(Boolean).join(' ');
-        return `
-            <li>
-                <span class="recipe-ingredient-name">${ingredientName}</span>
-                ${ingredientDetails ? `<span class="recipe-ingredient-amount">${ingredientDetails}</span>` : ''}
-            </li>
-        `;
+        return `<li>${ingredientName}${displayAmount ? ` · ${displayAmount}` : ''}</li>`;
     }).join('');
+    const moreIngredients = ingredientsList.length > 5 ? `<li>+ ${ingredientsList.length - 5} more</li>` : '';
     
-    const sanitizedSteps = steps ? steps.replace(/\n/g, '<br>') : '';
+    const stepLines = steps
+        ? steps.split(/\r?\n/).map(line => line.trim()).filter(Boolean).slice(0, 2)
+        : [];
+    const truncatedSteps = stepLines.length
+        ? `<p>${stepLines.join('<br>')}</p>`
+        : '';
     
     return `
         <article class="print-recipe">
             <header class="print-recipe-header">
                 <h2 class="print-recipe-title">${recipe.name}</h2>
                 <div class="print-recipe-meta">
-                    <span class="print-recipe-category">${recipe.category || 'Recipe'}</span>
-                    ${servings ? `<span class="print-recipe-servings">Approx. ${servings} servings</span>` : ''}
+                    ${recipe.category ? `<span class="print-recipe-category">${recipe.category}</span>` : ''}
+                    ${servings ? `<span class="print-recipe-servings">~${servings} servings</span>` : ''}
                 </div>
             </header>
-            <section class="print-recipe-body">
-                <div class="print-recipe-summary">
-                    <div><strong>Calories:</strong> ${Number.isFinite(nutrition.calories) ? nutrition.calories : '—'}</div>
-                    <div><strong>Protein:</strong> ${Number.isFinite(nutrition.protein) ? `${nutrition.protein}g` : '—'}</div>
-                    <div><strong>Carbs:</strong> ${Number.isFinite(nutrition.carbs) ? `${nutrition.carbs}g` : '—'}</div>
-                    <div><strong>Fat:</strong> ${Number.isFinite(nutrition.fat) ? `${nutrition.fat}g` : '—'}</div>
-                </div>
-                <div class="print-recipe-content">
-                    <div class="print-recipe-ingredients">
-                        <h3>Ingredients</h3>
-                        <ul>
-                            ${ingredientItems || '<li>No ingredients listed.</li>'}
-                        </ul>
-                    </div>
-                    ${sanitizedSteps ? `
-                        <div class="print-recipe-instructions">
-                            <h3>Instructions</h3>
-                            <p>${sanitizedSteps}</p>
-                        </div>
-                    ` : ''}
-                </div>
-            </section>
+            <div class="print-recipe-summary">
+                <div><strong>Cal:</strong> ${Number.isFinite(nutrition.calories) ? nutrition.calories : '—'}</div>
+                <div><strong>P:</strong> ${Number.isFinite(nutrition.protein) ? `${nutrition.protein}g` : '—'}</div>
+                <div><strong>C:</strong> ${Number.isFinite(nutrition.carbs) ? `${nutrition.carbs}g` : '—'}</div>
+                <div><strong>F:</strong> ${Number.isFinite(nutrition.fat) ? `${nutrition.fat}g` : '—'}</div>
+            </div>
+            <ul class="recipe-ingredient-list">
+                ${truncatedIngredients || '<li>No ingredients listed</li>'}
+                ${moreIngredients}
+            </ul>
+            ${truncatedSteps ? `<div class="print-recipe-notes">${truncatedSteps}</div>` : ''}
         </article>
     `;
 }
@@ -2304,7 +2293,7 @@ function printMealPlan(selectedRecipeIds = []) {
             <style>
                 @media print {
                     @page {
-                        margin: 0.5in;
+                        margin: 0.45in;
                         size: letter;
                     }
                 }
@@ -2312,10 +2301,10 @@ function printMealPlan(selectedRecipeIds = []) {
                 body {
                     font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
                     margin: 0;
-                    padding: 0.5in;
+                    padding: 0.45in;
                     background: #ffffff;
-                    font-size: 11pt;
-                    line-height: 1.45;
+                    font-size: 10pt;
+                    line-height: 1.4;
                     color: #1f2933;
                 }
                 
@@ -2323,15 +2312,15 @@ function printMealPlan(selectedRecipeIds = []) {
                     display: flex;
                     justify-content: space-between;
                     align-items: flex-end;
-                    gap: 18px;
-                    margin-bottom: 18px;
+                    gap: 16px;
+                    margin-bottom: 16px;
                     padding-bottom: 10px;
                     border-bottom: 1px solid #d8dee7;
                 }
                 
                 .print-title h1 {
                     margin: 0;
-                    font-size: 20pt;
+                    font-size: 18pt;
                     font-weight: 700;
                     letter-spacing: -0.01em;
                     color: #0f172a;
@@ -2339,13 +2328,13 @@ function printMealPlan(selectedRecipeIds = []) {
                 
                 .print-title .print-subtitle {
                     margin: 4px 0 0 0;
-                    font-size: 10.5pt;
-                    color: #4b5563;
+                    font-size: 10pt;
+                    color: #475569;
                 }
                 
                 .print-meta {
                     text-align: right;
-                    font-size: 9pt;
+                    font-size: 8.5pt;
                     color: #6b7280;
                     display: flex;
                     flex-direction: column;
@@ -2357,7 +2346,7 @@ function printMealPlan(selectedRecipeIds = []) {
                     border-collapse: collapse;
                     table-layout: fixed;
                     border: 1px solid #d8dee7;
-                    border-radius: 8px;
+                    border-radius: 6px;
                     overflow: hidden;
                     background: #ffffff;
                 }
@@ -2369,8 +2358,8 @@ function printMealPlan(selectedRecipeIds = []) {
                 .day-header {
                     font-weight: 600;
                     text-align: center;
-                    padding: 8px 4px;
-                    font-size: 9.5pt;
+                    padding: 7px 4px;
+                    font-size: 9pt;
                     color: #1f2937;
                     border-right: 1px solid #d8dee7;
                     white-space: pre-line;
@@ -2380,19 +2369,15 @@ function printMealPlan(selectedRecipeIds = []) {
                     border-right: none;
                 }
                 
-                .meal-row {
-                    background: #ffffff;
-                }
-                
                 .time-slot {
-                    background: #f3f6fb;
+                    background: #f5f7fb;
                     color: #1f2937;
                     font-weight: 600;
                     text-align: right;
-                    padding: 8px 6px;
+                    padding: 7px 6px;
                     border-right: 1px solid #d8dee7;
                     border-bottom: 1px solid #d8dee7;
-                    font-size: 9.5pt;
+                    font-size: 9pt;
                 }
                 
                 .meal-slot {
@@ -2410,11 +2395,11 @@ function printMealPlan(selectedRecipeIds = []) {
                 
                 .meal-item {
                     border: 1px solid #d1ede1;
-                    background: #f6fdf8;
+                    background: #f4fcf7;
                     border-radius: 6px;
                     margin-bottom: 4px;
                     padding: 5px 6px;
-                    font-size: 8.5pt;
+                    font-size: 8.2pt;
                     color: #1f2937;
                     page-break-inside: avoid;
                 }
@@ -2426,24 +2411,24 @@ function printMealPlan(selectedRecipeIds = []) {
                 .meal-item-name {
                     font-weight: 600;
                     margin: 0 0 2px 0;
-                    font-size: 8.8pt;
+                    font-size: 8.4pt;
                 }
                 
                 .meal-item-details {
-                    font-size: 8pt;
+                    font-size: 7.8pt;
                     color: #4b5563;
                     display: flex;
                     gap: 6px;
                 }
                 
                 .meal-item-nutrition {
-                    font-size: 7.8pt;
+                    font-size: 7.5pt;
                     color: #6b7280;
                     margin-top: 3px;
                 }
                 
                 .meal-item-nutrition span {
-                    margin-right: 8px;
+                    margin-right: 6px;
                 }
                 
                 .daily-nutrition-row {
@@ -2454,7 +2439,7 @@ function printMealPlan(selectedRecipeIds = []) {
                     padding: 6px;
                     border-right: 1px solid #d8dee7;
                     border-bottom: 1px solid #d8dee7;
-                    font-size: 8.5pt;
+                    font-size: 8.2pt;
                     color: #1f2937;
                     text-align: center;
                 }
@@ -2468,12 +2453,12 @@ function printMealPlan(selectedRecipeIds = []) {
                 .daily-totals {
                     display: flex;
                     flex-direction: column;
-                    gap: 4px;
+                    gap: 3px;
                 }
                 
                 .daily-calories {
                     font-weight: 700;
-                    font-size: 10pt;
+                    font-size: 9.4pt;
                     color: #0f172a;
                 }
                 
@@ -2482,14 +2467,14 @@ function printMealPlan(selectedRecipeIds = []) {
                 }
                 
                 .daily-macros {
-                    font-size: 8.5pt;
+                    font-size: 8pt;
                     color: #4b5563;
                 }
                 
                 .macro-progress-container {
                     display: flex;
                     justify-content: center;
-                    gap: 12px;
+                    gap: 10px;
                     margin-top: 4px;
                 }
                 
@@ -2497,8 +2482,8 @@ function printMealPlan(selectedRecipeIds = []) {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    min-width: 72px;
-                    font-size: 8pt;
+                    min-width: 68px;
+                    font-size: 7.6pt;
                     color: #4b5563;
                 }
                 
@@ -2506,8 +2491,8 @@ function printMealPlan(selectedRecipeIds = []) {
                     display: inline-flex;
                     align-items: baseline;
                     justify-content: center;
-                    gap: 0.2rem;
-                    font-size: 0.85rem;
+                    gap: 0.18rem;
+                    font-size: 0.82rem;
                     font-weight: 700;
                     color: #111827;
                 }
@@ -2517,130 +2502,106 @@ function printMealPlan(selectedRecipeIds = []) {
                 }
                 
                 .macro-label {
-                    font-size: 0.68rem;
+                    font-size: 0.64rem;
                     color: #0b3d25;
                     font-weight: 600;
-                    margin-top: 2px;
                     letter-spacing: 0.03em;
+                    margin-top: 2px;
                     text-transform: uppercase;
                 }
                 
                 .print-recipes {
-                    margin-top: 40px;
-                    page-break-before: always;
+                    margin-top: 24px;
+                    column-count: 2;
+                    column-gap: 16px;
                 }
                 
                 .print-recipes-title {
-                    font-size: 16pt;
-                    margin: 0 0 14px 0;
+                    column-span: all;
+                    font-size: 14pt;
+                    margin: 0 0 10px 0;
                     color: #0f172a;
                     font-weight: 600;
                 }
                 
                 .print-recipe {
+                    display: inline-block;
+                    width: 100%;
                     border: 1px solid #d8dee7;
-                    border-radius: 8px;
-                    padding: 16px;
-                    margin-bottom: 18px;
+                    border-radius: 6px;
+                    padding: 10px;
+                    margin: 0 0 12px;
                     background: #ffffff;
                     page-break-inside: avoid;
-                    page-break-after: always;
+                    break-inside: avoid-column;
+                    font-size: 8pt;
+                    color: #1f2937;
                 }
                 
                 .print-recipe-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    gap: 10px;
-                    margin-bottom: 12px;
-                    border-bottom: 1px solid #d8dee7;
-                    padding-bottom: 8px;
+                    margin-bottom: 6px;
                 }
                 
                 .print-recipe-title {
                     margin: 0;
-                    font-size: 14pt;
+                    font-size: 11pt;
                     color: #0f172a;
                     font-weight: 600;
                 }
                 
                 .print-recipe-meta {
                     display: flex;
-                    gap: 8px;
+                    gap: 6px;
                     flex-wrap: wrap;
-                    font-size: 8.5pt;
+                    font-size: 7.4pt;
                     color: #4b5563;
+                    margin-top: 2px;
                 }
                 
                 .print-recipe-category {
                     background: rgba(76, 175, 80, 0.16);
                     color: #065f46;
-                    padding: 2px 8px;
+                    padding: 1px 6px;
                     border-radius: 999px;
                     font-weight: 600;
-                    font-size: 7.5pt;
+                    font-size: 7pt;
                     text-transform: uppercase;
-                }
-                
-                .print-recipe-servings {
-                    font-weight: 600;
-                    color: #334155;
-                }
-                
-                .print-recipe-body {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-                    gap: 16px;
                 }
                 
                 .print-recipe-summary {
                     display: grid;
-                    grid-template-columns: repeat(2, minmax(100px, 1fr));
-                    gap: 6px;
+                    grid-template-columns: repeat(2, minmax(80px, 1fr));
+                    gap: 4px;
                     background: #f4f8f6;
                     border: 1px solid #d1ede1;
                     border-radius: 6px;
-                    padding: 10px;
-                    font-size: 8.5pt;
-                    color: #1f2937;
+                    padding: 8px;
+                    margin-bottom: 6px;
                 }
                 
-                .print-recipe-ingredients ul {
-                    list-style: none;
+                .recipe-ingredient-list {
                     margin: 0;
-                    padding: 0;
-                    font-size: 8.8pt;
+                    padding-left: 14px;
+                    font-size: 7.6pt;
                     color: #1f2937;
                 }
                 
-                .print-recipe-ingredients li {
-                    display: flex;
-                    justify-content: space-between;
-                    padding: 4px 0;
-                    border-bottom: 1px dotted #d8dee7;
+                .recipe-ingredient-list li {
+                    margin-bottom: 2px;
                 }
                 
-                .print-recipe-ingredients li:last-child {
-                    border-bottom: none;
-                }
-                
-                .print-recipe-instructions {
-                    font-size: 8.8pt;
-                    line-height: 1.55;
-                    color: #334155;
-                }
-                
-                .print-recipe:last-child {
-                    page-break-after: auto;
+                .print-recipe-notes {
+                    font-size: 7.2pt;
+                    color: #6b7280;
                 }
                 
                 .empty-slot {
                     background: #f8fafc;
-                    min-height: 40px;
+                    min-height: 38px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 8pt;
+                    font-size: 7.6pt;
                     color: #94a3b8;
                     font-style: italic;
                     border-radius: 4px;
