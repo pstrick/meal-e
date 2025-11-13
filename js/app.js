@@ -43,6 +43,23 @@ let selectedIngredients = new Map(); // Maps ingredient IDs to their nutrition d
 // Track the current recipe being edited
 let currentEditRecipeId = null;
 
+function addDarkModePreloadStyle() {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById('dark-mode-preload')) return;
+    const style = document.createElement('style');
+    style.id = 'dark-mode-preload';
+    style.textContent = 'html, body { background-color: #0f172a !important; color: #e2e8f0 !important; }';
+    (document.head || document.documentElement).appendChild(style);
+}
+
+function removeDarkModePreloadStyle() {
+    if (typeof document === 'undefined') return;
+    const style = document.getElementById('dark-mode-preload');
+    if (style) {
+        style.remove();
+    }
+}
+
 // Modal Management
 function openModal() {
     const recipeModal = document.getElementById('recipe-modal');
@@ -549,8 +566,10 @@ function initializeSettings() {
                 document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
                 if (isDark) {
                     document.documentElement.style.backgroundColor = '#0f172a';
+                    addDarkModePreloadStyle();
                 } else {
                     document.documentElement.style.removeProperty('background-color');
+                    removeDarkModePreloadStyle();
                 }
             });
             const initialDark = window.settings.theme === 'dark';
@@ -559,8 +578,10 @@ function initializeSettings() {
             document.documentElement.style.colorScheme = initialDark ? 'dark' : 'light';
             if (initialDark) {
                 document.documentElement.style.backgroundColor = '#0f172a';
+                addDarkModePreloadStyle();
             } else {
                 document.documentElement.style.removeProperty('background-color');
+                removeDarkModePreloadStyle();
             }
         }
     } catch (error) {

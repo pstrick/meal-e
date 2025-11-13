@@ -14,6 +14,12 @@
                     root.classList.add('dark-mode');
                     root.style.colorScheme = 'dark';
                     root.style.backgroundColor = '#0f172a';
+                    if (!document.getElementById('dark-mode-preload')) {
+                        const preloadStyle = document.createElement('style');
+                        preloadStyle.id = 'dark-mode-preload';
+                        preloadStyle.textContent = 'html, body { background-color: #0f172a !important; color: #e2e8f0 !important; }';
+                        (document.head || root).appendChild(preloadStyle);
+                    }
                 }
             } catch (error) {
                 console.warn('Unable to apply stored theme preference early:', error);
