@@ -9,11 +9,73 @@ if (versionEl) versionEl.textContent = version;
 let customIngredients = [];
 let editingIngredientId = null;
 
+const EMOJI_PALETTE = [
+    '🥦','🥕','🥬','🍅','🍆','🧅','🧄','🥔','🍠','🌽','🥒','🫑',
+    '🍎','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍒','🥭','🍍','🥝',
+    '🥩','🍗','🍖','🧀','🥚','🥛','🫘','🍞','🥐','🥨','🍚','🍝',
+    '🍣','🍱','🥙','🌮','🥗','🍲','🍜','🍪','🧁','🍩','🍫','🍿'
+];
+
+let emojiPickerInitialized = false;
+
+function sanitizeEmojiInput(value) {
+    const trimmed = (value || '').trim();
+    if (!trimmed) {
+        return '';
+    }
+    const chars = Array.from(trimmed);
+    return chars.slice(0, 2).join('');
+}
+
+function renderEmojiPicker() {
+    if (!emojiPicker || emojiPickerInitialized) return;
+    const fragment = document.createDocumentFragment();
+    EMOJI_PALETTE.forEach(emoji => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'emoji-option';
+        button.textContent = emoji;
+        button.addEventListener('click', () => applyEmojiSelection(emoji));
+        fragment.appendChild(button);
+    });
+    emojiPicker.appendChild(fragment);
+    emojiPickerInitialized = true;
+}
+
+function openEmojiPicker() {
+    if (!emojiPicker) return;
+    renderEmojiPicker();
+    emojiPicker.hidden = false;
+}
+
+function closeEmojiPicker() {
+    if (!emojiPicker) return;
+    emojiPicker.hidden = true;
+}
+
+function toggleEmojiPicker() {
+    if (!emojiPicker) return;
+    if (emojiPicker.hidden) {
+        openEmojiPicker();
+    } else {
+        closeEmojiPicker();
+    }
+}
+
+function applyEmojiSelection(emoji) {
+    if (!emojiInput) return;
+    emojiInput.value = sanitizeEmojiInput(emoji);
+    closeEmojiPicker();
+    emojiInput.focus();
+}
+
 // DOM Elements
 const form = document.getElementById('custom-ingredient-form');
 const ingredientsList = document.getElementById('custom-ingredients-list');
 const searchInput = document.getElementById('ingredient-search');
 const emojiInput = document.getElementById('ingredient-emoji');
+const emojiPickerToggle = document.getElementById('emoji-picker-toggle');
+const emojiPicker = document.getElementById('emoji-picker');
 const addIngredientBtn = document.getElementById('add-ingredient-btn');
 const ingredientModal = document.getElementById('ingredient-modal');
 const cancelIngredientBtn = document.getElementById('cancel-ingredient');
@@ -28,10 +90,7 @@ function loadCustomIngredients() {
             customIngredients = JSON.parse(savedIngredients).map(ingredient => ({
                 ...ingredient,
                 storeSection: ingredient.storeSection || '',
-                emoji: (() => {
-                    const trimmed = (ingredient.emoji || '').trim();
-                    return trimmed ? Array.from(trimmed).slice(0, 2).join('') : '';
-                })()
+                emoji: sanitizeEmojiInput(ingredient.emoji)
             }));
             console.log('Loaded custom ingredients:', customIngredients.length);
         } else {
@@ -83,7 +142,7 @@ function openIngredientModal(ingredient = null) {
             storeSectionInput.value = ingredient.storeSection || '';
         }
         if (emojiInput) {
-            emojiInput.value = ingredient.emoji || '';
+            emojiInput.value = sanitizeEmojiInput(ingredient.emoji);
         }
     } else {
         if (storeSectionInput) {
@@ -93,6 +152,7 @@ function openIngredientModal(ingredient = null) {
             emojiInput.value = '';
         }
     }
+    closeEmojiPicker();
     
     // Show modal
     ingredientModal.style.display = 'block';
@@ -105,6 +165,7 @@ function closeIngredientModal() {
     ingredientModal.classList.remove('active');
     editingIngredientId = null;
     form.reset();
+    closeEmojiPicker();
 }
 
 // Add or update custom ingredient
@@ -114,8 +175,7 @@ function saveCustomIngredient(event) {
         console.log('Saving custom ingredient...');
         
         const storeSectionInput = document.getElementById('store-section');
-        const emojiValue = emojiInput ? emojiInput.value.trim() : '';
-        const normalizedEmoji = emojiValue ? Array.from(emojiValue).slice(0, 2).join('') : '';
+        const normalizedEmoji = emojiInput ? sanitizeEmojiInput(emojiInput.value) : '';
         const ingredient = {
             id: editingIngredientId || Date.now().toString(),
             name: document.getElementById('ingredient-name').value,
@@ -243,10 +303,42 @@ function searchIngredients(event) {
 
 // Event Listeners
 form.addEventListener('submit', saveCustomIngredient);
+form.addEventListener('reset', closeEmojiPicker);
 searchInput.addEventListener('input', searchIngredients);
 addIngredientBtn.addEventListener('click', () => openIngredientModal());
 cancelIngredientBtn.addEventListener('click', closeIngredientModal);
 closeModalBtn.addEventListener('click', closeIngredientModal);
+
+if (emojiInput) {
+    emojiInput.addEventListener('focus', () => openEmojiPicker());
+    emojiInput.addEventListener('click', () => openEmojiPicker());
+    emojiInput.addEventListener('input', () => {
+        const sanitized = sanitizeEmojiInput(emojiInput.value);
+        if (emojiInput.value !== sanitized) {
+            emojiInput.value = sanitized;
+        }
+    });
+}
+
+if (emojiPickerToggle) {
+    emojiPickerToggle.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleEmojiPicker();
+    });
+}
+
+document.addEventListener('click', (event) => {
+    if (!emojiPicker || emojiPicker.hidden) return;
+    if (
+        emojiPicker.contains(event.target) ||
+        (emojiPickerToggle && emojiPickerToggle.contains(event.target)) ||
+        (emojiInput && emojiInput.contains(event.target))
+    ) {
+        return;
+    }
+    closeEmojiPicker();
+});
 
 // Close modal when clicking outside
 window.addEventListener('click', (event) => {

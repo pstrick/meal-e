@@ -231,43 +231,56 @@ function createRecipeCard(recipe) {
         .join(', ');
 
     const totalWeight = recipe.ingredients.reduce((sum, ing) => sum + ing.amount, 0);
-    const numberOfServings = Math.round((totalWeight / recipe.servingSize) * 10) / 10;
+    const computedServings = recipe.servingSize ? Math.round((totalWeight / recipe.servingSize) * 10) / 10 : 1;
+    const numberOfServings = Number.isFinite(computedServings) && computedServings > 0 ? computedServings : 1;
+    const instructionsPreview = recipe.steps ? recipe.steps.trim().replace(/\s+/g, ' ') : '';
+    const instructionsSnippet = instructionsPreview.length > 160 ? `${instructionsPreview.substring(0, 160)}...` : instructionsPreview;
 
     card.innerHTML = `
         <div class="recipe-card-content">
-            <span class="recipe-category">${recipe.category}</span>
-            <h3>${recipe.name}</h3>
-            <p class="recipe-servings">Serving Size: ${recipe.servingSize}g (Makes ${numberOfServings} servings)</p>
-            
-            <div class="recipe-nutrition">
-                <div class="nutrition-item">
-                    <span class="nutrition-value">${recipe.nutrition.calories}</span>
-                    <span class="nutrition-label">Calories</span>
+            <div class="recipe-card-header">
+                <div class="recipe-title-group">
+                    <span class="recipe-category">${recipe.category}</span>
+                    <h3>${recipe.name}</h3>
                 </div>
-                <div class="nutrition-item">
-                    <span class="nutrition-value">${recipe.nutrition.protein}g</span>
-                    <span class="nutrition-label">Protein</span>
-                </div>
-                <div class="nutrition-item">
-                    <span class="nutrition-value">${recipe.nutrition.carbs}g</span>
-                    <span class="nutrition-label">Carbs</span>
-                </div>
-                <div class="nutrition-item">
-                    <span class="nutrition-value">${recipe.nutrition.fat}g</span>
-                    <span class="nutrition-label">Fat</span>
+                <div class="recipe-meta">
+                    <span class="recipe-servings">Serving Size: ${recipe.servingSize}g</span>
+                    <span class="recipe-serving-count">Makes ${numberOfServings} servings</span>
                 </div>
             </div>
             
-            <p class="recipe-ingredients">
-                <strong>Ingredients:</strong><br>
-                ${ingredients}
-            </p>
-            ${recipe.steps ? `
-                <p class="recipe-steps">
-                    <strong>Instructions:</strong><br>
-                    ${recipe.steps.length > 100 ? recipe.steps.substring(0, 100) + '...' : recipe.steps}
-                </p>
-            ` : ''}
+            <div class="recipe-card-body">
+                <div class="recipe-nutrition">
+                    <div class="nutrition-item">
+                        <span class="nutrition-value">${recipe.nutrition.calories}</span>
+                        <span class="nutrition-label">Calories</span>
+                    </div>
+                    <div class="nutrition-item">
+                        <span class="nutrition-value">${recipe.nutrition.protein}g</span>
+                        <span class="nutrition-label">Protein</span>
+                    </div>
+                    <div class="nutrition-item">
+                        <span class="nutrition-value">${recipe.nutrition.carbs}g</span>
+                        <span class="nutrition-label">Carbs</span>
+                    </div>
+                    <div class="nutrition-item">
+                        <span class="nutrition-value">${recipe.nutrition.fat}g</span>
+                        <span class="nutrition-label">Fat</span>
+                    </div>
+                </div>
+                <div class="recipe-summary">
+                    <div class="recipe-ingredients">
+                        <strong>Ingredients</strong>
+                        <p class="recipe-text">${ingredients}</p>
+                    </div>
+                    ${instructionsPreview ? `
+                        <div class="recipe-steps">
+                            <strong>Instructions</strong>
+                            <p class="recipe-text">${instructionsSnippet}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
             
             <div class="recipe-actions">
                 <button class="btn btn-edit" onclick="editRecipe(${recipe.id})">

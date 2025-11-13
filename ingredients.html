@@ -72,9 +72,15 @@
                     <input type="text" id="ingredient-name" required>
                 </div>
                 
-                <div class="form-group">
+                <div class="form-group emoji-form-group">
                     <label for="ingredient-emoji">Emoji (Optional)</label>
-                    <input type="text" id="ingredient-emoji" placeholder="e.g., 🥦" maxlength="4">
+                    <div class="emoji-input-wrapper">
+                        <input type="text" id="ingredient-emoji" placeholder="e.g., 🥦" maxlength="4" autocomplete="off">
+                        <button type="button" class="btn btn-ghost emoji-picker-toggle" id="emoji-picker-toggle" aria-label="Open emoji picker">
+                            <span class="emoji-toggle-icon">😊</span>
+                        </button>
+                        <div id="emoji-picker" class="emoji-picker" hidden></div>
+                    </div>
                 </div>
                 
                 <div class="form-group">

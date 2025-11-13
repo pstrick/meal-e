@@ -2506,6 +2506,7 @@ function printMealPlan(selectedRecipeIds = []) {
                     margin-bottom: 20px;
                     background: #fff;
                     page-break-inside: avoid;
+                    page-break-after: always;
                 }
                 
                 .print-recipe-header {
@@ -2601,6 +2602,10 @@ function printMealPlan(selectedRecipeIds = []) {
                 
                 .print-recipe-instructions p + p {
                     margin-top: 10px;
+                }
+                
+                .print-recipe:last-child {
+                    page-break-after: auto;
                 }
                 
                 .empty-slot {
