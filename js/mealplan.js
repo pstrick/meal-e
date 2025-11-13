@@ -646,9 +646,9 @@ function createMealItem(item, amount, itemIndex, slot) {
     
     const label = item.type === 'meal' ? 'Recipe' : 'Custom Ingredient';
     
-    // Truncate item name to 300 characters for better readability
+    // Truncate item name to keep cards compact
     const displayName = item.emoji ? `${item.emoji} ${item.name}` : item.name;
-    const truncatedName = displayName.length > 300 ? displayName.substring(0, 300) + '...' : displayName;
+    const truncatedName = displayName.length > 140 ? `${displayName.substring(0, 137).trimEnd()}...` : displayName;
     
     // Calculate nutrition for this item
     let itemNutrition = { calories: 0, protein: 0, carbs: 0, fat: 0 };
@@ -2486,6 +2486,66 @@ function printMealPlan(selectedRecipeIds = []) {
                 .daily-macros span {
                     display: inline-block;
                     margin-right: 6px;
+                }
+                
+                .macro-progress-container {
+                    display: grid;
+                    grid-template-columns: repeat(3, minmax(80px, 1fr));
+                    gap: 8px;
+                    align-items: start;
+                    margin-top: 6px;
+                }
+                
+                .macro-progress-item {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 4px;
+                }
+                
+                .circular-progress {
+                    display: flex;
+                    align-items: baseline;
+                    justify-content: center;
+                    gap: 0.25rem;
+                    width: auto;
+                    height: auto;
+                    margin: 0;
+                    position: static;
+                    transform: none;
+                }
+                
+                .circular-progress-svg {
+                    display: none;
+                }
+                
+                .circular-progress-text {
+                    position: static;
+                    transform: none;
+                    text-align: center;
+                    font-size: 0.9rem;
+                    font-weight: 700;
+                    line-height: 1.2;
+                    display: inline-flex;
+                    align-items: baseline;
+                    gap: 0.2rem;
+                }
+                
+                .macro-value {
+                    color: #000;
+                    font-weight: 700;
+                }
+                
+                .macro-unit {
+                    font-size: 0.7rem;
+                    color: #555;
+                }
+                
+                .macro-label {
+                    font-size: 0.7rem;
+                    color: #555;
+                    font-weight: 600;
+                    text-transform: uppercase;
                 }
                 
                 .print-recipes {
