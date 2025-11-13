@@ -2293,8 +2293,12 @@ function printMealPlan(selectedRecipeIds = []) {
             <style>
                 @media print {
                     @page {
+                        size: landscape;
                         margin: 0.45in;
-                        size: letter;
+                    }
+                    @page recipe {
+                        size: portrait;
+                        margin: 0.5in;
                     }
                 }
                 
@@ -2545,6 +2549,8 @@ function printMealPlan(selectedRecipeIds = []) {
                     margin-top: 24px;
                     column-count: 2;
                     column-gap: 16px;
+                    page-break-before: always;
+                    page: recipe;
                 }
                 
                 .print-recipes-title {
