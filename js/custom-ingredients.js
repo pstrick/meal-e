@@ -23,8 +23,74 @@ let emojiPickerInstance = null;
 let emojiPickerReady = false;
 let emojiPickerInitializationFailed = false;
 
+const EMOJI_BUTTON_CDN_URL = 'https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/dist/index.min.js';
+let emojiButtonLoaderPromise = null;
+
+function loadEmojiButton() {
+    if (typeof window === 'undefined') {
+        return Promise.reject(new Error('Emoji picker is not available outside the browser.'));
+    }
+
+    if (typeof window.EmojiButton === 'function') {
+        return Promise.resolve(window.EmojiButton);
+    }
+
+    if (emojiButtonLoaderPromise) {
+        return emojiButtonLoaderPromise;
+    }
+
+    emojiButtonLoaderPromise = new Promise((resolve, reject) => {
+        const existingScript = Array.from(document.getElementsByTagName('script')).find((script) => {
+            const src = script.getAttribute('src') || '';
+            return script.dataset?.emojiButtonLoader === 'true' || src.includes('@joeattardi/emoji-button');
+        }) || null;
+
+        const script = existingScript || document.createElement('script');
+        script.dataset.emojiButtonLoader = 'true';
+
+        const cleanup = () => {
+            script.removeEventListener('load', handleLoad);
+            script.removeEventListener('error', handleError);
+        };
+
+        const handleLoad = () => {
+            cleanup();
+            script.dataset.emojiButtonLoaded = 'true';
+            if (typeof window.EmojiButton === 'function') {
+                resolve(window.EmojiButton);
+            } else {
+                emojiButtonLoaderPromise = null;
+                reject(new Error('EmojiButton constructor was not found after loading the script.'));
+            }
+        };
+
+        const handleError = () => {
+            cleanup();
+            emojiButtonLoaderPromise = null;
+            reject(new Error('Failed to load the emoji picker script.'));
+        };
+
+        script.addEventListener('load', handleLoad, { once: true });
+        script.addEventListener('error', handleError, { once: true });
+
+        if (!existingScript) {
+            script.src = EMOJI_BUTTON_CDN_URL;
+            script.async = true;
+            script.defer = false;
+            document.head.appendChild(script);
+        } else if (existingScript.dataset?.emojiButtonLoaded === 'true' || ['loaded', 'complete'].includes(existingScript.readyState || '')) {
+            handleLoad();
+            return;
+        }
+    });
+
+    return emojiButtonLoaderPromise;
+}
+
 function getEmojiPickerTheme() {
-    return settings?.darkMode ? 'dark' : 'light';
+    if (!settings) return 'light';
+    const theme = settings.theme ?? (settings.darkMode ? 'dark' : 'light');
+    return theme === 'dark' ? 'dark' : 'light';
 }
 
 function disableEmojiPickerToggle(message) {
@@ -36,27 +102,26 @@ function disableEmojiPickerToggle(message) {
     }
 }
 
-function ensureEmojiPicker() {
+async function ensureEmojiPicker() {
     if (emojiPickerReady && emojiPickerInstance) {
         if (typeof emojiPickerInstance.setTheme === 'function') {
             emojiPickerInstance.setTheme(getEmojiPickerTheme());
         }
-        return true;
+        return emojiPickerInstance;
     }
 
     if (emojiPickerInitializationFailed) {
-        return false;
-    }
-
-    if (typeof window === 'undefined' || typeof window.EmojiButton !== 'function') {
-        console.warn('Emoji picker library is unavailable.');
-        emojiPickerInitializationFailed = true;
-        disableEmojiPickerToggle('Emoji picker failed to load.');
-        return false;
+        return null;
     }
 
     try {
-        emojiPickerInstance = new window.EmojiButton({
+        const EmojiButtonConstructor = await loadEmojiButton();
+
+        if (typeof EmojiButtonConstructor !== 'function') {
+            throw new Error('EmojiButton constructor is unavailable.');
+        }
+
+        emojiPickerInstance = new EmojiButtonConstructor({
             autoHide: true,
             position: 'bottom-start',
             showPreview: false,
@@ -70,20 +135,27 @@ function ensureEmojiPicker() {
         });
 
         emojiPickerReady = true;
-        return true;
+        return emojiPickerInstance;
     } catch (error) {
         console.warn('Failed to initialize emoji picker:', error);
         emojiPickerInitializationFailed = true;
         disableEmojiPickerToggle('Emoji picker failed to initialize.');
-        return false;
+        return null;
     }
 }
 
-function openEmojiPicker(anchor = emojiPickerToggle || emojiInput) {
-    if (!ensureEmojiPicker() || !emojiPickerInstance || !anchor) {
+async function openEmojiPicker(anchor = emojiPickerToggle || emojiInput) {
+    if (!anchor) {
         return;
     }
-    emojiPickerInstance.showPicker(anchor);
+    if (anchor === emojiPickerToggle && (emojiPickerToggle.disabled || emojiPickerToggle.getAttribute('aria-disabled') === 'true')) {
+        return;
+    }
+    const picker = await ensureEmojiPicker();
+    if (!picker) {
+        return;
+    }
+    picker.showPicker(anchor);
 }
 
 function closeEmojiPicker() {
@@ -91,11 +163,18 @@ function closeEmojiPicker() {
     emojiPickerInstance.hidePicker();
 }
 
-function toggleEmojiPicker(anchor = emojiPickerToggle || emojiInput) {
-    if (!ensureEmojiPicker() || !emojiPickerInstance || !anchor) {
+async function toggleEmojiPicker(anchor = emojiPickerToggle || emojiInput) {
+    if (!anchor) {
         return;
     }
-    emojiPickerInstance.togglePicker(anchor);
+    if (anchor === emojiPickerToggle && (emojiPickerToggle.disabled || emojiPickerToggle.getAttribute('aria-disabled') === 'true')) {
+        return;
+    }
+    const picker = await ensureEmojiPicker();
+    if (!picker) {
+        return;
+    }
+    picker.togglePicker(anchor);
 }
 
 function applyEmojiSelection(selection) {
@@ -116,7 +195,7 @@ const emojiInput = document.getElementById('ingredient-emoji');
 const emojiPickerToggle = document.getElementById('emoji-picker-toggle');
 
 if (emojiPickerToggle) {
-    ensureEmojiPicker();
+    void ensureEmojiPicker();
 }
 const addIngredientBtn = document.getElementById('add-ingredient-btn');
 const ingredientModal = document.getElementById('ingredient-modal');
@@ -931,8 +1010,12 @@ cancelIngredientBtn.addEventListener('click', closeIngredientModal);
 closeModalBtn.addEventListener('click', closeIngredientModal);
 
 if (emojiInput) {
-    emojiInput.addEventListener('focus', () => openEmojiPicker(emojiInput));
-    emojiInput.addEventListener('click', () => openEmojiPicker(emojiInput));
+    emojiInput.addEventListener('focus', () => {
+        void openEmojiPicker(emojiInput);
+    });
+    emojiInput.addEventListener('click', () => {
+        void openEmojiPicker(emojiInput);
+    });
     emojiInput.addEventListener('input', () => {
         const sanitized = sanitizeEmojiInput(emojiInput.value);
         if (emojiInput.value !== sanitized) {
@@ -945,7 +1028,7 @@ if (emojiPickerToggle) {
     emojiPickerToggle.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
-        toggleEmojiPicker(emojiPickerToggle);
+        void toggleEmojiPicker(emojiPickerToggle);
     });
 }
 
