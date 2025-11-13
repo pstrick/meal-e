@@ -734,6 +734,17 @@ small {
     font-weight: 700;
 }
 
+.card-header-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+}
+
+.card-header-actions .btn {
+    white-space: nowrap;
+}
+
 .goals-grid {
     display: grid;
     gap: var(--space-3);
@@ -903,17 +914,97 @@ tbody tr:hover {
     font-weight: 700;
 }
 
+.scrape-progress,
+.scrape-error,
+.scrape-results {
+    margin-top: var(--space-3);
+}
+
+.scrape-progress {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-brand);
+    font-weight: 600;
+}
+
+.scrape-error {
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.scrape-results {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.scrape-section h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.scrape-summary p {
+    margin: 0;
+    color: var(--color-text-muted);
+}
+
+.scrape-nutrition {
+    display: grid;
+    gap: var(--space-2);
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.scrape-nutrition div {
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-2);
+}
+
+.scrape-nutrition dt {
+    margin: 0;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.scrape-nutrition dd {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+}
+
+#scrape-ingredient-list {
+    margin: 0;
+    padding-left: 1.1rem;
+    display: grid;
+    gap: 0.35rem;
+    color: var(--color-text-muted);
+}
+
+.scrape-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
 #shopping-list-modal.modal,
+#shopping-items-modal.modal,
 #shopping-list-selection-modal.modal {
     padding: 0;
 }
 
 #shopping-list-modal.modal.active,
+#shopping-items-modal.modal.active,
 #shopping-list-selection-modal.modal.active {
     align-items: stretch;
 }
 
 #shopping-list-modal .modal-content,
+#shopping-items-modal .modal-content,
 #shopping-list-selection-modal .modal-content {
     width: 100%;
     max-width: none;
@@ -930,6 +1021,7 @@ tbody tr:hover {
 }
 
 #shopping-list-modal .modal-content > .close,
+#shopping-items-modal .modal-content > .close,
 #shopping-list-selection-modal .modal-content > .close {
     position: sticky;
     top: 1rem;
@@ -938,6 +1030,7 @@ tbody tr:hover {
 }
 
 #shopping-list-modal .modal-content form,
+#shopping-items-modal .modal-content form,
 #shopping-list-selection-modal .modal-content form {
     flex: 1;
     display: flex;
@@ -954,8 +1047,22 @@ tbody tr:hover {
     margin-inline: auto;
 }
 
+#shopping-items-modal .shopping-items-modal-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    width: min(1100px, 100%);
+    margin-inline: auto;
+}
+
 #shopping-list-modal .shopping-list-modal-body form {
     flex: 1;
+}
+
+#shopping-items-modal .shopping-items-modal-body .shopping-items-layout {
+    flex: 1;
+    display: grid;
 }
 
 #shopping-list-selection-modal .modal-content .existing-list-controls,
