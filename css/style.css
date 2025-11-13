@@ -63,6 +63,13 @@
     --transition-slow: 260ms ease;
 }
 
+html.theme-preload,
+html.theme-preload * {
+    transition: none !important;
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+}
+
 html.dark-mode {
     color-scheme: dark;
     --color-brand: #66bb6a;

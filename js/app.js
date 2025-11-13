@@ -90,6 +90,18 @@ function clearInlineDarkThemeVars() {
     });
 }
 
+function applyThemePreload() {
+    if (typeof document === 'undefined') return;
+    document.documentElement.classList.add('theme-preload');
+}
+
+function releaseThemePreload() {
+    if (typeof document === 'undefined') return;
+    window.requestAnimationFrame(() => {
+        document.documentElement.classList.remove('theme-preload');
+    });
+}
+
 // Modal Management
 function openModal() {
     const recipeModal = document.getElementById('recipe-modal');
@@ -588,6 +600,7 @@ function initializeSettings() {
         if (themeToggle) {
             themeToggle.checked = window.settings.theme === 'dark';
             themeToggle.addEventListener('change', (e) => {
+                applyThemePreload();
                 window.settings.theme = e.target.checked ? 'dark' : 'light';
                 localStorage.setItem('meale-settings', JSON.stringify(window.settings));
                 const isDark = e.target.checked;
@@ -603,6 +616,12 @@ function initializeSettings() {
                     removeDarkModePreloadStyle();
                     clearInlineDarkThemeVars();
                 }
+                setTimeout(() => {
+                    if (isDark) {
+                        setTimeout(() => removeDarkModePreloadStyle(), 120);
+                    }
+                    releaseThemePreload();
+                }, 80);
             });
             const initialDark = window.settings.theme === 'dark';
             document.body.classList.toggle('dark-theme', initialDark);
@@ -727,6 +746,7 @@ function deleteCustomIngredient(id) {
 // Initialize app
 function initializeApp() {
     try {
+        applyThemePreload();
         // Load recipes and meal plan from localStorage first
         loadFromLocalStorage();
 
@@ -907,6 +927,16 @@ function initializeApp() {
     } catch (error) {
         console.error('Error initializing app:', error);
     }
+
+    window.addEventListener('load', () => {
+        releaseThemePreload();
+        if (document.body.classList.contains('dark-theme')) {
+            setTimeout(() => removeDarkModePreloadStyle(), 150);
+        } else {
+            removeDarkModePreloadStyle();
+            clearInlineDarkThemeVars();
+        }
+    }, { once: true });
 }
 
 // Initialize app when DOM is loaded

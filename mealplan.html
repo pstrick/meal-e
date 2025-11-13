@@ -7,10 +7,11 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <script>
         (function () {
+            const root = document.documentElement;
+            root.classList.add('theme-preload');
             try {
                 const settings = JSON.parse(localStorage.getItem('meale-settings'));
                 if (settings && settings.theme === 'dark') {
-                    const root = document.documentElement;
                     root.classList.add('dark-mode');
                     root.style.colorScheme = 'dark';
                     root.style.backgroundColor = '#0f172a';
