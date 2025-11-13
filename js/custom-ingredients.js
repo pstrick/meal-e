@@ -832,6 +832,8 @@ if (scrapeModal && scrapeIngredientBtn && scrapeForm) {
 
         const ingredients = [];
         const ingredientSelectors = [
+            '.component--product-ingredients li',
+            '.component.component--product-ingredients li',
             '[data-ui="product-ingredients"] li',
             'section[id*="ingredient"] li',
             'section[class*="ingredient"] li',
@@ -852,6 +854,8 @@ if (scrapeModal && scrapeIngredientBtn && scrapeForm) {
 
         const nutrition = {};
         const nutritionRowSelectors = [
+            '.component--product-nutritional-information table tr',
+            '.component.component--product-nutritional-information table tr',
             '[data-ui="product-nutrition"] table tr',
             'section[id*="nutrition"] table tr',
             '.nutrition-facts table tr',
@@ -1056,8 +1060,8 @@ if (scrapeModal && scrapeIngredientBtn && scrapeForm) {
         const domData = parseWegmansDomSections(doc);
         if (!result.name) {
             const title =
-                doc.querySelector('[data-ui="product-name"]')?.textContent ||
                 doc.querySelector('h1')?.textContent ||
+                doc.querySelector('[data-ui="product-name"]')?.textContent ||
                 doc.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
                 '';
             result.name = title ? title.trim() : '';
