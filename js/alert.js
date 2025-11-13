@@ -23,8 +23,14 @@ let overlayElement;
 let messageElement;
 let titleElement;
 let confirmButton;
+let cancelButton;
 let activeResolver = null;
 let previousFocus = null;
+let activeOptions = null;
+
+function isDismissible() {
+    return activeOptions?.dismissible !== false;
+}
 
 function ensureAlertRoot() {
     if (alertRoot) {
@@ -46,6 +52,7 @@ function ensureAlertRoot() {
                 <p class="app-alert__message" id="app-alert-message"></p>
             </div>
             <div class="app-alert__actions">
+                <button type="button" class="btn btn-secondary app-alert__cancel" data-alert-cancel>Cancel</button>
                 <button type="button" class="btn btn-primary app-alert__confirm" data-alert-confirm>OK</button>
             </div>
         </div>
@@ -56,20 +63,43 @@ function ensureAlertRoot() {
     messageElement = alertRoot.querySelector('.app-alert__message');
     titleElement = alertRoot.querySelector('.app-alert__title');
     confirmButton = alertRoot.querySelector('[data-alert-confirm]');
+    cancelButton = alertRoot.querySelector('[data-alert-cancel]');
 
-    overlayElement.addEventListener('click', handleDismiss);
-    confirmButton.addEventListener('click', handleDismiss);
+    overlayElement.addEventListener('click', () => {
+        if (!isDismissible()) {
+            return;
+        }
+        handleDismiss(false);
+    });
+    confirmButton.addEventListener('click', event => {
+        event?.preventDefault?.();
+        handleDismiss(true);
+    });
+    cancelButton.addEventListener('click', event => {
+        event?.preventDefault?.();
+        handleDismiss(false);
+    });
 
     const closeButton = alertRoot.querySelector('[data-alert-close]');
-    closeButton.addEventListener('click', handleDismiss);
+    closeButton.addEventListener('click', event => {
+        event?.preventDefault?.();
+        if (!isDismissible() && activeOptions?.cancelText) {
+            return;
+        }
+        handleDismiss(false);
+    });
 
     document.addEventListener('keydown', event => {
         if (!alertRoot.classList.contains('app-alert--active')) {
             return;
         }
         if (event.key === 'Escape') {
+            if (!isDismissible()) {
+                event.preventDefault();
+                return;
+            }
             event.preventDefault();
-            handleDismiss();
+            handleDismiss(false);
         }
         if (event.key === 'Tab') {
             maintainFocus(event);
@@ -124,7 +154,7 @@ function maintainFocus(event) {
     }
 }
 
-function handleDismiss() {
+function handleDismiss(result) {
     if (!alertRoot) {
         return;
     }
@@ -137,6 +167,14 @@ function handleDismiss() {
         'app-alert__dialog--error'
     );
 
+    if (cancelButton) {
+        cancelButton.hidden = true;
+        cancelButton.disabled = false;
+    }
+    if (confirmButton) {
+        confirmButton.disabled = false;
+    }
+
     if (previousFocus && typeof previousFocus.focus === 'function') {
         previousFocus.focus({ preventScroll: true });
     }
@@ -145,8 +183,13 @@ function handleDismiss() {
     if (activeResolver) {
         const resolve = activeResolver;
         activeResolver = null;
-        resolve();
+        const hasCancel = Boolean(activeOptions?.cancelText && String(activeOptions.cancelText).trim().length > 0);
+        const resolvedResult = typeof result === 'undefined'
+            ? (hasCancel ? false : true)
+            : result;
+        resolve(resolvedResult);
     }
+    activeOptions = null;
 
     setTimeout(() => {
         alertRoot.setAttribute('aria-hidden', 'true');
@@ -164,10 +207,24 @@ export function showAlert(message, options = {}) {
     const {
         title,
         type = 'info',
-        confirmText = 'OK'
+        confirmText = 'OK',
+        cancelText,
+        confirmButtonClass,
+        cancelButtonClass,
+        dismissible
     } = options;
 
     const typeConfig = TYPE_CONFIG[type] || TYPE_CONFIG.info;
+    const trimmedCancelText = typeof cancelText === 'string' ? cancelText.trim() : cancelText;
+    const hasCancel = Boolean(trimmedCancelText);
+
+    activeOptions = {
+        ...options,
+        type,
+        confirmText,
+        cancelText: hasCancel ? trimmedCancelText : undefined,
+        dismissible: dismissible !== false
+    };
 
     dialogElement.classList.add(typeConfig.className);
 
@@ -182,6 +239,37 @@ export function showAlert(message, options = {}) {
 
     messageElement.textContent = message;
     confirmButton.textContent = confirmText;
+    confirmButton.disabled = false;
+
+    if (confirmButtonClass) {
+        confirmButton.className = confirmButtonClass;
+        if (!confirmButton.classList.contains('app-alert__confirm')) {
+            confirmButton.classList.add('app-alert__confirm');
+        }
+    } else {
+        confirmButton.className = 'btn btn-primary app-alert__confirm';
+    }
+
+    if (cancelButton) {
+        if (cancelButtonClass) {
+            cancelButton.className = cancelButtonClass;
+            if (!cancelButton.classList.contains('app-alert__cancel')) {
+                cancelButton.classList.add('app-alert__cancel');
+            }
+        } else {
+            cancelButton.className = 'btn btn-secondary app-alert__cancel';
+        }
+
+        if (hasCancel) {
+            cancelButton.textContent = typeof trimmedCancelText === 'string'
+                ? trimmedCancelText
+                : 'Cancel';
+            cancelButton.hidden = false;
+            cancelButton.disabled = false;
+        } else {
+            cancelButton.hidden = true;
+        }
+    }
 
     previousFocus = document.activeElement instanceof HTMLElement
         ? document.activeElement

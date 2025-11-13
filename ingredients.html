@@ -71,9 +71,14 @@
             <div class="card">
                 <div class="card-header">
                     <h2>Custom Ingredients</h2>
-                    <button id="add-ingredient-btn" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Add New Custom Ingredient
-                    </button>
+                    <div class="card-header-actions">
+                        <button id="scrape-ingredient-btn" class="btn btn-secondary">
+                            <i class="fas fa-cloud-arrow-down"></i> Import From URL
+                        </button>
+                        <button id="add-ingredient-btn" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add New Custom Ingredient
+                        </button>
+                    </div>
                 </div>
                 <div class="search-bar">
                     <input type="text" id="ingredient-search" placeholder="Search custom ingredients...">
@@ -117,7 +122,6 @@
                         <button type="button" class="btn btn-ghost emoji-picker-toggle" id="emoji-picker-toggle" aria-label="Open emoji picker">
                             <span class="emoji-toggle-icon">😊</span>
                         </button>
-                        <emoji-picker id="emoji-picker" class="emoji-picker" categories="food" hidden></emoji-picker>
                     </div>
                 </div>
                 
@@ -175,7 +179,70 @@
         </div>
     </div>
 
+    <!-- Scrape Ingredient Modal -->
+    <div id="scrape-ingredient-modal" class="modal">
+        <div class="modal-content">
+            <span class="close scrape-close">&times;</span>
+            <h2>Import Ingredient From URL</h2>
+            <form id="scrape-ingredient-form" class="scrape-form">
+                <div class="form-group">
+                    <label for="scrape-url">Ingredient or Recipe URL</label>
+                    <input type="url" id="scrape-url" placeholder="https://example.com/your-ingredient" required>
+                    <small>We’ll attempt to read structured data (Recipe or Product schema) from this page.</small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-scrape">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Fetch Ingredient Data</button>
+                </div>
+            </form>
+            <div id="scrape-progress" class="scrape-progress" hidden>
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Fetching ingredient information…</span>
+            </div>
+            <div id="scrape-error" class="scrape-error" hidden></div>
+            <div id="scrape-results" class="scrape-results" hidden>
+                <section class="scrape-section scrape-summary">
+                    <h3 id="scrape-title"></h3>
+                    <p id="scrape-description"></p>
+                </section>
+                <section class="scrape-section" id="scrape-nutrition-section" hidden>
+                    <h3>Nutrition (per serving)</h3>
+                    <dl class="scrape-nutrition">
+                        <div>
+                            <dt>Calories</dt>
+                            <dd id="scrape-calories"></dd>
+                        </div>
+                        <div>
+                            <dt>Fat</dt>
+                            <dd id="scrape-fat"></dd>
+                        </div>
+                        <div>
+                            <dt>Carbs</dt>
+                            <dd id="scrape-carbs"></dd>
+                        </div>
+                        <div>
+                            <dt>Protein</dt>
+                            <dd id="scrape-protein"></dd>
+                        </div>
+                        <div>
+                            <dt>Serving Size</dt>
+                            <dd id="scrape-serving-size"></dd>
+                        </div>
+                    </dl>
+                </section>
+                <section class="scrape-section" id="scrape-ingredients-section" hidden>
+                    <h3>Ingredients</h3>
+                    <ul id="scrape-ingredient-list"></ul>
+                </section>
+                <div class="scrape-actions">
+                    <button type="button" class="btn btn-primary" id="scrape-prefill-btn">Prefill Ingredient Form</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/dist/index.min.js"></script>
     <script src="js/custom-ingredients.js" type="module"></script>
     <script src="js/footer.js" type="module"></script>
 </body>

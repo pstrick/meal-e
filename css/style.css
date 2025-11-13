@@ -1726,44 +1726,6 @@ tbody tr:hover {
     display: inline-block;
 }
 
-.emoji-picker {
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    left: 0;
-    width: min(320px, 90vw);
-    max-height: 360px;
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-md);
-    background: var(--color-surface);
-    z-index: 30;
-    overflow: hidden;
-}
-
-.emoji-picker[hidden] {
-    display: none !important;
-}
-
-.emoji-picker {
-    --background-color: var(--color-surface);
-    --border-color: var(--color-border);
-    --hover-background-color: var(--color-surface-alt);
-    --button-active-background-color: var(--color-brand-soft);
-    --button-active-color: var(--color-brand-strong);
-    --input-border-color: var(--color-border);
-    --input-background-color: var(--color-surface-alt);
-    --outline-color: var(--color-brand);
-}
-
-:root.dark-mode .emoji-picker {
-    --background-color: var(--color-surface);
-    --border-color: var(--color-border);
-    --hover-background-color: rgba(255, 255, 255, 0.08);
-    --button-active-background-color: rgba(102, 187, 106, 0.18);
-    --button-active-color: var(--color-brand);
-    --input-background-color: var(--color-surface-alt);
-}
-
 .emoji-form-group {
     position: relative;
 }
