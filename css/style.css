@@ -903,14 +903,17 @@ tbody tr:hover {
     font-weight: 700;
 }
 
+#shopping-list-modal.modal,
 #shopping-list-selection-modal.modal {
     padding: 0;
 }
 
+#shopping-list-modal.modal.active,
 #shopping-list-selection-modal.modal.active {
     align-items: stretch;
 }
 
+#shopping-list-modal .modal-content,
 #shopping-list-selection-modal .modal-content {
     width: 100%;
     max-width: none;
@@ -926,6 +929,7 @@ tbody tr:hover {
     background: var(--color-bg);
 }
 
+#shopping-list-modal .modal-content > .close,
 #shopping-list-selection-modal .modal-content > .close {
     position: sticky;
     top: 1rem;
@@ -933,11 +937,25 @@ tbody tr:hover {
     z-index: 1;
 }
 
+#shopping-list-modal .modal-content form,
 #shopping-list-selection-modal .modal-content form {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
+}
+
+#shopping-list-modal .shopping-list-modal-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    width: min(720px, 100%);
+    margin-inline: auto;
+}
+
+#shopping-list-modal .shopping-list-modal-body form {
+    flex: 1;
 }
 
 #shopping-list-selection-modal .modal-content .existing-list-controls,
@@ -1582,6 +1600,12 @@ tbody tr:hover {
     background: var(--color-surface-alt);
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.emoji-picker-toggle[disabled],
+.emoji-picker-toggle[aria-disabled='true'] {
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .emoji-picker-toggle:hover,
