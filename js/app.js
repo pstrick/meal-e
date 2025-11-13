@@ -946,194 +946,329 @@ document.addEventListener('DOMContentLoaded', initializeApp);
 function printRecipe(id) {
     const recipe = recipes.find(r => r.id === id);
     if (!recipe) return;
-    
+
     const printWindow = window.open('', '_blank');
-    const totalWeight = recipe.ingredients.reduce((sum, ing) => sum + ing.amount, 0);
-    const numberOfServings = Math.round((totalWeight / recipe.servingSize) * 10) / 10;
-    
+    if (!printWindow) {
+        showAlert('Unable to open print preview. Please allow pop-ups for this site.', { type: 'error' });
+        return;
+    }
+
+    const escapeHtml = (value) => String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+    const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+    const steps = typeof recipe.steps === 'string' ? recipe.steps.trim() : '';
+    const nutrition = recipe.nutrition || {};
+    const totalWeight = ingredients.reduce((sum, ing) => {
+        const amount = parseFloat(ing.amount);
+        return sum + (Number.isFinite(amount) ? amount : 0);
+    }, 0);
+    const servingSize = parseFloat(recipe.servingSize);
+    const servings = Number.isFinite(totalWeight) && Number.isFinite(servingSize) && servingSize > 0
+        ? Math.round((totalWeight / servingSize) * 10) / 10
+        : null;
+
+    const ingredientItems = ingredients.length
+        ? ingredients.map(ing => {
+            const amount = parseFloat(ing.amount);
+            const amountLabel = Number.isFinite(amount) ? `${Math.round(amount * 10) / 10}g` : '';
+            const emoji = (ing.emoji || '').trim();
+            const name = emoji
+                ? `${emoji} ${escapeHtml(ing.name || 'Ingredient')}`
+                : escapeHtml(ing.name || 'Ingredient');
+            const macros = ing.nutrition
+                ? {
+                    calories: Math.round(ing.nutrition.calories * (Number.isFinite(amount) ? amount : 0)),
+                    protein: Math.round(ing.nutrition.protein * (Number.isFinite(amount) ? amount : 0)),
+                    carbs: Math.round(ing.nutrition.carbs * (Number.isFinite(amount) ? amount : 0)),
+                    fat: Math.round(ing.nutrition.fat * (Number.isFinite(amount) ? amount : 0))
+                }
+                : null;
+            const macroLine = macros
+                ? `<span class="ingredient-macros">Cal ${macros.calories} · P ${macros.protein}g · C ${macros.carbs}g · F ${macros.fat}g</span>`
+                : '';
+            return `
+                <li>
+                    <div class="ingredient-line">
+                        <span class="ingredient-name">${name}</span>
+                        ${amountLabel ? `<span class="ingredient-amount">${amountLabel}</span>` : ''}
+                    </div>
+                    ${macroLine}
+                </li>
+            `;
+        }).join('')
+        : '<li>No ingredients listed</li>';
+
+    const instructionSteps = steps
+        ? steps.split(/\r?\n/).map(line => line.trim()).filter(Boolean)
+        : [];
+    const instructionsHtml = instructionSteps.length
+        ? `<ol class="print-recipe-steps">${instructionSteps.map(step => `<li>${escapeHtml(step)}</li>`).join('')}</ol>`
+        : '<p class="print-recipe-empty">No instructions provided.</p>';
+
+    const generatedDate = new Date().toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
+
+    const recipeHtml = `
+        <article class="print-recipe detailed">
+            <header class="print-recipe-header">
+                <h2 class="print-recipe-title">${escapeHtml(recipe.name)}</h2>
+                <div class="print-recipe-meta">
+                    ${recipe.category ? `<span class="print-recipe-category">${escapeHtml(recipe.category)}</span>` : ''}
+                    ${Number.isFinite(servings) ? `<span class="print-recipe-servings">~${servings} servings</span>` : ''}
+                    ${Number.isFinite(servingSize) ? `<span class="print-recipe-serving-size">${servingSize}g serving size</span>` : ''}
+                </div>
+            </header>
+            <div class="print-recipe-summary">
+                <div><strong>Cal:</strong> ${Number.isFinite(nutrition.calories) ? nutrition.calories : '—'}</div>
+                <div><strong>P:</strong> ${Number.isFinite(nutrition.protein) ? `${nutrition.protein}g` : '—'}</div>
+                <div><strong>C:</strong> ${Number.isFinite(nutrition.carbs) ? `${nutrition.carbs}g` : '—'}</div>
+                <div><strong>F:</strong> ${Number.isFinite(nutrition.fat) ? `${nutrition.fat}g` : '—'}</div>
+            </div>
+            <section class="print-recipe-section">
+                <h3 class="print-section-title">Ingredients</h3>
+                <ul class="recipe-ingredient-list">
+                    ${ingredientItems}
+                </ul>
+            </section>
+            <section class="print-recipe-section">
+                <h3 class="print-section-title">Instructions</h3>
+                ${instructionsHtml}
+            </section>
+        </article>
+    `;
+
     printWindow.document.write(`
         <!DOCTYPE html>
-        <html>
+        <html lang="en">
         <head>
-            <title>${recipe.name} - Recipe</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${escapeHtml(recipe.name)} - Meal-E Recipe</title>
             <style>
+                @media print {
+                    @page {
+                        size: portrait;
+                        margin: 0.5in;
+                    }
+                }
+
                 body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                    line-height: 1.6;
-                    color: #333;
-                    max-width: 800px;
-                    margin: 0 auto;
-                    padding: 20px;
+                    font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
+                    margin: 0;
+                    padding: 0.5in;
+                    background: #ffffff;
+                    font-size: 10pt;
+                    line-height: 1.4;
+                    color: #1f2933;
                 }
-                .recipe-header {
-                    text-align: center;
-                    border-bottom: 3px solid #4CAF50;
-                    padding-bottom: 20px;
-                    margin-bottom: 30px;
-                }
-                .recipe-title {
-                    font-size: 2.5rem;
-                    color: #4CAF50;
-                    margin: 0 0 10px 0;
-                }
-                .recipe-category {
-                    background: #4CAF50;
-                    color: white;
-                    padding: 5px 15px;
-                    border-radius: 20px;
-                    font-size: 0.9rem;
-                    text-transform: uppercase;
-                    display: inline-block;
-                    margin-bottom: 10px;
-                }
-                .recipe-info {
-                    background: #f8f9fa;
-                    padding: 20px;
-                    border-radius: 8px;
-                    margin-bottom: 30px;
-                }
-                .nutrition-grid {
-                    display: grid;
-                    grid-template-columns: repeat(4, 1fr);
-                    gap: 15px;
-                    margin: 20px 0;
-                }
-                .nutrition-item {
-                    background: white;
-                    padding: 15px;
-                    border-radius: 6px;
-                    text-align: center;
-                    border: 1px solid #dee2e6;
-                }
-                .nutrition-value {
-                    font-size: 1.5rem;
-                    font-weight: bold;
-                    color: #4CAF50;
-                    display: block;
-                }
-                .nutrition-label {
-                    font-size: 0.9rem;
-                    color: #666;
-                    margin-top: 5px;
-                }
-                .ingredients-section, .instructions-section {
-                    margin-bottom: 30px;
-                }
-                .section-title {
-                    font-size: 1.5rem;
-                    color: #4CAF50;
-                    border-bottom: 2px solid #4CAF50;
-                    padding-bottom: 10px;
-                    margin-bottom: 20px;
-                }
-                .ingredients-list {
-                    list-style: none;
-                    padding: 0;
-                }
-                .ingredient-item {
-                    background: white;
-                    padding: 15px;
-                    margin-bottom: 10px;
-                    border-radius: 6px;
-                    border: 1px solid #dee2e6;
+
+                .print-header {
                     display: flex;
                     justify-content: space-between;
-                    align-items: center;
+                    align-items: flex-end;
+                    gap: 16px;
+                    margin-bottom: 16px;
+                    padding-bottom: 10px;
+                    border-bottom: 1px solid #d8dee7;
                 }
-                .ingredient-name {
+
+                .print-title h1 {
+                    margin: 0;
+                    font-size: 18pt;
+                    font-weight: 700;
+                    letter-spacing: -0.01em;
+                    color: #0f172a;
+                }
+
+                .print-title .print-subtitle {
+                    margin: 4px 0 0 0;
+                    font-size: 10pt;
+                    color: #475569;
+                }
+
+                .print-meta {
+                    text-align: right;
+                    font-size: 8.5pt;
+                    color: #6b7280;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                }
+
+                .print-recipes {
+                    margin-top: 24px;
+                    column-count: 2;
+                    column-gap: 16px;
+                    page-break-before: auto;
+                }
+
+                .print-recipes.single {
+                    column-count: 1;
+                }
+
+                .print-recipe {
+                    display: inline-block;
+                    width: 100%;
+                    border: 1px solid #d8dee7;
+                    border-radius: 6px;
+                    padding: 10px;
+                    margin: 0 0 12px;
+                    background: #ffffff;
+                    page-break-inside: avoid;
+                    break-inside: avoid-column;
+                    font-size: 8pt;
+                    color: #1f2937;
+                }
+
+                .print-recipe-header {
+                    margin-bottom: 6px;
+                }
+
+                .print-recipe-title {
+                    margin: 0;
+                    font-size: 11pt;
+                    color: #0f172a;
                     font-weight: 600;
                 }
-                .ingredient-details {
-                    text-align: right;
-                    color: #666;
+
+                .print-recipe-meta {
+                    display: flex;
+                    gap: 6px;
+                    flex-wrap: wrap;
+                    font-size: 7.4pt;
+                    color: #4b5563;
+                    margin-top: 2px;
                 }
-                .instructions {
-                    background: white;
-                    padding: 20px;
+
+                .print-recipe-category {
+                    background: rgba(76, 175, 80, 0.16);
+                    color: #065f46;
+                    padding: 1px 6px;
+                    border-radius: 999px;
+                    font-weight: 600;
+                    font-size: 7pt;
+                    text-transform: uppercase;
+                }
+
+                .print-recipe-servings,
+                .print-recipe-serving-size {
+                    font-weight: 500;
+                }
+
+                .print-recipe-summary {
+                    display: grid;
+                    grid-template-columns: repeat(2, minmax(80px, 1fr));
+                    gap: 4px;
+                    background: #f4f8f6;
+                    border: 1px solid #d1ede1;
                     border-radius: 6px;
-                    border: 1px solid #dee2e6;
-                    white-space: pre-wrap;
-                    line-height: 1.8;
+                    padding: 8px;
+                    margin-bottom: 10px;
                 }
-                .no-instructions {
-                    color: #666;
+
+                .print-recipe-section {
+                    margin-top: 10px;
+                }
+
+                .print-section-title {
+                    font-size: 8.2pt;
+                    font-weight: 600;
+                    color: #0f172a;
+                    margin: 0 0 6px;
+                    letter-spacing: 0.03em;
+                    text-transform: uppercase;
+                }
+
+                .recipe-ingredient-list {
+                    margin: 0;
+                    padding-left: 14px;
+                    font-size: 7.6pt;
+                    color: #1f2937;
+                }
+
+                .recipe-ingredient-list li {
+                    margin-bottom: 4px;
+                    list-style: disc;
+                }
+
+                .ingredient-line {
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 8px;
+                }
+
+                .ingredient-name {
+                    font-weight: 600;
+                    color: #0f172a;
+                }
+
+                .ingredient-amount {
+                    color: #475569;
+                    white-space: nowrap;
+                }
+
+                .ingredient-macros {
+                    display: block;
+                    margin-top: 2px;
+                    color: #6b7280;
+                    font-size: 7pt;
+                }
+
+                .print-recipe-steps {
+                    margin: 0;
+                    padding-left: 16px;
+                    font-size: 7.6pt;
+                    color: #1f2937;
+                }
+
+                .print-recipe-steps li {
+                    margin-bottom: 6px;
+                }
+
+                .print-recipe-empty {
+                    margin: 0;
+                    font-size: 7.2pt;
+                    color: #6b7280;
                     font-style: italic;
-                }
-                @media print {
-                    body { margin: 0; padding: 15px; }
-                    .recipe-header { border-bottom-color: #000; }
-                    .section-title { border-bottom-color: #000; color: #000; }
-                    .nutrition-value { color: #000; }
-                    .recipe-title { color: #000; }
                 }
             </style>
         </head>
         <body>
-            <div class="recipe-header">
-                <h1 class="recipe-title">${recipe.name}</h1>
-                <span class="recipe-category">${recipe.category}</span>
-                <p>Serving Size: ${recipe.servingSize}g (Makes ${numberOfServings} servings)</p>
-            </div>
-            
-            <div class="recipe-info">
-                <h2 class="section-title">Nutrition Information</h2>
-                <div class="nutrition-grid">
-                    <div class="nutrition-item">
-                        <span class="nutrition-value">${recipe.nutrition.calories}</span>
-                        <span class="nutrition-label">Calories</span>
-                    </div>
-                    <div class="nutrition-item">
-                        <span class="nutrition-value">${recipe.nutrition.protein}g</span>
-                        <span class="nutrition-label">Protein</span>
-                    </div>
-                    <div class="nutrition-item">
-                        <span class="nutrition-value">${recipe.nutrition.carbs}g</span>
-                        <span class="nutrition-label">Carbs</span>
-                    </div>
-                    <div class="nutrition-item">
-                        <span class="nutrition-value">${recipe.nutrition.fat}g</span>
-                        <span class="nutrition-label">Fat</span>
-                    </div>
+            <div class="print-header">
+                <div class="print-title">
+                    <h1>Meal-E Recipe</h1>
+                    <p class="print-subtitle">${escapeHtml(recipe.name)}</p>
+                </div>
+                <div class="print-meta">
+                    <span>${generatedDate}</span>
+                    ${window.settings?.profile?.name ? `<span>${escapeHtml(window.settings.profile.name)}</span>` : ''}
                 </div>
             </div>
-            
-            <div class="ingredients-section">
-                <h2 class="section-title">Ingredients</h2>
-                <ul class="ingredients-list">
-                    ${recipe.ingredients.map(ing => `
-                        <li class="ingredient-item">
-                            <span class="ingredient-name">${((ing.emoji || '').trim()) ? `${(ing.emoji || '').trim()} ${ing.name}` : ing.name}</span>
-                            <div class="ingredient-details">
-                                <div>${ing.amount}g</div>
-                                <div style="font-size: 0.9rem;">
-                                    Cal: ${Math.round(ing.nutrition.calories * ing.amount)} | 
-                                    P: ${Math.round(ing.nutrition.protein * ing.amount)}g | 
-                                    C: ${Math.round(ing.nutrition.carbs * ing.amount)}g | 
-                                    F: ${Math.round(ing.nutrition.fat * ing.amount)}g
-                                </div>
-                            </div>
-                        </li>
-                    `).join('')}
-                </ul>
-            </div>
-            
-            <div class="instructions-section">
-                <h2 class="section-title">Instructions</h2>
-                <div class="instructions">
-                    ${recipe.steps ? recipe.steps : '<span class="no-instructions">No instructions provided</span>'}
-                </div>
+            <div class="print-recipes single">
+                ${recipeHtml}
             </div>
         </body>
         </html>
     `);
-    
+
     printWindow.document.close();
-    printWindow.focus();
-    
-    // Wait for content to load then print
-    setTimeout(() => {
+
+    printWindow.onload = () => {
+        printWindow.focus();
         printWindow.print();
-    }, 500);
+    };
+
+    printWindow.addEventListener('afterprint', () => {
+        printWindow.close();
+    });
 }
 
 // Update editRecipe to set the global edit ID and handler
