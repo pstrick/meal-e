@@ -48,6 +48,7 @@ This is a learning project focused on fundamental web development concepts. The 
 - Paste the link to a recipe or product page that exposes structured data (Recipe or Product schema) and the tool will pull available ingredients and nutrition.
 - Review the fetched details, then choose **Prefill Ingredient Form** to copy the data into the custom ingredient form before saving.
 - Some sites block cross-origin requests; if fetching fails, try a different URL or manually enter the ingredient details instead.
+- Wegmans.com requires routing through a CORS-friendly proxy (or server-side fetch) before results will appear in the scraper.
 
 ## Contributing
 
