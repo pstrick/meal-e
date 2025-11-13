@@ -19,172 +19,200 @@ function sanitizeEmojiInput(value) {
     return chars.slice(0, 2).join('');
 }
 
-let emojiPickerInstance = null;
-let emojiPickerReady = false;
-let emojiPickerInitializationFailed = false;
+const FOOD_EMOJIS = [
+    { emoji: '🍎', label: 'Red Apple', keywords: ['apple', 'fruit', 'produce'] },
+    { emoji: '🍏', label: 'Green Apple', keywords: ['apple', 'fruit', 'produce'] },
+    { emoji: '🍌', label: 'Banana', keywords: ['banana', 'fruit', 'produce'] },
+    { emoji: '🍓', label: 'Strawberry', keywords: ['strawberry', 'berries'] },
+    { emoji: '🍇', label: 'Grapes', keywords: ['grapes', 'fruit'] },
+    { emoji: '🍉', label: 'Watermelon', keywords: ['watermelon', 'fruit'] },
+    { emoji: '🍍', label: 'Pineapple', keywords: ['pineapple', 'tropical', 'fruit'] },
+    { emoji: '🥝', label: 'Kiwi', keywords: ['kiwi', 'fruit'] },
+    { emoji: '🥭', label: 'Mango', keywords: ['mango', 'fruit'] },
+    { emoji: '🥥', label: 'Coconut', keywords: ['coconut', 'fruit'] },
+    { emoji: '🥑', label: 'Avocado', keywords: ['avocado', 'produce', 'healthy'] },
+    { emoji: '🥦', label: 'Broccoli', keywords: ['broccoli', 'vegetable', 'produce'] },
+    { emoji: '🥕', label: 'Carrot', keywords: ['carrot', 'vegetable', 'produce'] },
+    { emoji: '🌽', label: 'Corn', keywords: ['corn', 'vegetable', 'produce'] },
+    { emoji: '🥔', label: 'Potato', keywords: ['potato', 'vegetable'] },
+    { emoji: '🍠', label: 'Sweet Potato', keywords: ['yam', 'sweet potato', 'vegetable'] },
+    { emoji: '🥒', label: 'Cucumber', keywords: ['cucumber', 'vegetable'] },
+    { emoji: '🫑', label: 'Bell Pepper', keywords: ['pepper', 'vegetable'] },
+    { emoji: '🍅', label: 'Tomato', keywords: ['tomato', 'vegetable', 'produce'] },
+    { emoji: '🧅', label: 'Onion', keywords: ['onion', 'aromatics'] },
+    { emoji: '🧄', label: 'Garlic', keywords: ['garlic', 'aromatics'] },
+    { emoji: '🥬', label: 'Leafy Greens', keywords: ['greens', 'lettuce', 'vegetable'] },
+    { emoji: '🍄', label: 'Mushroom', keywords: ['mushroom', 'fungi'] },
+    { emoji: '🍞', label: 'Bread', keywords: ['bread', 'bakery'] },
+    { emoji: '🥐', label: 'Croissant', keywords: ['pastry', 'croissant', 'bakery'] },
+    { emoji: '🥖', label: 'Baguette', keywords: ['baguette', 'bread'] },
+    { emoji: '🥨', label: 'Pretzel', keywords: ['pretzel', 'snack'] },
+    { emoji: '🧀', label: 'Cheese', keywords: ['cheese', 'dairy'] },
+    { emoji: '🥚', label: 'Egg', keywords: ['egg', 'protein'] },
+    { emoji: '🥛', label: 'Milk', keywords: ['milk', 'dairy'] },
+    { emoji: '🧈', label: 'Butter', keywords: ['butter', 'dairy'] },
+    { emoji: '🍗', label: 'Chicken Leg', keywords: ['chicken', 'protein', 'meat'] },
+    { emoji: '🥩', label: 'Steak', keywords: ['steak', 'beef', 'protein'] },
+    { emoji: '🥓', label: 'Bacon', keywords: ['bacon', 'pork'] },
+    { emoji: '🍖', label: 'Rib', keywords: ['pork', 'meat'] },
+    { emoji: '🍤', label: 'Shrimp', keywords: ['shrimp', 'seafood'] },
+    { emoji: '🐟', label: 'Fish', keywords: ['fish', 'seafood'] },
+    { emoji: '🍣', label: 'Sushi', keywords: ['sushi', 'seafood'] },
+    { emoji: '🍛', label: 'Curry', keywords: ['curry', 'meal'] },
+    { emoji: '🍜', label: 'Noodles', keywords: ['noodles', 'pasta'] },
+    { emoji: '🍝', label: 'Spaghetti', keywords: ['pasta', 'spaghetti'] },
+    { emoji: '🥗', label: 'Salad', keywords: ['salad', 'greens'] },
+    { emoji: '🥪', label: 'Sandwich', keywords: ['sandwich', 'deli'] },
+    { emoji: '🌮', label: 'Taco', keywords: ['taco'] },
+    { emoji: '🌯', label: 'Burrito', keywords: ['burrito'] },
+    { emoji: '🍕', label: 'Pizza', keywords: ['pizza'] },
+    { emoji: '🥙', label: 'Stuffed Pita', keywords: ['pita', 'wrap'] },
+    { emoji: '🍲', label: 'Stew', keywords: ['stew', 'soup'] },
+    { emoji: '🥣', label: 'Cereal Bowl', keywords: ['breakfast', 'cereal'] },
+    { emoji: '🍱', label: 'Bento Box', keywords: ['bento', 'lunch'] },
+    { emoji: '🧆', label: 'Falafel', keywords: ['falafel', 'vegetarian'] },
+    { emoji: '🫘', label: 'Beans', keywords: ['beans', 'legumes'] },
+    { emoji: '🥫', label: 'Canned Food', keywords: ['canned', 'pantry'] },
+    { emoji: '🧃', label: 'Juice Box', keywords: ['juice', 'drink'] },
+    { emoji: '🧊', label: 'Ice', keywords: ['ice'] },
+    { emoji: '🍩', label: 'Donut', keywords: ['donut', 'dessert'] },
+    { emoji: '🍪', label: 'Cookie', keywords: ['cookie', 'dessert'] },
+    { emoji: '🧁', label: 'Cupcake', keywords: ['cupcake', 'dessert'] },
+    { emoji: '🍰', label: 'Cake Slice', keywords: ['cake', 'dessert'] },
+    { emoji: '🍯', label: 'Honey', keywords: ['honey', 'sweetener'] },
+    { emoji: '🥜', label: 'Peanuts', keywords: ['nuts', 'snack'] },
+    { emoji: '🌰', label: 'Chestnut', keywords: ['nuts', 'snack'] },
+    { emoji: '🍫', label: 'Chocolate', keywords: ['chocolate', 'dessert'] },
+    { emoji: '🍿', label: 'Popcorn', keywords: ['popcorn', 'snack'] },
+    { emoji: '🫐', label: 'Blueberries', keywords: ['berries', 'fruit'] },
+    { emoji: '🍋', label: 'Lemon', keywords: ['citrus', 'fruit'] },
+    { emoji: '🍊', label: 'Orange', keywords: ['citrus', 'fruit'] },
+    { emoji: '🍑', label: 'Peach', keywords: ['peach', 'fruit'] },
+    { emoji: '🍐', label: 'Pear', keywords: ['pear', 'fruit'] },
+    { emoji: '🍈', label: 'Melon', keywords: ['melon', 'fruit'] },
+    { emoji: '🍒', label: 'Cherries', keywords: ['cherries', 'fruit'] }
+].map((item) => ({
+    ...item,
+    search: `${item.label} ${item.keywords.join(' ')} ${item.emoji}`.toLowerCase()
+}));
 
-const EMOJI_BUTTON_CDN_URL = 'https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/dist/index.min.js';
-let emojiButtonLoaderPromise = null;
+let emojiPickerInitialized = false;
+let emojiPickerFilter = '';
 
-function loadEmojiButton() {
-    if (typeof window === 'undefined') {
-        return Promise.reject(new Error('Emoji picker is not available outside the browser.'));
+function filterEmojiOptions(term) {
+    const normalized = (term || '').trim().toLowerCase();
+    if (!normalized) {
+        return FOOD_EMOJIS;
+    }
+    return FOOD_EMOJIS.filter((item) => item.search.includes(normalized));
+}
+
+function ensureEmojiPickerPanel() {
+    if (!emojiPickerPanel || emojiPickerInitialized) {
+        return;
     }
 
-    if (typeof window.EmojiButton === 'function') {
-        return Promise.resolve(window.EmojiButton);
-    }
+    emojiPickerPanel.innerHTML = '';
 
-    if (emojiButtonLoaderPromise) {
-        return emojiButtonLoaderPromise;
-    }
+    const searchWrapper = document.createElement('div');
+    searchWrapper.className = 'emoji-picker-search';
 
-    emojiButtonLoaderPromise = new Promise((resolve, reject) => {
-        const existingScript = Array.from(document.getElementsByTagName('script')).find((script) => {
-            const src = script.getAttribute('src') || '';
-            return script.dataset?.emojiButtonLoader === 'true' || src.includes('@joeattardi/emoji-button');
-        }) || null;
+    const searchInput = document.createElement('input');
+    searchInput.type = 'search';
+    searchInput.placeholder = 'Search food emojis...';
+    searchInput.setAttribute('aria-label', 'Search emojis');
+    searchInput.autocomplete = 'off';
+    searchWrapper.appendChild(searchInput);
 
-        const script = existingScript || document.createElement('script');
-        script.dataset.emojiButtonLoader = 'true';
+    const grid = document.createElement('div');
+    grid.className = 'emoji-picker-grid';
+    grid.dataset.role = 'emoji-grid';
 
-        const cleanup = () => {
-            script.removeEventListener('load', handleLoad);
-            script.removeEventListener('error', handleError);
-        };
+    const emptyState = document.createElement('div');
+    emptyState.className = 'emoji-picker-empty';
+    emptyState.dataset.role = 'emoji-empty';
+    emptyState.hidden = true;
 
-        const handleLoad = () => {
-            cleanup();
-            script.dataset.emojiButtonLoaded = 'true';
-            if (typeof window.EmojiButton === 'function') {
-                resolve(window.EmojiButton);
-            } else {
-                emojiButtonLoaderPromise = null;
-                reject(new Error('EmojiButton constructor was not found after loading the script.'));
-            }
-        };
+    emojiPickerPanel.appendChild(searchWrapper);
+    emojiPickerPanel.appendChild(grid);
+    emojiPickerPanel.appendChild(emptyState);
 
-        const handleError = () => {
-            cleanup();
-            emojiButtonLoaderPromise = null;
-            reject(new Error('Failed to load the emoji picker script.'));
-        };
-
-        script.addEventListener('load', handleLoad, { once: true });
-        script.addEventListener('error', handleError, { once: true });
-
-        if (!existingScript) {
-            script.src = EMOJI_BUTTON_CDN_URL;
-            script.async = true;
-            script.defer = false;
-            document.head.appendChild(script);
-        } else if (existingScript.dataset?.emojiButtonLoaded === 'true' || ['loaded', 'complete'].includes(existingScript.readyState || '')) {
-            handleLoad();
-            return;
-        }
+    searchInput.addEventListener('input', (event) => {
+        emojiPickerFilter = event.target.value;
+        renderEmojiResults(emojiPickerFilter);
     });
 
-    return emojiButtonLoaderPromise;
+    emojiPickerInitialized = true;
+    renderEmojiResults('');
 }
 
-function getEmojiPickerTheme() {
-    if (!settings) return 'light';
-    const theme = settings.theme ?? (settings.darkMode ? 'dark' : 'light');
-    return theme === 'dark' ? 'dark' : 'light';
-}
+function renderEmojiResults(term) {
+    if (!emojiPickerPanel) return;
+    const grid = emojiPickerPanel.querySelector('[data-role="emoji-grid"]');
+    const emptyState = emojiPickerPanel.querySelector('[data-role="emoji-empty"]');
+    if (!grid || !emptyState) return;
 
-function disableEmojiPickerToggle(message) {
-    if (!emojiPickerToggle) return;
-    emojiPickerToggle.disabled = true;
-    emojiPickerToggle.setAttribute('aria-disabled', 'true');
-    if (message) {
-        emojiPickerToggle.title = message;
-    }
-}
+    const results = filterEmojiOptions(term);
+    grid.innerHTML = '';
 
-async function ensureEmojiPicker() {
-    if (emojiPickerReady && emojiPickerInstance) {
-        if (typeof emojiPickerInstance.setTheme === 'function') {
-            emojiPickerInstance.setTheme(getEmojiPickerTheme());
-        }
-        return emojiPickerInstance;
+    if (results.length === 0) {
+        emptyState.textContent = 'No emojis match your search.';
+        emptyState.hidden = false;
+        grid.hidden = true;
+        return;
     }
 
-    if (emojiPickerInitializationFailed) {
-        return null;
-    }
+    emptyState.hidden = true;
+    grid.hidden = false;
 
-    try {
-        const EmojiButtonConstructor = await loadEmojiButton();
-
-        if (typeof EmojiButtonConstructor !== 'function') {
-            throw new Error('EmojiButton constructor is unavailable.');
-        }
-
-        emojiPickerInstance = new EmojiButtonConstructor({
-            autoHide: true,
-            position: 'bottom-start',
-            showPreview: false,
-            showSearch: true,
-            theme: getEmojiPickerTheme(),
-            zIndex: 1300
+    results.forEach((item) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'emoji-picker-option';
+        button.textContent = item.emoji;
+        button.title = item.label;
+        button.dataset.emoji = item.emoji;
+        button.addEventListener('click', () => {
+            applyEmojiSelection(item.emoji);
         });
-
-        emojiPickerInstance.on('emoji', (selection) => {
-            applyEmojiSelection(selection);
-        });
-
-        emojiPickerReady = true;
-        return emojiPickerInstance;
-    } catch (error) {
-        console.warn('Failed to initialize emoji picker:', error);
-        emojiPickerInitializationFailed = true;
-        disableEmojiPickerToggle('Emoji picker failed to initialize.');
-        return null;
-    }
+        grid.appendChild(button);
+    });
 }
 
-async function openEmojiPicker(anchor = emojiPickerToggle || emojiInput) {
-    if (!anchor) {
-        return;
+function openEmojiPicker(anchor = emojiPickerToggle || emojiInput) {
+    if (!emojiPickerPanel) return;
+    ensureEmojiPickerPanel();
+    emojiPickerPanel.hidden = false;
+    const searchInput = emojiPickerPanel.querySelector('input[type="search"]');
+    if (searchInput) {
+        searchInput.value = '';
+        emojiPickerFilter = '';
+        renderEmojiResults('');
+        setTimeout(() => {
+            searchInput.focus({ preventScroll: true });
+        }, 10);
     }
-    if (anchor === emojiPickerToggle && (emojiPickerToggle.disabled || emojiPickerToggle.getAttribute('aria-disabled') === 'true')) {
-        return;
-    }
-    const picker = await ensureEmojiPicker();
-    if (!picker) {
-        return;
-    }
-    picker.showPicker(anchor);
 }
 
 function closeEmojiPicker() {
-    if (!emojiPickerInstance) return;
-    emojiPickerInstance.hidePicker();
+    if (!emojiPickerPanel) return;
+    emojiPickerPanel.hidden = true;
 }
 
-async function toggleEmojiPicker(anchor = emojiPickerToggle || emojiInput) {
-    if (!anchor) {
-        return;
+function toggleEmojiPicker(anchor = emojiPickerToggle || emojiInput) {
+    if (!emojiPickerPanel) return;
+    if (emojiPickerPanel.hidden) {
+        openEmojiPicker(anchor);
+    } else {
+        closeEmojiPicker();
     }
-    if (anchor === emojiPickerToggle && (emojiPickerToggle.disabled || emojiPickerToggle.getAttribute('aria-disabled') === 'true')) {
-        return;
-    }
-    const picker = await ensureEmojiPicker();
-    if (!picker) {
-        return;
-    }
-    picker.togglePicker(anchor);
 }
 
-function applyEmojiSelection(selection) {
+function applyEmojiSelection(emoji) {
     if (!emojiInput) return;
-    const value = typeof selection === 'string'
-        ? selection
-        : selection?.emoji || selection?.unicode || '';
-    emojiInput.value = sanitizeEmojiInput(value);
-    emojiInput.focus();
+    emojiInput.value = sanitizeEmojiInput(emoji);
     closeEmojiPicker();
+    emojiInput.focus();
 }
 
 // DOM Elements
@@ -193,9 +221,10 @@ const ingredientsList = document.getElementById('custom-ingredients-list');
 const searchInput = document.getElementById('ingredient-search');
 const emojiInput = document.getElementById('ingredient-emoji');
 const emojiPickerToggle = document.getElementById('emoji-picker-toggle');
+const emojiPickerPanel = document.getElementById('emoji-picker-panel');
 
 if (emojiPickerToggle) {
-    void ensureEmojiPicker();
+    void ensureEmojiPickerPanel();
 }
 const addIngredientBtn = document.getElementById('add-ingredient-btn');
 const ingredientModal = document.getElementById('ingredient-modal');
@@ -1431,7 +1460,23 @@ if (emojiPickerToggle) {
     });
 }
 
-// The EmojiButton instance manages its own overlay and closing behaviour.
+document.addEventListener('click', (event) => {
+    if (!emojiPickerPanel || emojiPickerPanel.hidden) return;
+    if (
+        emojiPickerPanel.contains(event.target) ||
+        (emojiPickerToggle && emojiPickerToggle.contains(event.target)) ||
+        (emojiInput && emojiInput.contains(event.target))
+    ) {
+        return;
+    }
+    closeEmojiPicker();
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && emojiPickerPanel && !emojiPickerPanel.hidden) {
+        closeEmojiPicker();
+    }
+});
 
 // Close modal when clicking outside
 window.addEventListener('click', (event) => {
