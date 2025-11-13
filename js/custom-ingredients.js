@@ -4,9 +4,7 @@ import {
     ensureIconify,
     scanIconifyElements,
     normalizeIconValue,
-    renderIcon,
-    getIconText,
-    mergeIconLists
+    renderIcon
 } from './icon-utils.js';
 
 // Update version in footer
@@ -17,81 +15,83 @@ if (versionEl) versionEl.textContent = version;
 let customIngredients = [];
 let editingIngredientId = null;
 let lastScrapedIngredientData = null;
+let selectedIconValue = '';
 
-const ICONIFY_FOOD_ICONS = mergeIconLists(
-    [
-        { icon: 'mdi:food-apple', label: 'Apple', keywords: ['apple', 'produce', 'fruit'] },
-        { icon: 'mdi:carrot', label: 'Carrot', keywords: ['carrot', 'vegetable', 'produce'] },
-        { icon: 'mdi:food-croissant', label: 'Croissant', keywords: ['croissant', 'pastry', 'bakery'] },
-        { icon: 'mdi:cupcake', label: 'Cupcake', keywords: ['cupcake', 'dessert', 'sweet'] },
-        { icon: 'mdi:pizza', label: 'Pizza', keywords: ['pizza', 'fastfood'] },
-        { icon: 'mdi:hamburger', label: 'Burger', keywords: ['burger', 'fastfood'] },
-        { icon: 'mdi:food-drumstick', label: 'Chicken', keywords: ['chicken', 'protein', 'meat'] },
-        { icon: 'mdi:food-steak', label: 'Steak', keywords: ['steak', 'beef', 'protein'] },
-        { icon: 'mdi:fish', label: 'Fish', keywords: ['fish', 'seafood', 'protein'] },
-        { icon: 'mdi:food-soup', label: 'Soup', keywords: ['soup', 'stew', 'comfort'] },
-        { icon: 'mdi:food-turkey', label: 'Turkey', keywords: ['turkey', 'protein', 'meat'] },
-        { icon: 'mdi:food-variant', label: 'Meal', keywords: ['meal', 'plate', 'food'] },
-        { icon: 'mdi:fruit-grapes', label: 'Grapes', keywords: ['grapes', 'fruit', 'produce'] },
-        { icon: 'mdi:fruit-watermelon', label: 'Watermelon', keywords: ['watermelon', 'fruit', 'produce'] },
-        { icon: 'mdi:food-banana', label: 'Banana', keywords: ['banana', 'fruit', 'produce'] },
-        { icon: 'mdi:fruit-cherries', label: 'Cherries', keywords: ['cherries', 'fruit', 'produce'] },
-        { icon: 'mdi:fruit-pineapple', label: 'Pineapple', keywords: ['pineapple', 'fruit', 'tropical'] },
-        { icon: 'mdi:fruit-pear', label: 'Pear', keywords: ['pear', 'fruit'] },
-        { icon: 'mdi:food-apple-outline', label: 'Apple Outline', keywords: ['apple', 'produce', 'fruit'] },
-        { icon: 'mdi:corn', label: 'Corn', keywords: ['corn', 'vegetable'] },
-        { icon: 'mdi:food-pepper', label: 'Pepper', keywords: ['pepper', 'vegetable', 'spice'] },
-        { icon: 'mdi:food-onion', label: 'Onion', keywords: ['onion', 'aromatic'] },
-        { icon: 'mdi:garlic', label: 'Garlic', keywords: ['garlic', 'aromatic'] },
-        { icon: 'mdi:mushroom', label: 'Mushroom', keywords: ['mushroom', 'vegetable'] },
-        { icon: 'mdi:food-egg', label: 'Egg', keywords: ['egg', 'protein'] },
-        { icon: 'mdi:egg-easter', label: 'Egg Easter', keywords: ['egg', 'protein'] },
-        { icon: 'mdi:food-hot-dog', label: 'Hot Dog', keywords: ['hotdog', 'fastfood'] },
-        { icon: 'mdi:food-takeout-box', label: 'Takeout', keywords: ['takeout', 'box', 'meal'] },
-        { icon: 'mdi:food-bowl', label: 'Bowl', keywords: ['bowl', 'meal'] },
-        { icon: 'mdi:food-ramen', label: 'Ramen', keywords: ['ramen', 'noodles'] },
-        { icon: 'mdi:food-apple-plus', label: 'Apple Plus', keywords: ['apple', 'nutrition'] },
-        { icon: 'mdi:noodles', label: 'Noodles', keywords: ['noodles', 'pasta'] },
-        { icon: 'mdi:pasta', label: 'Pasta', keywords: ['pasta', 'italian'] },
-        { icon: 'mdi:rice', label: 'Rice', keywords: ['rice', 'grain'] },
-        { icon: 'mdi:bread-slice', label: 'Bread Slice', keywords: ['bread', 'bakery'] },
-        { icon: 'mdi:baguette', label: 'Baguette', keywords: ['bread', 'baguette'] },
-        { icon: 'mdi:pretzel', label: 'Pretzel', keywords: ['pretzel', 'snack'] },
-        { icon: 'mdi:cookie', label: 'Cookie', keywords: ['cookie', 'dessert'] },
-        { icon: 'mdi:cake-variant', label: 'Cake', keywords: ['cake', 'dessert'] },
-        { icon: 'mdi:cup-water', label: 'Water', keywords: ['water', 'drink'] },
-        { icon: 'mdi:coffee', label: 'Coffee', keywords: ['coffee', 'drink'] },
-        { icon: 'mdi:tea', label: 'Tea', keywords: ['tea', 'drink'] },
-        { icon: 'mdi:glass-cocktail', label: 'Cocktail', keywords: ['cocktail', 'drink'] },
-        { icon: 'mdi:beer', label: 'Beer', keywords: ['beer', 'drink'] },
-        { icon: 'mdi:bottle-wine', label: 'Wine', keywords: ['wine', 'drink'] },
-        { icon: 'mdi:barbecue', label: 'Barbecue', keywords: ['bbq', 'grill'] },
-        { icon: 'mdi:food-burrito', label: 'Burrito', keywords: ['burrito', 'wrap'] },
-        { icon: 'mdi:food-taco', label: 'Taco', keywords: ['taco', 'mexican'] },
-        { icon: 'mdi:food-kiwi', label: 'Kiwi', keywords: ['kiwi', 'fruit'] },
-        { icon: 'mdi:food-grains', label: 'Grains', keywords: ['grains', 'wheat'] },
-        { icon: 'mdi:food-corn', label: 'Corn Alt', keywords: ['corn', 'vegetable'] },
-        { icon: 'mdi:food-apple-outline', label: 'Apple Outline', keywords: ['apple', 'fruit'] }
-    ],
-    [
-        { icon: 'fluent:food-grains-24-filled', label: 'Grains Filled', keywords: ['grain', 'bread'] },
-        { icon: 'fluent:food-pizza-24-filled', label: 'Pizza Fluent', keywords: ['pizza', 'fastfood'] },
-        { icon: 'fluent:drink-coffee-24-filled', label: 'Coffee Fluent', keywords: ['coffee', 'drink'] },
-        { icon: 'fluent:food-carrot-24-filled', label: 'Carrot Fluent', keywords: ['carrot', 'vegetable'] },
-        { icon: 'fluent:food-cake-24-filled', label: 'Cake Fluent', keywords: ['cake', 'dessert'] }
-    ],
-    [
-        { icon: 'twemoji:grapes', label: 'Emoji Grapes', keywords: ['grapes', 'fruit'] },
-        { icon: 'twemoji:hot-dog', label: 'Emoji Hot Dog', keywords: ['hotdog', 'fastfood'] },
-        { icon: 'twemoji:hamburger', label: 'Emoji Burger', keywords: ['burger'] },
-        { icon: 'twemoji:shallow-pan-of-food', label: 'Emoji Paella', keywords: ['meal', 'food'] },
-        { icon: 'twemoji:teacup-without-handle', label: 'Emoji Tea', keywords: ['tea', 'drink'] }
-    ]
-).map((item) => ({
+const ICONIFY_FOOD_ICONS = [
+    { icon: 'mdi:food-apple', emoji: '🍎', label: 'Apple', keywords: ['apple', 'produce', 'fruit'] },
+    { icon: 'mdi:carrot', emoji: '🥕', label: 'Carrot', keywords: ['carrot', 'vegetable', 'produce'] },
+    { icon: 'mdi:food-croissant', emoji: '🥐', label: 'Croissant', keywords: ['croissant', 'pastry', 'bakery'] },
+    { icon: 'mdi:cupcake', emoji: '🧁', label: 'Cupcake', keywords: ['cupcake', 'dessert', 'sweet'] },
+    { icon: 'mdi:pizza', emoji: '🍕', label: 'Pizza', keywords: ['pizza', 'fastfood'] },
+    { icon: 'mdi:hamburger', emoji: '🍔', label: 'Burger', keywords: ['burger', 'fastfood'] },
+    { icon: 'mdi:food-drumstick', emoji: '🍗', label: 'Chicken', keywords: ['chicken', 'protein', 'meat'] },
+    { icon: 'mdi:food-steak', emoji: '🥩', label: 'Steak', keywords: ['steak', 'beef', 'protein'] },
+    { icon: 'mdi:fish', emoji: '🐟', label: 'Fish', keywords: ['fish', 'seafood', 'protein'] },
+    { icon: 'mdi:food-soup', emoji: '🍲', label: 'Soup', keywords: ['soup', 'stew', 'comfort'] },
+    { icon: 'mdi:food-turkey', emoji: '🦃', label: 'Turkey', keywords: ['turkey', 'protein', 'meat'] },
+    { icon: 'mdi:food-variant', emoji: '🍽️', label: 'Meal', keywords: ['meal', 'plate', 'food'] },
+    { icon: 'mdi:fruit-grapes', emoji: '🍇', label: 'Grapes', keywords: ['grapes', 'fruit', 'produce'] },
+    { icon: 'mdi:fruit-watermelon', emoji: '🍉', label: 'Watermelon', keywords: ['watermelon', 'fruit', 'produce'] },
+    { icon: 'mdi:food-banana', emoji: '🍌', label: 'Banana', keywords: ['banana', 'fruit', 'produce'] },
+    { icon: 'mdi:fruit-cherries', emoji: '🍒', label: 'Cherries', keywords: ['cherries', 'fruit', 'produce'] },
+    { icon: 'mdi:fruit-pineapple', emoji: '🍍', label: 'Pineapple', keywords: ['pineapple', 'fruit', 'tropical'] },
+    { icon: 'mdi:fruit-pear', emoji: '🍐', label: 'Pear', keywords: ['pear', 'fruit'] },
+    { icon: 'mdi:food-apple-outline', emoji: '🍎', label: 'Apple Outline', keywords: ['apple', 'produce', 'fruit'] },
+    { icon: 'mdi:corn', emoji: '🌽', label: 'Corn', keywords: ['corn', 'vegetable'] },
+    { icon: 'mdi:food-pepper', emoji: '🫑', label: 'Pepper', keywords: ['pepper', 'vegetable', 'spice'] },
+    { icon: 'mdi:food-onion', emoji: '🧅', label: 'Onion', keywords: ['onion', 'aromatic'] },
+    { icon: 'mdi:garlic', emoji: '🧄', label: 'Garlic', keywords: ['garlic', 'aromatic'] },
+    { icon: 'mdi:mushroom', emoji: '🍄', label: 'Mushroom', keywords: ['mushroom', 'vegetable'] },
+    { icon: 'mdi:food-egg', emoji: '🥚', label: 'Egg', keywords: ['egg', 'protein'] },
+    { icon: 'mdi:egg-easter', emoji: '🥚', label: 'Egg (Decorated)', keywords: ['egg', 'protein'] },
+    { icon: 'mdi:food-hot-dog', emoji: '🌭', label: 'Hot Dog', keywords: ['hotdog', 'fastfood'] },
+    { icon: 'mdi:food-takeout-box', emoji: '🥡', label: 'Takeout', keywords: ['takeout', 'box', 'meal'] },
+    { icon: 'mdi:food-bowl', emoji: '🥣', label: 'Bowl', keywords: ['bowl', 'meal'] },
+    { icon: 'mdi:food-ramen', emoji: '🍜', label: 'Ramen', keywords: ['ramen', 'noodles'] },
+    { icon: 'mdi:food-apple-plus', emoji: '🍎', label: 'Apple Plus', keywords: ['apple', 'nutrition'] },
+    { icon: 'mdi:noodles', emoji: '🍝', label: 'Noodles', keywords: ['noodles', 'pasta'] },
+    { icon: 'mdi:pasta', emoji: '🍝', label: 'Pasta', keywords: ['pasta', 'italian'] },
+    { icon: 'mdi:rice', emoji: '🍚', label: 'Rice', keywords: ['rice', 'grain'] },
+    { icon: 'mdi:bread-slice', emoji: '🍞', label: 'Bread Slice', keywords: ['bread', 'bakery'] },
+    { icon: 'mdi:baguette', emoji: '🥖', label: 'Baguette', keywords: ['bread', 'baguette'] },
+    { icon: 'mdi:pretzel', emoji: '🥨', label: 'Pretzel', keywords: ['pretzel', 'snack'] },
+    { icon: 'mdi:cookie', emoji: '🍪', label: 'Cookie', keywords: ['cookie', 'dessert'] },
+    { icon: 'mdi:cake-variant', emoji: '🍰', label: 'Cake', keywords: ['cake', 'dessert'] },
+    { icon: 'mdi:cup-water', emoji: '🥤', label: 'Water', keywords: ['water', 'drink'] },
+    { icon: 'mdi:coffee', emoji: '☕️', label: 'Coffee', keywords: ['coffee', 'drink'] },
+    { icon: 'mdi:tea', emoji: '🍵', label: 'Tea', keywords: ['tea', 'drink'] },
+    { icon: 'mdi:glass-cocktail', emoji: '🍸', label: 'Cocktail', keywords: ['cocktail', 'drink'] },
+    { icon: 'mdi:beer', emoji: '🍺', label: 'Beer', keywords: ['beer', 'drink'] },
+    { icon: 'mdi:bottle-wine', emoji: '🍷', label: 'Wine', keywords: ['wine', 'drink'] },
+    { icon: 'mdi:barbecue', emoji: '🍖', label: 'Barbecue', keywords: ['bbq', 'grill'] },
+    { icon: 'mdi:food-burrito', emoji: '🌯', label: 'Burrito', keywords: ['burrito', 'wrap'] },
+    { icon: 'mdi:food-taco', emoji: '🌮', label: 'Taco', keywords: ['taco', 'mexican'] },
+    { icon: 'mdi:food-kiwi', emoji: '🥝', label: 'Kiwi', keywords: ['kiwi', 'fruit'] },
+    { icon: 'mdi:food-grains', emoji: '🌾', label: 'Grains', keywords: ['grains', 'wheat'] },
+    { icon: 'mdi:food-corn', emoji: '🌽', label: 'Corn Alt', keywords: ['corn', 'vegetable'] },
+    { icon: 'fluent:food-grains-24-filled', emoji: '🌾', label: 'Grains Filled', keywords: ['grain', 'bread'] },
+    { icon: 'fluent:food-pizza-24-filled', emoji: '🍕', label: 'Pizza Fluent', keywords: ['pizza', 'fastfood'] },
+    { icon: 'fluent:drink-coffee-24-filled', emoji: '☕️', label: 'Coffee Fluent', keywords: ['coffee', 'drink'] },
+    { icon: 'fluent:food-carrot-24-filled', emoji: '🥕', label: 'Carrot Fluent', keywords: ['carrot', 'vegetable'] },
+    { icon: 'fluent:food-cake-24-filled', emoji: '🍰', label: 'Cake Fluent', keywords: ['cake', 'dessert'] },
+    { icon: 'twemoji:grapes', emoji: '🍇', label: 'Emoji Grapes', keywords: ['grapes', 'fruit'] },
+    { icon: 'twemoji:hot-dog', emoji: '🌭', label: 'Emoji Hot Dog', keywords: ['hotdog', 'fastfood'] },
+    { icon: 'twemoji:hamburger', emoji: '🍔', label: 'Emoji Burger', keywords: ['burger'] },
+    { icon: 'twemoji:shallow-pan-of-food', emoji: '🥘', label: 'Emoji Paella', keywords: ['meal', 'food'] },
+    { icon: 'twemoji:teacup-without-handle', emoji: '🍵', label: 'Emoji Tea', keywords: ['tea', 'drink'] }
+].map((item) => ({
     ...item,
     value: `iconify:${item.icon}`,
     search: `${item.label} ${item.keywords.join(' ')} ${item.icon}`.toLowerCase()
 }));
+
+function findIconDefinition(iconValue) {
+    const normalized = (iconValue || '').trim();
+    if (!normalized) {
+        return null;
+    }
+    return ICONIFY_FOOD_ICONS.find((item) => item.value === normalized) || null;
+}
 
 let emojiPickerInitialized = false;
 let emojiPickerFilter = '';
@@ -99,9 +99,9 @@ let emojiPickerFilter = '';
 function filterEmojiOptions(term) {
     const normalized = (term || '').trim().toLowerCase();
     if (!normalized) {
-        return FOOD_EMOJIS;
+        return ICONIFY_FOOD_ICONS;
     }
-    return FOOD_EMOJIS.filter((item) => item.search.includes(normalized));
+    return ICONIFY_FOOD_ICONS.filter((item) => item.search.includes(normalized));
 }
 
 function ensureEmojiPickerPanel() {
@@ -170,7 +170,7 @@ function renderEmojiResults(term) {
         button.title = item.label;
         button.dataset.iconify = item.value;
         button.addEventListener('click', () => {
-            applyEmojiSelection(item.value);
+            applyIconSelection(item);
         });
         grid.appendChild(button);
     });
@@ -206,10 +206,13 @@ function toggleEmojiPicker(anchor = emojiPickerToggle || emojiInput) {
     }
 }
 
-function applyEmojiSelection(selection) {
+function applyIconSelection(selectedItem) {
     if (!emojiInput) return;
-    const normalized = normalizeIconValue(selection);
-    emojiInput.value = normalized;
+    const normalizedEmoji = normalizeIconValue(selectedItem?.emoji);
+    selectedIconValue = selectedItem?.value || '';
+    emojiInput.value = normalizedEmoji;
+    emojiInput.dataset.iconifyValue = selectedIconValue;
+    emojiInput.dataset.iconifyLabel = selectedItem?.label || '';
     closeEmojiPicker();
     emojiInput.focus();
 }
@@ -257,11 +260,18 @@ function loadCustomIngredients() {
         console.log('Loading custom ingredients...');
         const savedIngredients = localStorage.getItem('meale-custom-ingredients');
         if (savedIngredients) {
-            customIngredients = JSON.parse(savedIngredients).map(ingredient => ({
+            customIngredients = JSON.parse(savedIngredients).map(ingredient => {
+                const iconValue = typeof ingredient.icon === 'string' ? ingredient.icon.trim() : '';
+                const iconDef = findIconDefinition(iconValue);
+                const fallbackEmoji = iconDef?.emoji || ingredient.emoji;
+                return {
                 ...ingredient,
                 storeSection: ingredient.storeSection || '',
-                emoji: normalizeIconValue(ingredient.emoji)
-            }));
+                    emoji: normalizeIconValue(fallbackEmoji),
+                    icon: iconValue,
+                    iconLabel: ingredient.iconLabel || iconDef?.label || ''
+                };
+            });
             console.log('Loaded custom ingredients:', customIngredients.length);
         } else {
             console.log('No custom ingredients found');
@@ -312,7 +322,18 @@ function openIngredientModal(ingredient = null) {
             storeSectionInput.value = ingredient.storeSection || '';
         }
         if (emojiInput) {
-            emojiInput.value = normalizeIconValue(ingredient.emoji);
+            const normalized = normalizeIconValue(ingredient.emoji);
+            const iconValue = typeof ingredient.icon === 'string' ? ingredient.icon.trim() : '';
+            const iconDef = findIconDefinition(iconValue);
+            selectedIconValue = iconValue;
+            emojiInput.value = normalized;
+            if (iconValue) {
+                emojiInput.dataset.iconifyValue = iconValue;
+                emojiInput.dataset.iconifyLabel = iconDef?.label || ingredient.iconLabel || '';
+            } else {
+                delete emojiInput.dataset.iconifyValue;
+                delete emojiInput.dataset.iconifyLabel;
+            }
         }
     } else {
         if (storeSectionInput) {
@@ -320,7 +341,10 @@ function openIngredientModal(ingredient = null) {
         }
         if (emojiInput) {
             emojiInput.value = '';
+            delete emojiInput.dataset.iconifyValue;
+            delete emojiInput.dataset.iconifyLabel;
         }
+        selectedIconValue = '';
     }
     closeEmojiPicker();
     
@@ -336,6 +360,11 @@ function closeIngredientModal() {
     editingIngredientId = null;
     form.reset();
     closeEmojiPicker();
+    selectedIconValue = '';
+    if (emojiInput) {
+        delete emojiInput.dataset.iconifyValue;
+        delete emojiInput.dataset.iconifyLabel;
+    }
 }
 
 // Add or update custom ingredient
@@ -346,6 +375,7 @@ function saveCustomIngredient(event) {
         
         const storeSectionInput = document.getElementById('store-section');
         const normalizedEmoji = emojiInput ? normalizeIconValue(emojiInput.value) : '';
+        const iconLabel = emojiInput?.dataset.iconifyLabel || '';
         const ingredient = {
             id: editingIngredientId || Date.now().toString(),
             name: document.getElementById('ingredient-name').value,
@@ -360,7 +390,9 @@ function saveCustomIngredient(event) {
             },
             isCustom: true,
             storeSection: storeSectionInput ? storeSectionInput.value.trim() : '',
-            emoji: normalizedEmoji
+            emoji: normalizedEmoji,
+            icon: selectedIconValue,
+            iconLabel: iconLabel
         };
         
         // Calculate price per gram
@@ -380,6 +412,7 @@ function saveCustomIngredient(event) {
         saveCustomIngredients();
         renderIngredientsList();
         closeIngredientModal();
+        selectedIconValue = '';
         
         console.log('Saved ingredient:', ingredient);
     } catch (error) {
@@ -417,7 +450,8 @@ function renderIngredientsList(filteredIngredients = null) {
         
         ingredients.forEach(ingredient => {
             const row = document.createElement('tr');
-            const iconMarkup = renderIcon(ingredient.emoji, { className: 'ingredient-icon' });
+            const iconSource = ingredient.icon || ingredient.emoji;
+            const iconMarkup = iconSource ? renderIcon(iconSource, { className: 'ingredient-icon' }) : '';
             const nameHTML = iconMarkup
                 ? `${iconMarkup}<span class="ingredient-name-text">${ingredient.name}</span>`
                 : `<span class="ingredient-name-text">${ingredient.name}</span>`;
@@ -1477,6 +1511,9 @@ if (emojiInput) {
         if (emojiInput.value !== sanitized) {
             emojiInput.value = sanitized;
         }
+        selectedIconValue = '';
+        delete emojiInput.dataset.iconifyValue;
+        delete emojiInput.dataset.iconifyLabel;
     });
 }
 

@@ -1812,11 +1812,16 @@ tbody tr:hover {
     position: relative;
 }
 
-.ingredients-table .ingredient-emoji {
+.ingredients-table .ingredient-emoji,
+.ingredients-table .ingredient-icon {
     font-size: 1.25rem;
     margin-right: var(--space-1);
     display: inline-block;
     vertical-align: middle;
+}
+
+.ingredients-table .ingredient-icon.iconify {
+    font-size: 1.35rem;
 }
 
 /* Shopping Lists --------------------------------------------------------- */
