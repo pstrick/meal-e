@@ -1560,12 +1560,12 @@ tbody tr:hover {
 
 .recipe-grid {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: var(--space-4);
 }
 
 .recipe-grid > .recipe-card {
-    flex: 1 1 320px;
+    width: 100%;
 }
 
 .recipe-card {
