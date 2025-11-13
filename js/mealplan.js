@@ -2271,6 +2271,11 @@ function printMealPlan(selectedRecipeIds = []) {
     const week = getWeekDates(currentWeekOffset);
     const startDate = formatDate(week.startDate);
     const endDate = formatDate(week.endDate);
+    const generatedDate = new Date().toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+    });
     
     // Get the meal plan grid content
     const mealPlanGrid = document.querySelector('.meal-plan-grid');
@@ -2305,246 +2310,218 @@ function printMealPlan(selectedRecipeIds = []) {
                 }
                 
                 body {
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
                     margin: 0;
-                    padding: 20px;
-                    background: white;
-                    font-size: 12pt;
-                    line-height: 1.4;
+                    padding: 0.5in;
+                    background: #ffffff;
+                    font-size: 11pt;
+                    line-height: 1.45;
+                    color: #1f2933;
                 }
                 
                 .print-header {
-                    text-align: center;
-                    margin-bottom: 20px;
-                    page-break-after: avoid;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-end;
+                    gap: 18px;
+                    margin-bottom: 18px;
+                    padding-bottom: 10px;
+                    border-bottom: 1px solid #d8dee7;
                 }
                 
-                .print-header h1 {
-                    font-size: 18pt;
-                    margin: 0 0 10px 0;
-                    color: #000;
-                }
-                
-                .print-header h2 {
-                    font-size: 14pt;
+                .print-title h1 {
                     margin: 0;
-                    color: #000;
+                    font-size: 20pt;
+                    font-weight: 700;
+                    letter-spacing: -0.01em;
+                    color: #0f172a;
+                }
+                
+                .print-title .print-subtitle {
+                    margin: 4px 0 0 0;
+                    font-size: 10.5pt;
+                    color: #4b5563;
+                }
+                
+                .print-meta {
+                    text-align: right;
+                    font-size: 9pt;
+                    color: #6b7280;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
                 }
                 
                 .meal-plan-grid {
-                    display: table;
                     width: 100%;
-                    background: white;
                     border-collapse: collapse;
                     table-layout: fixed;
-                    page-break-inside: avoid;
+                    border: 1px solid #d8dee7;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    background: #ffffff;
                 }
                 
                 .meal-plan-header {
-                    display: table-row;
-                    page-break-inside: avoid;
+                    background: #eef2f8;
                 }
                 
                 .day-header {
-                    background: #f5f6fa;
-                    font-weight: bold;
+                    font-weight: 600;
                     text-align: center;
                     padding: 8px 4px;
-                    border: 1px solid #000;
-                    font-size: 10pt;
+                    font-size: 9.5pt;
+                    color: #1f2937;
+                    border-right: 1px solid #d8dee7;
                     white-space: pre-line;
-                    display: table-cell;
-                    vertical-align: middle;
-                    width: 120px;
-                    page-break-inside: avoid;
+                }
+                
+                .day-header:last-child {
+                    border-right: none;
                 }
                 
                 .meal-row {
-                    display: table-row;
-                    page-break-inside: avoid;
+                    background: #ffffff;
                 }
                 
                 .time-slot {
-                    background: #f5f6fa;
+                    background: #f3f6fb;
+                    color: #1f2937;
                     font-weight: 600;
                     text-align: right;
-                    padding: 8px 4px;
-                    border: 1px solid #000;
-                    font-size: 10pt;
-                    display: table-cell;
-                    vertical-align: middle;
-                    width: 120px;
-                    page-break-inside: avoid;
+                    padding: 8px 6px;
+                    border-right: 1px solid #d8dee7;
+                    border-bottom: 1px solid #d8dee7;
+                    font-size: 9.5pt;
                 }
                 
                 .meal-slot {
-                    background: white;
-                    border: 1px solid #000;
-                    display: table-cell;
+                    padding: 6px;
+                    border-right: 1px solid #d8dee7;
+                    border-bottom: 1px solid #d8dee7;
                     vertical-align: top;
-                    padding: 4px;
-                    box-sizing: border-box;
-                    width: calc((100% - 120px) / 7);
-                    max-width: calc((100% - 120px) / 7);
-                    overflow: visible;
+                    background: #ffffff;
                     page-break-inside: avoid;
-                    min-height: 60px;
+                }
+                
+                .meal-slot:last-child {
+                    border-right: none;
                 }
                 
                 .meal-item {
-                    background: #f8fff8;
-                    border: 1px solid #ccc;
-                    border-radius: 3px;
+                    border: 1px solid #d1ede1;
+                    background: #f6fdf8;
+                    border-radius: 6px;
                     margin-bottom: 4px;
-                    padding: 4px;
-                    display: block;
-                    font-size: 9pt;
-                    position: relative;
-                    max-width: 100%;
-                    overflow: visible;
+                    padding: 5px 6px;
+                    font-size: 8.5pt;
+                    color: #1f2937;
                     page-break-inside: avoid;
                 }
                 
-                .meal-item-header {
-                    display: flex;
-                    align-items: flex-start;
-                    width: 100%;
-                    justify-content: space-between;
-                    flex-direction: column;
+                .meal-item:last-child {
+                    margin-bottom: 0;
                 }
                 
                 .meal-item-name {
                     font-weight: 600;
-                    font-size: 9pt;
-                    color: #000;
-                    max-width: 100%;
-                    overflow: visible;
-                    text-overflow: clip;
-                    white-space: normal;
-                    word-wrap: break-word;
-                    word-break: break-word;
-                    display: block;
-                    line-height: 1.2;
-                    margin-bottom: 2px;
+                    margin: 0 0 2px 0;
+                    font-size: 8.8pt;
                 }
                 
                 .meal-item-details {
                     font-size: 8pt;
-                    color: #666;
-                    margin-top: 2px;
+                    color: #4b5563;
+                    display: flex;
+                    gap: 6px;
                 }
                 
                 .meal-item-nutrition {
-                    font-size: 8pt;
-                    margin-top: 2px;
+                    font-size: 7.8pt;
+                    color: #6b7280;
+                    margin-top: 3px;
                 }
                 
                 .meal-item-nutrition span {
-                    display: inline-block;
                     margin-right: 8px;
-                    font-size: 8pt;
                 }
                 
                 .daily-nutrition-row {
-                    display: table-row;
-                    page-break-inside: avoid;
+                    background: #f8fafc;
                 }
                 
                 .daily-nutrition-cell {
-                    background: #f0f0f0;
-                    border: 1px solid #000;
-                    padding: 4px;
+                    padding: 6px;
+                    border-right: 1px solid #d8dee7;
+                    border-bottom: 1px solid #d8dee7;
+                    font-size: 8.5pt;
+                    color: #1f2937;
                     text-align: center;
-                    font-size: 9pt;
-                    display: table-cell;
-                    vertical-align: middle;
-                    page-break-inside: avoid;
                 }
                 
                 .daily-nutrition-cell:first-child {
-                    width: 120px;
-                    font-weight: bold;
-                    background: #e0e0e0;
+                    font-weight: 600;
+                    text-align: right;
+                    color: #0b3d25;
                 }
                 
                 .daily-totals {
-                    display: block;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
                 }
                 
                 .daily-calories {
-                    font-weight: bold;
-                    font-size: 9pt;
-                    display: block;
-                    margin-bottom: 2px;
+                    font-weight: 700;
+                    font-size: 10pt;
+                    color: #0f172a;
+                }
+                
+                .daily-calories span {
+                    color: #15803d;
                 }
                 
                 .daily-macros {
-                    font-size: 8pt;
-                    display: block;
-                }
-                
-                .daily-macros span {
-                    display: inline-block;
-                    margin-right: 6px;
+                    font-size: 8.5pt;
+                    color: #4b5563;
                 }
                 
                 .macro-progress-container {
-                    display: grid;
-                    grid-template-columns: repeat(3, minmax(80px, 1fr));
-                    gap: 8px;
-                    align-items: start;
-                    margin-top: 6px;
+                    display: flex;
+                    justify-content: center;
+                    gap: 12px;
+                    margin-top: 4px;
                 }
                 
                 .macro-progress-item {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    gap: 4px;
+                    min-width: 72px;
+                    font-size: 8pt;
+                    color: #4b5563;
                 }
                 
                 .circular-progress {
-                    display: flex;
+                    display: inline-flex;
                     align-items: baseline;
                     justify-content: center;
-                    gap: 0.25rem;
-                    width: auto;
-                    height: auto;
-                    margin: 0;
-                    position: static;
-                    transform: none;
+                    gap: 0.2rem;
+                    font-size: 0.85rem;
+                    font-weight: 700;
+                    color: #111827;
                 }
                 
                 .circular-progress-svg {
                     display: none;
                 }
                 
-                .circular-progress-text {
-                    position: static;
-                    transform: none;
-                    text-align: center;
-                    font-size: 0.9rem;
-                    font-weight: 700;
-                    line-height: 1.2;
-                    display: inline-flex;
-                    align-items: baseline;
-                    gap: 0.2rem;
-                }
-                
-                .macro-value {
-                    color: #000;
-                    font-weight: 700;
-                }
-                
-                .macro-unit {
-                    font-size: 0.7rem;
-                    color: #555;
-                }
-                
                 .macro-label {
-                    font-size: 0.7rem;
-                    color: #555;
+                    font-size: 0.68rem;
+                    color: #0b3d25;
                     font-weight: 600;
+                    margin-top: 2px;
+                    letter-spacing: 0.03em;
                     text-transform: uppercase;
                 }
                 
@@ -2554,114 +2531,103 @@ function printMealPlan(selectedRecipeIds = []) {
                 }
                 
                 .print-recipes-title {
-                    font-size: 18pt;
-                    margin: 0 0 20px 0;
-                    color: #000;
+                    font-size: 16pt;
+                    margin: 0 0 14px 0;
+                    color: #0f172a;
+                    font-weight: 600;
                 }
                 
                 .print-recipe {
-                    border: 1px solid #ddd;
-                    border-radius: 6px;
-                    padding: 20px;
-                    margin-bottom: 20px;
-                    background: #fff;
+                    border: 1px solid #d8dee7;
+                    border-radius: 8px;
+                    padding: 16px;
+                    margin-bottom: 18px;
+                    background: #ffffff;
                     page-break-inside: avoid;
                     page-break-after: always;
                 }
                 
                 .print-recipe-header {
-                    margin-bottom: 15px;
-                    border-bottom: 2px solid #4caf50;
-                    padding-bottom: 10px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    gap: 10px;
+                    margin-bottom: 12px;
+                    border-bottom: 1px solid #d8dee7;
+                    padding-bottom: 8px;
                 }
                 
                 .print-recipe-title {
                     margin: 0;
-                    font-size: 16pt;
-                    color: #2c3e50;
+                    font-size: 14pt;
+                    color: #0f172a;
+                    font-weight: 600;
                 }
                 
                 .print-recipe-meta {
                     display: flex;
-                    gap: 12px;
+                    gap: 8px;
                     flex-wrap: wrap;
-                    margin-top: 8px;
-                    font-size: 10pt;
-                    color: #555;
+                    font-size: 8.5pt;
+                    color: #4b5563;
                 }
                 
                 .print-recipe-category {
-                    background: #4caf50;
-                    color: #fff;
-                    padding: 4px 10px;
-                    border-radius: 12px;
+                    background: rgba(76, 175, 80, 0.16);
+                    color: #065f46;
+                    padding: 2px 8px;
+                    border-radius: 999px;
                     font-weight: 600;
+                    font-size: 7.5pt;
+                    text-transform: uppercase;
                 }
                 
                 .print-recipe-servings {
-                    font-weight: 500;
+                    font-weight: 600;
+                    color: #334155;
                 }
                 
                 .print-recipe-body {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 20px;
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+                    gap: 16px;
                 }
                 
                 .print-recipe-summary {
                     display: grid;
-                    grid-template-columns: repeat(2, minmax(120px, 1fr));
-                    gap: 10px;
-                    background: #f8f9fa;
-                    padding: 12px;
+                    grid-template-columns: repeat(2, minmax(100px, 1fr));
+                    gap: 6px;
+                    background: #f4f8f6;
+                    border: 1px solid #d1ede1;
                     border-radius: 6px;
-                    font-size: 10pt;
-                }
-                
-                .print-recipe-content {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                    gap: 20px;
+                    padding: 10px;
+                    font-size: 8.5pt;
+                    color: #1f2937;
                 }
                 
                 .print-recipe-ingredients ul {
                     list-style: none;
                     margin: 0;
                     padding: 0;
+                    font-size: 8.8pt;
+                    color: #1f2937;
                 }
                 
                 .print-recipe-ingredients li {
                     display: flex;
                     justify-content: space-between;
-                    padding: 6px 0;
-                    border-bottom: 1px solid #eee;
-                    font-size: 10pt;
+                    padding: 4px 0;
+                    border-bottom: 1px dotted #d8dee7;
                 }
                 
                 .print-recipe-ingredients li:last-child {
                     border-bottom: none;
                 }
                 
-                .recipe-ingredient-name {
-                    font-weight: 600;
-                }
-                
-                .recipe-ingredient-amount {
-                    color: #555;
-                }
-                
                 .print-recipe-instructions {
-                    font-size: 10pt;
-                    line-height: 1.6;
-                    white-space: normal;
-                }
-                
-                .print-recipe-instructions p {
-                    margin: 0;
-                }
-                
-                .print-recipe-instructions p + p {
-                    margin-top: 10px;
+                    font-size: 8.8pt;
+                    line-height: 1.55;
+                    color: #334155;
                 }
                 
                 .print-recipe:last-child {
@@ -2669,32 +2635,29 @@ function printMealPlan(selectedRecipeIds = []) {
                 }
                 
                 .empty-slot {
-                    background: #f9f9f9;
+                    background: #f8fafc;
                     min-height: 40px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     font-size: 8pt;
-                    color: #999;
+                    color: #94a3b8;
                     font-style: italic;
-                }
-                
-                @media print {
-                    body {
-                        margin: 0;
-                        padding: 0;
-                    }
-                    
-                    .print-header {
-                        margin-bottom: 15px;
-                    }
+                    border-radius: 4px;
+                    border: 1px dashed #d8dee7;
                 }
             </style>
         </head>
         <body>
             <div class="print-header">
-                <h1>Meal Plan</h1>
-                <h2>Week of ${startDate} - ${endDate}</h2>
+                <div class="print-title">
+                    <h1>Meal Plan</h1>
+                    <p class="print-subtitle">Week of ${startDate} - ${endDate}</p>
+                </div>
+                <div class="print-meta">
+                    <span>${generatedDate}</span>
+                    ${window.settings?.profile?.name ? `<span>${window.settings.profile.name}</span>` : ''}
+                </div>
             </div>
             ${mealPlanGrid.outerHTML}
             ${hasRecipeSections ? `
