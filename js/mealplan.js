@@ -2343,12 +2343,25 @@ function printMealPlan(selectedRecipeIds = []) {
                 
                 .meal-plan-grid {
                     width: 100%;
-                    border-collapse: collapse;
-                    table-layout: fixed;
                     border: 1px solid #d8dee7;
                     border-radius: 6px;
                     overflow: hidden;
                     background: #ffffff;
+                    display: block;
+                    margin: 0;
+                }
+                
+                .meal-plan-grid > * {
+                    margin: 0;
+                }
+                
+                .meal-plan-grid > .meal-plan-header,
+                .meal-plan-grid > .meal-row,
+                .meal-plan-grid > .daily-nutrition-row {
+                    display: grid;
+                    grid-template-columns: minmax(68px, 0.9fr) repeat(7, minmax(80px, 1fr));
+                    align-items: stretch;
+                    gap: 0;
                 }
                 
                 .meal-plan-header {
@@ -2358,14 +2371,22 @@ function printMealPlan(selectedRecipeIds = []) {
                 .day-header {
                     font-weight: 600;
                     text-align: center;
-                    padding: 7px 4px;
-                    font-size: 9pt;
+                    padding: 6px 4px;
+                    font-size: 8.6pt;
                     color: #1f2937;
                     border-right: 1px solid #d8dee7;
+                    border-bottom: 1px solid #d8dee7;
                     white-space: pre-line;
                 }
                 
-                .day-header:last-child {
+                .day-header:first-child {
+                    text-align: right;
+                    background: #f5f7fb;
+                }
+                
+                .day-header:last-child,
+                .meal-row > *:last-child,
+                .daily-nutrition-row > *:last-child {
                     border-right: none;
                 }
                 
@@ -2374,23 +2395,26 @@ function printMealPlan(selectedRecipeIds = []) {
                     color: #1f2937;
                     font-weight: 600;
                     text-align: right;
-                    padding: 7px 6px;
+                    padding: 6px 5px;
                     border-right: 1px solid #d8dee7;
                     border-bottom: 1px solid #d8dee7;
-                    font-size: 9pt;
+                    font-size: 8.6pt;
+                }
+                
+                .meal-row > * {
+                    border-bottom: 1px solid #d8dee7;
                 }
                 
                 .meal-slot {
-                    padding: 6px;
+                    padding: 5px;
                     border-right: 1px solid #d8dee7;
-                    border-bottom: 1px solid #d8dee7;
                     vertical-align: top;
                     background: #ffffff;
                     page-break-inside: avoid;
-                }
-                
-                .meal-slot:last-child {
-                    border-right: none;
+                    min-height: 72px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
                 }
                 
                 .meal-item {
@@ -2412,6 +2436,7 @@ function printMealPlan(selectedRecipeIds = []) {
                     font-weight: 600;
                     margin: 0 0 2px 0;
                     font-size: 8.4pt;
+                    word-break: break-word;
                 }
                 
                 .meal-item-details {
@@ -2433,6 +2458,7 @@ function printMealPlan(selectedRecipeIds = []) {
                 
                 .daily-nutrition-row {
                     background: #f8fafc;
+                    border-top: 1px solid #d8dee7;
                 }
                 
                 .daily-nutrition-cell {
@@ -2448,6 +2474,7 @@ function printMealPlan(selectedRecipeIds = []) {
                     font-weight: 600;
                     text-align: right;
                     color: #0b3d25;
+                    background: #f5f7fb;
                 }
                 
                 .daily-totals {
@@ -2473,26 +2500,29 @@ function printMealPlan(selectedRecipeIds = []) {
                 
                 .macro-progress-container {
                     display: flex;
-                    justify-content: center;
-                    gap: 10px;
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 4px;
                     margin-top: 4px;
                 }
                 
                 .macro-progress-item {
                     display: flex;
-                    flex-direction: column;
+                    flex-direction: row;
                     align-items: center;
-                    min-width: 68px;
-                    font-size: 7.6pt;
+                    justify-content: space-between;
+                    min-width: 0;
+                    font-size: 7.4pt;
                     color: #4b5563;
+                    gap: 6px;
                 }
                 
                 .circular-progress {
                     display: inline-flex;
                     align-items: baseline;
                     justify-content: center;
-                    gap: 0.18rem;
-                    font-size: 0.82rem;
+                    gap: 0.12rem;
+                    font-size: 0.78rem;
                     font-weight: 700;
                     color: #111827;
                 }
@@ -2502,12 +2532,13 @@ function printMealPlan(selectedRecipeIds = []) {
                 }
                 
                 .macro-label {
-                    font-size: 0.64rem;
+                    font-size: 0.62rem;
                     color: #0b3d25;
                     font-weight: 600;
                     letter-spacing: 0.03em;
-                    margin-top: 2px;
+                    margin-top: 0;
                     text-transform: uppercase;
+                    white-space: nowrap;
                 }
                 
                 .print-recipes {
@@ -2650,6 +2681,11 @@ function printMealPlan(selectedRecipeIds = []) {
                 slot.innerHTML = '<div class="empty-slot">Empty</div>';
             }
         });
+        
+        const totalsHeadingCell = printWindow.document.querySelector('.daily-nutrition-row .daily-nutrition-cell');
+        if (totalsHeadingCell && !totalsHeadingCell.textContent.trim()) {
+            totalsHeadingCell.textContent = 'Daily Totals';
+        }
         
         // Trigger print
         setTimeout(() => {
