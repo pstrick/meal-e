@@ -1592,43 +1592,38 @@ tbody tr:hover {
     position: absolute;
     top: calc(100% + 0.5rem);
     left: 0;
-    display: grid;
-    grid-template-columns: repeat(6, 2rem);
-    gap: 0.35rem;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: 0.5rem;
-    box-shadow: var(--shadow);
-    z-index: 12;
-    max-width: min(18rem, 90vw);
-    max-height: 12rem;
-    overflow-y: auto;
+    width: min(320px, 90vw);
+    max-height: 360px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
+    background: var(--color-surface);
+    z-index: 30;
+    overflow: hidden;
 }
 
 .emoji-picker[hidden] {
     display: none !important;
 }
 
-.emoji-picker button {
-    width: 2rem;
-    height: 2rem;
-    font-size: 1.5rem;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    line-height: 1;
-    border-radius: var(--radius-sm);
-    transition: background-color 0.1s ease;
+.emoji-picker {
+    --background-color: var(--color-surface);
+    --border-color: var(--color-border);
+    --hover-background-color: var(--color-surface-alt);
+    --button-active-background-color: var(--color-brand-soft);
+    --button-active-color: var(--color-brand-strong);
+    --input-border-color: var(--color-border);
+    --input-background-color: var(--color-surface-alt);
+    --outline-color: var(--color-brand);
 }
 
-.emoji-picker button:hover,
-.emoji-picker button:focus-visible {
-    background: rgba(0, 0, 0, 0.08);
-}
-
-.emoji-picker button:active {
-    transform: scale(0.95);
+:root.dark-mode .emoji-picker {
+    --background-color: var(--color-surface);
+    --border-color: var(--color-border);
+    --hover-background-color: rgba(255, 255, 255, 0.08);
+    --button-active-background-color: rgba(102, 187, 106, 0.18);
+    --button-active-color: var(--color-brand);
+    --input-background-color: var(--color-surface-alt);
 }
 
 .emoji-form-group {

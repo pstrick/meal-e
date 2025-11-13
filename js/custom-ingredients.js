@@ -9,15 +9,6 @@ if (versionEl) versionEl.textContent = version;
 let customIngredients = [];
 let editingIngredientId = null;
 
-const EMOJI_PALETTE = [
-    '🥦','🥕','🥬','🍅','🍆','🧅','🧄','🥔','🍠','🌽','🥒','🫑',
-    '🍎','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍒','🥭','🍍','🥝',
-    '🥩','🍗','🍖','🧀','🥚','🥛','🫘','🍞','🥐','🥨','🍚','🍝',
-    '🍣','🍱','🥙','🌮','🥗','🍲','🍜','🍪','🧁','🍩','🍫','🍿'
-];
-
-let emojiPickerInitialized = false;
-
 function sanitizeEmojiInput(value) {
     const trimmed = (value || '').trim();
     if (!trimmed) {
@@ -27,25 +18,26 @@ function sanitizeEmojiInput(value) {
     return chars.slice(0, 2).join('');
 }
 
-function renderEmojiPicker() {
-    if (!emojiPicker || emojiPickerInitialized) return;
-    const fragment = document.createDocumentFragment();
-    EMOJI_PALETTE.forEach(emoji => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'emoji-option';
-        button.textContent = emoji;
-        button.addEventListener('click', () => applyEmojiSelection(emoji));
-        fragment.appendChild(button);
-    });
-    emojiPicker.appendChild(fragment);
-    emojiPickerInitialized = true;
-}
-
 function openEmojiPicker() {
     if (!emojiPicker) return;
-    renderEmojiPicker();
+    
+    if (!hasConfiguredEmojiPicker) {
+        try {
+            if ('categories' in emojiPicker) {
+                emojiPicker.categories = ['food'];
+            } else {
+                emojiPicker.setAttribute('categories', 'food');
+            }
+        } catch (error) {
+            console.warn('Emoji picker category configuration failed:', error);
+        }
+        hasConfiguredEmojiPicker = true;
+    }
+    
     emojiPicker.hidden = false;
+    if (typeof emojiPicker.focus === 'function') {
+        emojiPicker.focus();
+    }
 }
 
 function closeEmojiPicker() {
@@ -76,6 +68,7 @@ const searchInput = document.getElementById('ingredient-search');
 const emojiInput = document.getElementById('ingredient-emoji');
 const emojiPickerToggle = document.getElementById('emoji-picker-toggle');
 const emojiPicker = document.getElementById('emoji-picker');
+let hasConfiguredEmojiPicker = false;
 const addIngredientBtn = document.getElementById('add-ingredient-btn');
 const ingredientModal = document.getElementById('ingredient-modal');
 const cancelIngredientBtn = document.getElementById('cancel-ingredient');
@@ -325,6 +318,15 @@ if (emojiPickerToggle) {
         event.preventDefault();
         event.stopPropagation();
         toggleEmojiPicker();
+    });
+}
+
+if (emojiPicker) {
+    emojiPicker.addEventListener('emoji-click', (event) => {
+        const selectedEmoji = event.detail?.unicode || event.detail?.emoji;
+        if (selectedEmoji) {
+            applyEmojiSelection(selectedEmoji);
+        }
     });
 }
 
