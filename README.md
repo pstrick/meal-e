@@ -42,6 +42,13 @@ To deploy your own version:
 
 This is a learning project focused on fundamental web development concepts. The application is built using basic web technologies to maintain simplicity and focus on core functionality.
 
+## Ingredient Import Tool
+
+- Open `ingredients.html` and choose **Import From URL** to launch the scraper.
+- Paste the link to a recipe or product page that exposes structured data (Recipe or Product schema) and the tool will pull available ingredients and nutrition.
+- Review the fetched details, then choose **Prefill Ingredient Form** to copy the data into the custom ingredient form before saving.
+- Some sites block cross-origin requests; if fetching fails, try a different URL or manually enter the ingredient details instead.
+
 ## Contributing
 
 This is a personal learning project, but suggestions and feedback are welcome!

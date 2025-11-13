@@ -669,6 +669,7 @@ if (scrapeModal && scrapeIngredientBtn && scrapeForm) {
     const setScrapeLoading = (isLoading) => {
         if (scrapeProgress) {
             scrapeProgress.hidden = !isLoading;
+            scrapeProgress.setAttribute('aria-busy', isLoading ? 'true' : 'false');
         }
         if (scrapeForm) {
             Array.from(scrapeForm.elements).forEach((element) => {
@@ -676,6 +677,9 @@ if (scrapeModal && scrapeIngredientBtn && scrapeForm) {
                     element.disabled = isLoading;
                 }
             });
+        }
+        if (scrapeResults) {
+            scrapeResults.setAttribute('aria-busy', isLoading ? 'true' : 'false');
         }
         if (scrapePrefillBtn) {
             scrapePrefillBtn.disabled = isLoading || !lastScrapedIngredientData;
@@ -708,6 +712,7 @@ if (scrapeModal && scrapeIngredientBtn && scrapeForm) {
         }
         if (scrapeResults) {
             scrapeResults.hidden = true;
+            scrapeResults.setAttribute('aria-busy', 'false');
         }
     };
 
@@ -791,6 +796,7 @@ if (scrapeModal && scrapeIngredientBtn && scrapeForm) {
         }
 
         scrapeResults.hidden = false;
+        scrapeResults.setAttribute('aria-busy', 'false');
         if (scrapePrefillBtn) {
             const canPrefill =
                 Boolean(data.name) ||

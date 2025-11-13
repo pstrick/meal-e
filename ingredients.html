@@ -195,12 +195,12 @@
                     <button type="submit" class="btn btn-primary">Fetch Ingredient Data</button>
                 </div>
             </form>
-            <div id="scrape-progress" class="scrape-progress" hidden>
+            <div id="scrape-progress" class="scrape-progress" role="status" aria-live="polite" hidden>
                 <i class="fas fa-spinner fa-spin"></i>
                 <span>Fetching ingredient information…</span>
             </div>
-            <div id="scrape-error" class="scrape-error" hidden></div>
-            <div id="scrape-results" class="scrape-results" hidden>
+            <div id="scrape-error" class="scrape-error" role="alert" aria-live="assertive" hidden></div>
+            <div id="scrape-results" class="scrape-results" aria-live="polite" hidden>
                 <section class="scrape-section scrape-summary">
                     <h3 id="scrape-title"></h3>
                     <p id="scrape-description"></p>
