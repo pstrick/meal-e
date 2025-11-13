@@ -1559,10 +1559,13 @@ tbody tr:hover {
 }
 
 .recipe-grid {
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
     gap: var(--space-4);
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    align-content: start;
+}
+
+.recipe-grid > .recipe-card {
+    flex: 1 1 320px;
 }
 
 .recipe-card {
