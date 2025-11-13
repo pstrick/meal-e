@@ -18,35 +18,64 @@ function sanitizeEmojiInput(value) {
     return chars.slice(0, 2).join('');
 }
 
+function configureEmojiPicker() {
+    if (!emojiPicker || hasConfiguredEmojiPicker) {
+        return;
+    }
+
+    try {
+        if ('categories' in emojiPicker) {
+            emojiPicker.categories = ['food'];
+        } else {
+            emojiPicker.setAttribute('categories', 'food');
+        }
+    } catch (error) {
+        console.warn('Emoji picker category configuration failed:', error);
+    }
+
+    hasConfiguredEmojiPicker = true;
+}
+
 function openEmojiPicker() {
     if (!emojiPicker) return;
-    
-    if (!hasConfiguredEmojiPicker) {
-        try {
-            if ('categories' in emojiPicker) {
-                emojiPicker.categories = ['food'];
-            } else {
-                emojiPicker.setAttribute('categories', 'food');
+    if (emojiPickerToggle && (emojiPickerToggle.disabled || emojiPickerToggle.getAttribute('aria-disabled') === 'true')) {
+        return;
+    }
+
+    isEmojiPickerOpening = true;
+
+    emojiPickerDefinitionPromise
+        .then((defined) => {
+            if (!defined || !emojiPicker || !isEmojiPickerOpening) {
+                return;
             }
-        } catch (error) {
-            console.warn('Emoji picker category configuration failed:', error);
-        }
-        hasConfiguredEmojiPicker = true;
-    }
-    
-    emojiPicker.hidden = false;
-    if (typeof emojiPicker.focus === 'function') {
-        emojiPicker.focus();
-    }
+
+            configureEmojiPicker();
+
+            emojiPicker.hidden = false;
+            if (typeof emojiPicker.focus === 'function') {
+                emojiPicker.focus();
+            }
+        })
+        .catch((error) => {
+            console.warn('Unable to open emoji picker:', error);
+        })
+        .finally(() => {
+            isEmojiPickerOpening = false;
+        });
 }
 
 function closeEmojiPicker() {
     if (!emojiPicker) return;
+    isEmojiPickerOpening = false;
     emojiPicker.hidden = true;
 }
 
 function toggleEmojiPicker() {
     if (!emojiPicker) return;
+    if (emojiPickerToggle && (emojiPickerToggle.disabled || emojiPickerToggle.getAttribute('aria-disabled') === 'true')) {
+        return;
+    }
     if (emojiPicker.hidden) {
         openEmojiPicker();
     } else {
@@ -69,6 +98,36 @@ const emojiInput = document.getElementById('ingredient-emoji');
 const emojiPickerToggle = document.getElementById('emoji-picker-toggle');
 const emojiPicker = document.getElementById('emoji-picker');
 let hasConfiguredEmojiPicker = false;
+let isEmojiPickerOpening = false;
+
+const emojiPickerDefinitionPromise = (typeof window !== 'undefined' &&
+    window.customElements &&
+    typeof window.customElements.whenDefined === 'function')
+    ? (window.customElements.get('emoji-picker')
+        ? Promise.resolve(true)
+        : window.customElements.whenDefined('emoji-picker').then(() => true))
+    : Promise.resolve(false);
+
+emojiPickerDefinitionPromise
+    .then((defined) => {
+        if (!defined) {
+            if (emojiPickerToggle) {
+                emojiPickerToggle.disabled = true;
+                emojiPickerToggle.setAttribute('aria-disabled', 'true');
+                emojiPickerToggle.title = 'Emoji picker is not supported in this browser.';
+            }
+            return;
+        }
+        configureEmojiPicker();
+    })
+    .catch((error) => {
+        console.warn('Emoji picker definition failed to load:', error);
+        if (emojiPickerToggle) {
+            emojiPickerToggle.disabled = true;
+            emojiPickerToggle.setAttribute('aria-disabled', 'true');
+            emojiPickerToggle.title = 'Emoji picker failed to load.';
+        }
+    });
 const addIngredientBtn = document.getElementById('add-ingredient-btn');
 const ingredientModal = document.getElementById('ingredient-modal');
 const cancelIngredientBtn = document.getElementById('cancel-ingredient');
