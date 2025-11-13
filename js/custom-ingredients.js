@@ -679,15 +679,6 @@ if (scrapeModal && scrapeIngredientBtn && scrapeForm) {
         };
     };
 
-    const findFirstMatching = (collection, predicate) => {
-        for (const item of collection) {
-            if (predicate(item)) {
-                return item;
-            }
-        }
-        return null;
-    };
-
     const parseWegmansNutrition = (nutritionData) => {
         if (!nutritionData || typeof nutritionData !== 'object') {
             return {};
@@ -1089,16 +1080,16 @@ if (scrapeModal && scrapeIngredientBtn && scrapeForm) {
                 }
             }
 
-            const fallback = fallbackFromDom(doc);
-            if (fallback) {
-                return fallback;
-            }
-
             if (options?.url && options.url.includes('wegmans.com')) {
                 const wegmansData = parseWegmansData(doc);
                 if (wegmansData) {
                     return wegmansData;
                 }
+            }
+
+            const fallback = fallbackFromDom(doc);
+            if (fallback) {
+                return fallback;
             }
 
             return null;
