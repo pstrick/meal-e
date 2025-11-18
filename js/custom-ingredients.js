@@ -341,13 +341,11 @@ function openIngredientModal(ingredient = null) {
     closeEmojiPicker();
     
     // Show modal
-    ingredientModal.style.display = 'block';
     ingredientModal.classList.add('active');
 }
 
 // Close ingredient modal
 function closeIngredientModal() {
-    ingredientModal.style.display = 'none';
     ingredientModal.classList.remove('active');
     editingIngredientId = null;
     form.reset();
