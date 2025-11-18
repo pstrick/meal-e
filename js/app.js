@@ -4,6 +4,7 @@ import './mealplan.js';
 import { initializeMealPlanner } from './mealplan.js';
 import { settings, normalizeThemeSettings } from './settings.js';
 import { showAlert } from './alert.js';
+import { searchUSDAIngredients } from './usda-api.js';
 
 // DOM Elements
 const navLinks = document.querySelectorAll('nav a');
@@ -1469,9 +1470,11 @@ function showInlineSearchResults(input, results) {
             cursor: pointer;
             border-bottom: 1px solid #eee;
         `;
+        const sourceLabel = result.source === 'usda' ? 'USDA Database' : 'Custom Ingredient';
+        const sourceIcon = result.source === 'usda' ? '🌾' : '🏠';
         item.innerHTML = `
-            <div style="font-weight: 600;">${result.name}</div>
-            <div style="font-size: 0.8em; color: #666;">${result.brandOwner || 'Custom Ingredient'}</div>
+            <div style="font-weight: 600;">${sourceIcon} ${result.name}</div>
+            <div style="font-size: 0.8em; color: #666;">${result.brandOwner || sourceLabel}</div>
         `;
         
         item.addEventListener('click', () => {
@@ -1513,10 +1516,13 @@ function selectIngredient(ingredient) {
     const amountInput = currentIngredientInput.querySelector('.ingredient-amount');
     
     if (nameInput && amountInput) {
-        // Generate unique ID for this ingredient
-        const fdcId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Generate unique ID based on source
         const emoji = (ingredient.emoji || '').trim();
-        nameInput.dataset.fdcId = fdcId;
+        const storageId = ingredient.source === 'usda' 
+            ? `usda-${ingredient.fdcId}` 
+            : `custom-${ingredient.id || Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        nameInput.dataset.fdcId = storageId;
         nameInput.dataset.storeSection = ingredient.storeSection || '';
         nameInput.dataset.emoji = emoji;
         const displayName = emoji ? `${emoji} ${ingredient.name}` : ingredient.name;
@@ -1530,10 +1536,12 @@ function selectIngredient(ingredient) {
             amount: parseFloat(amountInput.value) || 0,
             nutrition: ingredient.nutrition,
             source: ingredient.source || 'custom',
+            id: ingredient.id || ingredient.fdcId,
+            fdcId: ingredient.fdcId || storageId,
             storeSection: ingredient.storeSection || '',
             emoji: emoji
         };
-        selectedIngredients.set(fdcId, ingredientData);
+        selectedIngredients.set(storageId, ingredientData);
         
         // Update nutrition display
         updateIngredientMacros(currentIngredientInput, ingredientData);
@@ -1549,7 +1557,7 @@ function selectIngredient(ingredient) {
 async function searchAllIngredients(query) {
     const results = [];
     
-    // Search only custom ingredients
+    // Search custom ingredients first (faster, local)
     const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
     const customMatches = customIngredients.filter(ingredient => 
         ingredient.name.toLowerCase().includes(query.toLowerCase())
@@ -1562,6 +1570,7 @@ async function searchAllIngredients(query) {
         const emoji = (ingredient.emoji || '').trim();
         results.push({
             id: ingredient.id,
+            fdcId: `custom-${ingredient.id}`, // Custom ID for tracking
             name: ingredient.name,
             source: 'custom',
             nutrition: {
@@ -1577,8 +1586,24 @@ async function searchAllIngredients(query) {
         });
     });
     
-    // Sort results by name
-    results.sort((a, b) => a.name.localeCompare(b.name));
+    // Search USDA API (async, network call)
+    try {
+        const usdaResults = await searchUSDAIngredients(query, 10);
+        // Add USDA results to the array
+        results.push(...usdaResults);
+    } catch (error) {
+        console.error('Error searching USDA API:', error);
+        // Continue with custom ingredients only if USDA fails
+    }
+    
+    // Sort results: custom ingredients first, then USDA, then alphabetically
+    results.sort((a, b) => {
+        // Custom ingredients first
+        if (a.source === 'custom' && b.source !== 'custom') return -1;
+        if (a.source !== 'custom' && b.source === 'custom') return 1;
+        // Then alphabetically
+        return a.name.localeCompare(b.name);
+    });
     
     return results;
 }
@@ -1597,15 +1622,16 @@ async function displaySearchResults(results) {
         div.className = 'search-result-item';
         
         // Create visual indicator for ingredient source
-        const sourceIcon = '🏠';
-        const sourceLabel = 'Custom Ingredient';
+        const sourceConfig = ingredient.source === 'usda' 
+            ? { icon: '🌾', label: 'USDA Database' }
+            : { icon: '🏠', label: 'Custom Ingredient' };
         
         const [mainName, ...details] = ingredient.name.split(',');
         const emoji = (ingredient.emoji || '').trim();
         div.innerHTML = `
             <div class="search-result-header">
                 <span class="source-indicator ${ingredient.source}">
-                    ${sourceIcon} ${sourceLabel}
+                    ${sourceConfig.icon} ${sourceConfig.label}
                 </span>
                 <h4>${emoji ? `<span class="ingredient-emoji">${emoji}</span> ` : ''}${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
             </div>
@@ -1619,26 +1645,30 @@ async function displaySearchResults(results) {
                     return;
                 }
                 
-                // Handle custom ingredient
+                // Handle ingredient (custom or USDA)
                 const ingredientData = {
                     name: ingredient.name,
                     amount: parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0,
                     nutrition: ingredient.nutrition,
-                    source: 'custom',
-                    id: ingredient.id,
+                    source: ingredient.source || 'custom',
+                    id: ingredient.id || ingredient.fdcId,
+                    fdcId: ingredient.fdcId || `custom-${ingredient.id}`,
                     storeSection: ingredient.storeSection || '',
                     emoji: emoji
                 };
                 
-                // Store in selectedIngredients with custom ID
-                selectedIngredients.set(`custom-${ingredient.id}`, ingredientData);
+                // Store in selectedIngredients with appropriate ID
+                const storageId = ingredient.source === 'usda' 
+                    ? `usda-${ingredient.fdcId}` 
+                    : `custom-${ingredient.id}`;
+                selectedIngredients.set(storageId, ingredientData);
                 
                 // Update the input field
                 const nameField = currentIngredientInput.querySelector('.ingredient-name');
                 if (nameField) {
                     const displayName = emoji ? `${emoji} ${ingredient.name}` : ingredient.name;
                     nameField.value = displayName;
-                    nameField.dataset.fdcId = `custom-${ingredient.id}`;
+                    nameField.dataset.fdcId = storageId;
                     nameField.dataset.storeSection = ingredient.storeSection || '';
                     nameField.dataset.emoji = emoji;
                 }

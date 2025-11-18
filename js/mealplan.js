@@ -1,4 +1,5 @@
 import { showAlert } from './alert.js';
+import { searchUSDAIngredients } from './usda-api.js';
 
 // Meal Planning functionality
 let currentWeekOffset = 0;  // Track week offset instead of modifying date directly
@@ -80,11 +81,11 @@ function resetWeekOffset() {
     console.log('Week offset reset to current week');
 }
 
-// Custom ingredient search function for meal plan (no USDA API)
+// Ingredient search function for meal plan (includes USDA API)
 async function searchAllIngredients(query) {
     const results = [];
     
-    // Search custom ingredients only (no USDA API search)
+    // Search custom ingredients first (faster, local)
     const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]').map(ingredient => ({
         ...ingredient,
         storeSection: ingredient.storeSection || '',
@@ -103,6 +104,7 @@ async function searchAllIngredients(query) {
         const servingSize = ingredient.servingSize || 100; // Default to 100g if not specified
         results.push({
             id: ingredient.id,
+            fdcId: `custom-${ingredient.id}`,
             name: ingredient.name,
             source: 'custom',
             category: ingredient.category || 'ingredient',
@@ -122,8 +124,32 @@ async function searchAllIngredients(query) {
         });
     });
     
-    // Sort results alphabetically
-    results.sort((a, b) => a.name.localeCompare(b.name));
+    // Search USDA API (async, network call)
+    try {
+        const usdaResults = await searchUSDAIngredients(query, 10);
+        // Add USDA results with meal plan specific fields
+        usdaResults.forEach(ingredient => {
+            results.push({
+                ...ingredient,
+                category: ingredient.category || 'ingredient',
+                pricePerGram: null,
+                totalPrice: null,
+                totalWeight: null
+            });
+        });
+    } catch (error) {
+        console.error('Error searching USDA API:', error);
+        // Continue with custom ingredients only if USDA fails
+    }
+    
+    // Sort results: custom ingredients first, then USDA, then alphabetically
+    results.sort((a, b) => {
+        // Custom ingredients first
+        if (a.source === 'custom' && b.source !== 'custom') return -1;
+        if (a.source !== 'custom' && b.source === 'custom') return 1;
+        // Then alphabetically
+        return a.name.localeCompare(b.name);
+    });
     
     return results;
 }
