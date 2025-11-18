@@ -233,26 +233,18 @@ const ingredientModal = document.getElementById('ingredient-modal');
 const cancelIngredientBtn = document.getElementById('cancel-ingredient');
 const closeModalBtn = ingredientModal.querySelector('.close');
 
-const scrapeIngredientBtn = document.getElementById('scrape-ingredient-btn');
-const scrapeModal = document.getElementById('scrape-ingredient-modal');
-const scrapeCloseBtn = scrapeModal ? scrapeModal.querySelector('.scrape-close') : null;
-const scrapeForm = document.getElementById('scrape-ingredient-form');
-const scrapeUrlInput = document.getElementById('scrape-url');
-const scrapeProgress = document.getElementById('scrape-progress');
-const scrapeError = document.getElementById('scrape-error');
-const scrapeResults = document.getElementById('scrape-results');
-const scrapeTitle = document.getElementById('scrape-title');
-const scrapeDescription = document.getElementById('scrape-description');
-const scrapeNutritionSection = document.getElementById('scrape-nutrition-section');
-const scrapeIngredientsSection = document.getElementById('scrape-ingredients-section');
-const scrapeIngredientList = document.getElementById('scrape-ingredient-list');
-const scrapePrefillBtn = document.getElementById('scrape-prefill-btn');
-const scrapeCalories = document.getElementById('scrape-calories');
-const scrapeFat = document.getElementById('scrape-fat');
-const scrapeCarbs = document.getElementById('scrape-carbs');
-const scrapeProtein = document.getElementById('scrape-protein');
-const scrapeServingSize = document.getElementById('scrape-serving-size');
-const cancelScrapeBtn = document.getElementById('cancel-scrape');
+// CSV Upload/Download DOM Elements
+const downloadCsvTemplateBtn = document.getElementById('download-csv-template-btn');
+const uploadCsvBtn = document.getElementById('upload-csv-btn');
+const uploadCsvModal = document.getElementById('upload-csv-modal');
+const uploadCsvForm = document.getElementById('upload-csv-form');
+const csvFileInput = document.getElementById('csv-file-input');
+const csvUploadProgress = document.getElementById('csv-upload-progress');
+const csvUploadError = document.getElementById('csv-upload-error');
+const csvUploadResults = document.getElementById('csv-upload-results');
+const csvUploadSummary = document.getElementById('csv-upload-summary');
+const csvCloseBtn = uploadCsvModal ? uploadCsvModal.querySelector('.csv-close') : null;
+const cancelCsvUploadBtn = document.getElementById('cancel-csv-upload');
 
 // Load custom ingredients from localStorage
 function loadCustomIngredients() {
@@ -510,8 +502,294 @@ function searchIngredients(event) {
     }
 }
 
-if (scrapeModal && scrapeIngredientBtn && scrapeForm) {
-    const normalizeUrl = (value) => {
+// CSV Upload/Download Functionality
+
+// CSV Template Download Function (must be defined outside conditional)
+function downloadCsvTemplate() {
+    const headers = [
+        'name',
+        'emoji',
+        'storeSection',
+        'totalPrice',
+        'totalWeight',
+        'servingSize',
+        'calories',
+        'fat',
+        'carbs',
+        'protein'
+    ];
+    
+    const exampleRow = [
+        'Chicken Breast',
+        '🍗',
+        'Meat',
+        '8.99',
+        '500',
+        '100',
+        '165',
+        '3.6',
+        '0',
+        '31'
+    ];
+    
+    const csvContent = [
+        headers.join(','),
+        exampleRow.join(','),
+        '# Example: Add your ingredients below',
+        '# All numeric values should be numbers (no units)',
+        '# emoji and storeSection are optional'
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'ingredients-template.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+if (downloadCsvTemplateBtn) {
+    downloadCsvTemplateBtn.addEventListener('click', downloadCsvTemplate);
+}
+
+if (uploadCsvBtn && uploadCsvModal && uploadCsvForm) {
+    // CSV Upload and Parse Function
+    function parseCsvFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const text = e.target.result;
+                    const lines = text.split('\n').filter(line => line.trim() && !line.trim().startsWith('#'));
+                    
+                    if (lines.length < 2) {
+                        reject(new Error('CSV file must have at least a header row and one data row'));
+                        return;
+                    }
+                    
+                    // Parse CSV line handling quoted values
+                    function parseCsvLine(line) {
+                        const result = [];
+                        let current = '';
+                        let inQuotes = false;
+                        
+                        for (let i = 0; i < line.length; i++) {
+                            const char = line[i];
+                            if (char === '"') {
+                                inQuotes = !inQuotes;
+                            } else if (char === ',' && !inQuotes) {
+                                result.push(current.trim());
+                                current = '';
+                            } else {
+                                current += char;
+                            }
+                        }
+                        result.push(current.trim());
+                        return result;
+                    }
+                    
+                    const headers = parseCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+                    const requiredHeaders = ['name', 'servingsize', 'calories', 'fat', 'carbs', 'protein'];
+                    const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+                    
+                    if (missingHeaders.length > 0) {
+                        reject(new Error(`Missing required columns: ${missingHeaders.join(', ')}`));
+                        return;
+                    }
+                    
+                    const ingredients = [];
+                    for (let i = 1; i < lines.length; i++) {
+                        const values = parseCsvLine(lines[i]);
+                        if (values.length < headers.length) continue;
+                        
+                        const nameIndex = headers.indexOf('name');
+                        const name = nameIndex >= 0 ? values[nameIndex] || '' : '';
+                        
+                        if (!name) continue; // Skip rows without a name
+                        
+                        const getValue = (headerName, defaultValue = '') => {
+                            const index = headers.indexOf(headerName);
+                            return index >= 0 ? (values[index] || defaultValue) : defaultValue;
+                        };
+                        
+                        const ingredient = {
+                            id: Date.now() + i,
+                            name: name,
+                            emoji: getValue('emoji', '').trim(),
+                            storeSection: getValue('storesection', '').trim(),
+                            totalPrice: parseFloat(getValue('totalprice', '0')) || null,
+                            totalWeight: parseFloat(getValue('totalweight', '0')) || null,
+                            servingSize: parseFloat(getValue('servingsize', '100')) || 100,
+                            nutrition: {
+                                calories: parseFloat(getValue('calories', '0')) || 0,
+                                fat: parseFloat(getValue('fat', '0')) || 0,
+                                carbs: parseFloat(getValue('carbs', '0')) || 0,
+                                protein: parseFloat(getValue('protein', '0')) || 0
+                            }
+                        };
+                        
+                        ingredients.push(ingredient);
+                    }
+                    
+                    if (ingredients.length === 0) {
+                        reject(new Error('No valid ingredients found in CSV file'));
+                        return;
+                    }
+                    
+                    resolve(ingredients);
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsText(file);
+        });
+    }
+    
+    // CSV Upload Modal Functions
+    const openCsvUploadModal = () => {
+        if (uploadCsvModal) {
+            uploadCsvModal.style.display = 'block';
+            uploadCsvModal.classList.add('active');
+            if (csvFileInput) {
+                csvFileInput.value = '';
+            }
+            if (csvUploadError) {
+                csvUploadError.hidden = true;
+                csvUploadError.textContent = '';
+            }
+            if (csvUploadResults) {
+                csvUploadResults.hidden = true;
+            }
+            if (csvUploadProgress) {
+                csvUploadProgress.hidden = true;
+            }
+        }
+    };
+    
+    const closeCsvUploadModal = () => {
+        if (uploadCsvModal) {
+            uploadCsvModal.style.display = 'none';
+            uploadCsvModal.classList.remove('active');
+        }
+        if (csvUploadProgress) {
+            csvUploadProgress.hidden = true;
+        }
+    };
+    
+    const showCsvError = (message) => {
+        if (csvUploadError) {
+            csvUploadError.textContent = message;
+            csvUploadError.hidden = false;
+        }
+        if (csvUploadResults) {
+            csvUploadResults.hidden = true;
+        }
+    };
+    
+    const showCsvResults = (imported, skipped, errors) => {
+        if (csvUploadResults && csvUploadSummary) {
+            let summary = `Successfully imported ${imported} ingredient(s).`;
+            if (skipped > 0) {
+                summary += ` ${skipped} ingredient(s) skipped (duplicates or invalid data).`;
+            }
+            if (errors.length > 0) {
+                summary += ` Errors: ${errors.join(', ')}`;
+            }
+            csvUploadSummary.textContent = summary;
+            csvUploadResults.hidden = false;
+        }
+    };
+    
+    const handleCsvUpload = async (event) => {
+        event.preventDefault();
+        if (!csvFileInput || !csvFileInput.files || csvFileInput.files.length === 0) {
+            showCsvError('Please select a CSV file');
+            return;
+        }
+        
+        const file = csvFileInput.files[0];
+        if (csvUploadProgress) {
+            csvUploadProgress.hidden = false;
+        }
+        if (csvUploadError) {
+            csvUploadError.hidden = true;
+        }
+        
+        try {
+            const importedIngredients = await parseCsvFile(file);
+            
+            let imported = 0;
+            let skipped = 0;
+            const errors = [];
+            
+            importedIngredients.forEach(ingredient => {
+                // Check for duplicates by name
+                const existing = customIngredients.find(ci => 
+                    ci.name.toLowerCase() === ingredient.name.toLowerCase()
+                );
+                
+                if (existing) {
+                    skipped++;
+                } else {
+                    customIngredients.push(ingredient);
+                    imported++;
+                }
+            });
+            
+            if (imported > 0) {
+                saveCustomIngredients();
+                renderIngredientsList();
+            }
+            
+            showCsvResults(imported, skipped, errors);
+            
+            // Auto-close after 3 seconds if successful
+            if (imported > 0) {
+                setTimeout(() => {
+                    closeCsvUploadModal();
+                }, 3000);
+            }
+        } catch (error) {
+            console.error('CSV upload error:', error);
+            showCsvError(error.message || 'Failed to process CSV file. Please check the format.');
+        } finally {
+            if (csvUploadProgress) {
+                csvUploadProgress.hidden = true;
+            }
+        }
+    };
+    
+    // Event Listeners
+    uploadCsvBtn.addEventListener('click', openCsvUploadModal);
+    uploadCsvForm.addEventListener('submit', handleCsvUpload);
+    
+    if (csvCloseBtn) {
+        csvCloseBtn.addEventListener('click', closeCsvUploadModal);
+    }
+    
+    if (cancelCsvUploadBtn) {
+        cancelCsvUploadBtn.addEventListener('click', closeCsvUploadModal);
+    }
+    
+    window.addEventListener('click', (event) => {
+        if (event.target === uploadCsvModal) {
+            closeCsvUploadModal();
+        }
+    });
+    
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && uploadCsvModal && uploadCsvModal.classList.contains('active')) {
+            closeCsvUploadModal();
+        }
+    });
+}
+
+// Standalone CSV Template Download (outside the conditional)
+function downloadCsvTemplate() {
         if (typeof value !== 'string') return '';
         const trimmed = value.trim();
         if (!trimmed) return '';

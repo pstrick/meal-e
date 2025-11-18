@@ -82,8 +82,11 @@
                 <div class="card-header">
                     <h2>Custom Ingredients</h2>
                     <div class="card-header-actions">
-                        <button id="scrape-ingredient-btn" class="btn btn-secondary">
-                            <i class="fas fa-cloud-arrow-down"></i> Import From URL
+                        <button id="download-csv-template-btn" class="btn btn-secondary">
+                            <i class="fas fa-download"></i> Download CSV Template
+                        </button>
+                        <button id="upload-csv-btn" class="btn btn-secondary">
+                            <i class="fas fa-upload"></i> Upload CSV
                         </button>
                         <button id="add-ingredient-btn" class="btn btn-primary">
                             <i class="fas fa-plus"></i> Add New Custom Ingredient
@@ -192,63 +195,31 @@
         </div>
     </div>
 
-    <!-- Scrape Ingredient Modal -->
-    <div id="scrape-ingredient-modal" class="modal">
+    <!-- Upload CSV Modal -->
+    <div id="upload-csv-modal" class="modal">
         <div class="modal-content">
-            <span class="close scrape-close">&times;</span>
-            <h2>Import Ingredient From URL</h2>
-            <form id="scrape-ingredient-form" class="scrape-form">
+            <span class="close csv-close">&times;</span>
+            <h2>Upload CSV File</h2>
+            <form id="upload-csv-form">
                 <div class="form-group">
-                    <label for="scrape-url">Ingredient or Recipe URL</label>
-                    <input type="url" id="scrape-url" placeholder="https://example.com/your-ingredient" required>
-                    <small>We’ll attempt to read structured data (Recipe or Product schema) from this page.</small>
+                    <label for="csv-file-input">Select CSV File</label>
+                    <input type="file" id="csv-file-input" accept=".csv" required>
+                    <small>Upload a CSV file with ingredient data. Use "Download CSV Template" to see the required format.</small>
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancel-scrape">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Fetch Ingredient Data</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-csv-upload">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload and Import</button>
                 </div>
             </form>
-            <div id="scrape-progress" class="scrape-progress" role="status" aria-live="polite" hidden>
+            <div id="csv-upload-progress" class="scrape-progress" role="status" aria-live="polite" hidden>
                 <i class="fas fa-spinner fa-spin"></i>
-                <span>Fetching ingredient information…</span>
+                <span>Processing CSV file…</span>
             </div>
-            <div id="scrape-error" class="scrape-error" role="alert" aria-live="assertive" hidden></div>
-            <div id="scrape-results" class="scrape-results" aria-live="polite" hidden>
-                <section class="scrape-section scrape-summary">
-                    <h3 id="scrape-title"></h3>
-                    <p id="scrape-description"></p>
-                </section>
-                <section class="scrape-section" id="scrape-nutrition-section" hidden>
-                    <h3>Nutrition (per serving)</h3>
-                    <dl class="scrape-nutrition">
-                        <div>
-                            <dt>Calories</dt>
-                            <dd id="scrape-calories"></dd>
-                        </div>
-                        <div>
-                            <dt>Fat</dt>
-                            <dd id="scrape-fat"></dd>
-                        </div>
-                        <div>
-                            <dt>Carbs</dt>
-                            <dd id="scrape-carbs"></dd>
-                        </div>
-                        <div>
-                            <dt>Protein</dt>
-                            <dd id="scrape-protein"></dd>
-                        </div>
-                        <div>
-                            <dt>Serving Size</dt>
-                            <dd id="scrape-serving-size"></dd>
-                        </div>
-                    </dl>
-                </section>
-                <section class="scrape-section" id="scrape-ingredients-section" hidden>
-                    <h3>Ingredients</h3>
-                    <ul id="scrape-ingredient-list"></ul>
-                </section>
-                <div class="scrape-actions">
-                    <button type="button" class="btn btn-primary" id="scrape-prefill-btn">Prefill Ingredient Form</button>
+            <div id="csv-upload-error" class="scrape-error" role="alert" aria-live="assertive" hidden></div>
+            <div id="csv-upload-results" class="scrape-results" aria-live="polite" hidden>
+                <div class="scrape-section">
+                    <h3>Import Results</h3>
+                    <p id="csv-upload-summary"></p>
                 </div>
             </div>
         </div>

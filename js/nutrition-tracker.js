@@ -1,6 +1,7 @@
 // Nutrition Tracker Module
 import { settings } from './settings.js';
 import { showAlert } from './alert.js';
+import { searchUSDAIngredients } from './usda-api.js';
 
 // Global variables
 let currentDate = new Date();
@@ -340,31 +341,70 @@ function closeAddFoodModal() {
     currentMeal = '';
 }
 
-function handleFoodSearch() {
+async function handleFoodSearch() {
     const query = foodSearch.value.toLowerCase().trim();
     if (query.length < 2) {
         foodSearchResults.innerHTML = '';
         return;
     }
     
-    const results = searchFoods(query);
+    const results = await searchFoods(query);
     displaySearchResults(results);
 }
 
-function searchFoods(query) {
+async function searchFoods(query) {
     const results = [];
     
-    // Search custom ingredients
+    // Search custom ingredients first (faster, local)
     const ingredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
-    console.log('Searching ingredients:', ingredients.length, 'found');
+    console.log('Searching custom ingredients:', ingredients.length, 'found');
     ingredients.forEach(ingredient => {
         if (ingredient.name.toLowerCase().includes(query)) {
+            // Convert nutrition to per-gram format for consistency
+            const servingSize = ingredient.servingSize || 100;
             results.push({
                 type: 'ingredient',
-                data: ingredient
+                data: {
+                    ...ingredient,
+                    nutrition: {
+                        calories: ingredient.nutrition.calories / servingSize,
+                        protein: ingredient.nutrition.protein / servingSize,
+                        carbs: ingredient.nutrition.carbs / servingSize,
+                        fat: ingredient.nutrition.fat / servingSize
+                    },
+                    source: 'custom'
+                }
             });
         }
     });
+    
+    // Search USDA API (async, network call)
+    try {
+        const usdaResults = await searchUSDAIngredients(query, 10);
+        usdaResults.forEach(ingredient => {
+            // Convert USDA ingredient to nutrition tracker format
+            // USDA nutrition is already per-gram (from usda-api.js), keep it that way
+            results.push({
+                type: 'ingredient',
+                data: {
+                    id: ingredient.fdcId,
+                    name: ingredient.name,
+                    servingSize: ingredient.servingSize || 100,
+                    nutrition: {
+                        calories: ingredient.nutrition.calories, // per-gram
+                        protein: ingredient.nutrition.protein,   // per-gram
+                        carbs: ingredient.nutrition.carbs,         // per-gram
+                        fat: ingredient.nutrition.fat              // per-gram
+                    },
+                    source: 'usda',
+                    brandOwner: ingredient.brandOwner || 'USDA Database'
+                }
+            });
+        });
+    } catch (error) {
+        console.error('Error searching USDA API:', error);
+        // Continue with custom ingredients only if USDA fails
+    }
     
     // Search custom recipes
     const recipes = JSON.parse(localStorage.getItem('recipes') || '[]');
@@ -378,8 +418,17 @@ function searchFoods(query) {
         }
     });
     
+    // Sort results: custom ingredients first, then USDA, then recipes
+    results.sort((a, b) => {
+        if (a.type === 'recipe' && b.type !== 'recipe') return 1;
+        if (a.type !== 'recipe' && b.type === 'recipe') return -1;
+        if (a.data.source === 'custom' && b.data.source !== 'custom') return -1;
+        if (a.data.source !== 'custom' && b.data.source === 'custom') return 1;
+        return a.data.name.localeCompare(b.data.name);
+    });
+    
     console.log('Search results:', results.length, 'total');
-    return results.slice(0, 10); // Limit to 10 results
+    return results.slice(0, 15); // Limit to 15 results (increased to show more options)
 }
 
 function displaySearchResults(results) {
@@ -393,12 +442,26 @@ function displaySearchResults(results) {
     results.forEach(result => {
         const div = document.createElement('div');
         div.className = 'search-result-item';
+        
+        // Determine source label and icon
+        let sourceLabel = result.type === 'recipe' ? 'Recipe' : 'Ingredient';
+        let sourceIcon = '';
+        if (result.type === 'ingredient' && result.data.source) {
+            if (result.data.source === 'usda') {
+                sourceLabel = 'USDA Database';
+                sourceIcon = '🌾 ';
+            } else {
+                sourceLabel = 'Custom Ingredient';
+                sourceIcon = '🏠 ';
+            }
+        }
+        
         div.innerHTML = `
             <div class="result-header">
                 <span class="result-type ${result.type}">${result.type}</span>
-                <h4>${result.data.name}</h4>
+                <h4>${sourceIcon}${result.data.name}</h4>
             </div>
-            <p>${result.type === 'recipe' ? 'Recipe' : 'Ingredient'}</p>
+            <p>${sourceLabel}${result.data.brandOwner ? ` - ${result.data.brandOwner}` : ''}</p>
         `;
         
         div.addEventListener('click', () => selectFood(result));
@@ -414,12 +477,28 @@ function selectFood(foodResult) {
     selectedFoodDetails.dataset.foodData = JSON.stringify(food);
     selectedFoodDetails.dataset.foodType = type;
     
+    // Format nutrition info based on type
+    let nutritionInfo = '';
+    if (type === 'ingredient') {
+        // For ingredients, nutrition is stored per-gram, show per 100g for display
+        const servingSize = food.servingSize || 100;
+        const nutrition = food.nutrition || {};
+        // nutrition is per-gram, so multiply by 100g for display
+        const calories = (nutrition.calories || 0) * 100;
+        const protein = (nutrition.protein || 0) * 100;
+        const carbs = (nutrition.carbs || 0) * 100;
+        const fat = (nutrition.fat || 0) * 100;
+        const sourceLabel = food.source === 'usda' ? ' (USDA Database)' : ' (Custom)';
+        nutritionInfo = `<p class="nutrition-info">Per 100g: ${Math.round(calories)} cal, ${Math.round(protein)}g protein, ${Math.round(carbs)}g carbs, ${Math.round(fat)}g fat${sourceLabel}</p>`;
+    } else if (type === 'recipe') {
+        nutritionInfo = `<p class="serving-size">Serving size: ${food.servingSize || '1 serving'}g</p>`;
+    }
+    
     selectedFoodDetails.innerHTML = `
         <div class="selected-food-info">
             <h4>${food.name}</h4>
             <p class="food-type">${type === 'recipe' ? 'Recipe' : 'Ingredient'}</p>
-            ${type === 'recipe' ? `<p class="serving-size">Serving size: ${food.servingSize || '1 serving'}</p>` : ''}
-            ${type === 'ingredient' ? `<p class="nutrition-info">Per 100g: ${food.calories || 0} cal, ${food.protein || 0}g protein, ${food.carbs || 0}g carbs, ${food.fat || 0}g fat</p>` : ''}
+            ${nutritionInfo}
         </div>
     `;
     
@@ -443,12 +522,12 @@ function updateNutritionPreview() {
     let calories = 0, protein = 0, carbs = 0, fat = 0;
     
     if (foodType === 'ingredient') {
-        // For ingredients, calculate based on per 100g values
-        const multiplier = amount / 100; // Convert to percentage of 100g
-        calories = Math.round((foodData.nutrition?.calories || 0) * multiplier);
-        protein = Math.round((foodData.nutrition?.protein || 0) * multiplier);
-        carbs = Math.round((foodData.nutrition?.carbs || 0) * multiplier);
-        fat = Math.round((foodData.nutrition?.fat || 0) * multiplier);
+        // For ingredients, nutrition is stored per-gram, so multiply by amount
+        // foodData.nutrition is per-gram values
+        calories = Math.round((foodData.nutrition?.calories || 0) * amount);
+        protein = Math.round((foodData.nutrition?.protein || 0) * amount);
+        carbs = Math.round((foodData.nutrition?.carbs || 0) * amount);
+        fat = Math.round((foodData.nutrition?.fat || 0) * amount);
     } else if (foodType === 'recipe') {
         // For recipes, use the stored nutrition data per serving
         if (foodData.nutrition) {
@@ -508,12 +587,12 @@ function addFoodToMeal() {
     let calories = 0, protein = 0, carbs = 0, fat = 0;
     
     if (foodType === 'ingredient') {
-        // For ingredients, calculate based on per 100g values
-        const multiplier = amount / 100; // Convert to percentage of 100g
-        calories = Math.round((foodData.nutrition?.calories || 0) * multiplier);
-        protein = Math.round((foodData.nutrition?.protein || 0) * multiplier);
-        carbs = Math.round((foodData.nutrition?.carbs || 0) * multiplier);
-        fat = Math.round((foodData.nutrition?.fat || 0) * multiplier);
+        // For ingredients, nutrition is stored per-gram, so multiply by amount
+        // foodData.nutrition is per-gram values
+        calories = Math.round((foodData.nutrition?.calories || 0) * amount);
+        protein = Math.round((foodData.nutrition?.protein || 0) * amount);
+        carbs = Math.round((foodData.nutrition?.carbs || 0) * amount);
+        fat = Math.round((foodData.nutrition?.fat || 0) * amount);
     } else if (foodType === 'recipe') {
         // For recipes, use the stored nutrition data per serving
         if (foodData.nutrition) {
