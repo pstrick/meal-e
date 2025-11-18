@@ -1700,6 +1700,63 @@ tbody tr:hover {
     --btn-shadow: none;
 }
 
+.ingredient-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
+}
+
+.ingredient-main {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.ingredient-name {
+    flex: 1 1 200px;
+    min-width: 150px;
+}
+
+.ingredient-amount {
+    flex: 0 0 120px;
+    min-width: 100px;
+}
+
+.ingredient-main .remove-ingredient {
+    flex: 0 0 auto;
+    font-size: 1.25rem;
+    line-height: 1;
+    padding: 0.55rem;
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.ingredient-main .remove-ingredient:hover {
+    color: var(--color-danger);
+    background: rgba(220, 38, 38, 0.08);
+}
+
+.ingredient-macros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.ingredient-macros .macro-item {
+    font-weight: 600;
+}
+
+.ingredient-macros .macro-item span {
+    color: var(--color-text);
+}
+
 .emoji-form-group .emoji-input-wrapper {
     position: relative;
     display: flex;

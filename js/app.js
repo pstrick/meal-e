@@ -1296,7 +1296,7 @@ function editRecipe(id) {
             <div class="ingredient-main">
                 <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${displayName}">
                 <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="${ing.amount}">
-                <button type="button" class="remove-ingredient">&times;</button>
+                <button type="button" class="remove-ingredient btn btn-ghost btn-icon" aria-label="Remove ingredient">&times;</button>
             </div>
             <div class="ingredient-macros">
                 <span class="macro-item">Calories: <span class="calories">0</span></span>
@@ -1697,7 +1697,7 @@ function addIngredientInput() {
         <div class="ingredient-main">
             <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly>
             <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="0">
-            <button type="button" class="remove-ingredient">&times;</button>
+            <button type="button" class="remove-ingredient btn btn-ghost btn-icon" aria-label="Remove ingredient">&times;</button>
         </div>
         <div class="ingredient-macros">
             <span class="macro-item">Calories: <span class="calories">0</span></span>
@@ -1859,7 +1859,7 @@ function duplicateRecipe(id) {
             <div class="ingredient-main">
                 <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${displayName}">
                 <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="${ing.amount}">
-                <button type="button" class="remove-ingredient">&times;</button>
+                <button type="button" class="remove-ingredient btn btn-ghost btn-icon" aria-label="Remove ingredient">&times;</button>
             </div>
             <div class="ingredient-macros">
                 <span class="macro-item">Calories: <span class="calories">0</span></span>
