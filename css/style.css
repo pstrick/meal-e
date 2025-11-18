@@ -874,7 +874,7 @@ tbody tr:hover {
 
 .modal.active {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
 }
 
