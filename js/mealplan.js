@@ -347,7 +347,7 @@ async function updateUnifiedList() {
         });
     }
     
-    // Search custom ingredients only
+    // Search custom ingredients and USDA API
     try {
         const ingredientResults = await searchAllIngredients(searchTerm);
         for (const ingredient of ingredientResults) {
@@ -356,16 +356,26 @@ async function updateUnifiedList() {
             
             // Only add if category matches or is 'all'
             if (category === 'all' || ingredientCategory === category) {
+                // Determine icon and label based on source
+                const isUSDA = ingredient.source === 'usda';
+                const icon = isUSDA ? '🌾' : '🥩';
+                const label = isUSDA ? 'USDA Database' : 'Custom Ingredient';
+                const id = isUSDA ? `usda-${ingredient.fdcId}` : `custom-${ingredient.id}`;
+                
                 results.push({
                     type: 'ingredient',
-                    id: `custom-${ingredient.id}`,
+                    id: id,
                     name: ingredient.name,
                     category: ingredientCategory,
                     servingSize: ingredient.servingSize || 100, // Default to 100g if not specified
                     nutrition: ingredient.nutrition,
                     source: ingredient.source,
-                    icon: '🥩',
-                    label: 'Custom Ingredient'
+                    fdcId: ingredient.fdcId,
+                    emoji: ingredient.emoji || '',
+                    storeSection: ingredient.storeSection || '',
+                    brandOwner: ingredient.brandOwner || '',
+                    icon: icon,
+                    label: label
                 });
             }
         }
@@ -384,6 +394,7 @@ async function updateUnifiedList() {
     results.forEach(item => {
         const div = document.createElement('div');
         div.className = 'unified-option';
+        const brandInfo = item.brandOwner && item.source === 'usda' ? `<p class="brand-info">${item.brandOwner}</p>` : '';
         div.innerHTML = `
             <div class="item-header">
                 <span class="item-icon">${item.icon}</span>
@@ -392,6 +403,7 @@ async function updateUnifiedList() {
             </div>
             <p>Category: ${item.category}</p>
             <p>Serving Size: ${item.servingSize || 100}g</p>
+            ${brandInfo}
             <div class="item-nutrition">
                 <span>Cal: ${Math.round(item.nutrition.calories * (item.servingSize || 100))}</span>
                 <span>P: ${Math.round(item.nutrition.protein * (item.servingSize || 100))}g</span>
@@ -1054,7 +1066,9 @@ async function handleMealPlanSubmit(e) {
             servingSize: selectedItem.servingSize,
             storeSection: selectedItem.storeSection || '',
             emoji: selectedItem.emoji || '',
-            endDate: endDate || null
+            endDate: endDate || null,
+            source: selectedItem.source || 'custom',
+            fdcId: selectedItem.fdcId || null
         };
         
         recurringItems.push(recurringItem);
@@ -1075,7 +1089,9 @@ async function handleMealPlanSubmit(e) {
             nutrition: selectedItem.nutrition,
             servingSize: selectedItem.servingSize,
             storeSection: selectedItem.storeSection || '',
-            emoji: selectedItem.emoji || ''
+            emoji: selectedItem.emoji || '',
+            source: selectedItem.source || 'custom',
+            fdcId: selectedItem.fdcId || null
         });
         saveMealPlan();
     }

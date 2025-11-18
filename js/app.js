@@ -1385,7 +1385,7 @@ function openIngredientSearch(ingredientInput) {
     if (nameInput) {
         nameInput.readOnly = false;
         nameInput.focus();
-        nameInput.placeholder = 'Type to search ingredients...';
+        nameInput.placeholder = 'Type to search custom ingredients or USDA database...';
         
         // Add event listeners for inline search
         nameInput.addEventListener('input', handleInlineSearch);
