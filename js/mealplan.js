@@ -296,7 +296,6 @@ function openMealPlanModal(slot) {
     });
     
     // Make sure modal is visible
-    mealPlanModal.style.display = 'block';
     mealPlanModal.classList.add('active');
 
     // Load all items immediately
@@ -516,7 +515,6 @@ function closeMealPlanModal() {
     if (!mealPlanModal) return;
     
     mealPlanModal.classList.remove('active');
-    mealPlanModal.style.display = 'none';
     
     // Clear the stored slot reference
     if (mealPlanForm) {
@@ -1745,14 +1743,12 @@ function openShoppingListSelectionModal(shoppingListData) {
     
     updateShoppingListOptionState();
     
-    shoppingListSelectionModal.style.display = 'block';
     shoppingListSelectionModal.classList.add('active');
 }
 
 function closeShoppingListSelectionModal() {
     if (shoppingListSelectionModal) {
         shoppingListSelectionModal.classList.remove('active');
-        shoppingListSelectionModal.style.display = 'none';
     }
     pendingShoppingListData = null;
 }
@@ -2055,7 +2051,6 @@ function openPrintOptionsModal() {
     const weeklyRecipes = getCurrentWeekRecipesSummary();
     renderPrintRecipeSelectionList(weeklyRecipes);
     
-    printOptionsModal.style.display = 'block';
     printOptionsModal.classList.add('active');
 }
 
@@ -2063,7 +2058,6 @@ function closePrintOptionsModal() {
     if (!printOptionsModal) return;
     
     printOptionsModal.classList.remove('active');
-    printOptionsModal.style.display = 'none';
 }
 
 function getCurrentWeekRecipesSummary() {

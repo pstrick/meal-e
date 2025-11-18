@@ -885,18 +885,22 @@ function initializeApp() {
         if (searchBtn) {
             searchBtn.addEventListener('click', async () => {
                 const query = ingredientSearchInput ? ingredientSearchInput.value.trim() : '';
-                if (query) {
-                    const searchResults = document.getElementById('search-results');
-                    if (searchResults) {
-                        searchResults.innerHTML = '<div class="loading">Searching...</div>';
-                        try {
-                            const results = await searchAllIngredients(query);
-                            displaySearchResults(results);
-                        } catch (error) {
-                            console.error('Error searching ingredients:', error);
-                            searchResults.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
-                        }
+                const searchResultsElement = document.getElementById('search-results');
+                if (searchResultsElement) {
+                    if (query.length < 2) {
+                        searchResultsElement.innerHTML = '<div class="no-results">Please enter at least 2 characters to search</div>';
+                        return;
                     }
+                    searchResultsElement.innerHTML = '<div class="loading">Searching...</div>';
+                    try {
+                        const results = await searchAllIngredients(query);
+                        await displaySearchResults(results);
+                    } catch (error) {
+                        console.error('Error searching ingredients:', error);
+                        searchResultsElement.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
+                    }
+                } else {
+                    console.error('Search results element not found');
                 }
             });
         }
@@ -906,6 +910,27 @@ function initializeApp() {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     if (searchBtn) searchBtn.click();
+                }
+            });
+            
+            // Also allow real-time search as user types
+            ingredientSearchInput.addEventListener('input', async (e) => {
+                const query = e.target.value.trim();
+                const searchResultsElement = document.getElementById('search-results');
+                if (searchResultsElement && query.length >= 2) {
+                    clearTimeout(modalSearchTimeout);
+                    modalSearchTimeout = setTimeout(async () => {
+                        searchResultsElement.innerHTML = '<div class="loading">Searching...</div>';
+                        try {
+                            const results = await searchAllIngredients(query);
+                            await displaySearchResults(results);
+                        } catch (error) {
+                            console.error('Error searching ingredients:', error);
+                            searchResultsElement.innerHTML = '<div class="error">Error searching ingredients. Please try again.</div>';
+                        }
+                    }, 300);
+                } else if (searchResultsElement && query.length === 0) {
+                    searchResultsElement.innerHTML = '';
                 }
             });
         }
@@ -1380,16 +1405,45 @@ function openIngredientSearch(ingredientInput) {
     // Store reference to the input being edited
     currentIngredientInput = ingredientInput;
     
-    // Make the input editable and focus it
+    // Open the modal for easier search experience
+    openIngredientSearchModal();
+    
+    // Also enable inline search as a fallback
     const nameInput = ingredientInput.querySelector('.ingredient-name');
     if (nameInput) {
         nameInput.readOnly = false;
-        nameInput.focus();
         nameInput.placeholder = 'Type to search custom ingredients or USDA database...';
         
+        // Remove existing event listeners by cloning (clean way to remove all listeners)
+        const oldValue = nameInput.value;
+        const newNameInput = nameInput.cloneNode(true);
+        newNameInput.value = oldValue;
+        nameInput.parentNode.replaceChild(newNameInput, nameInput);
+        
         // Add event listeners for inline search
-        nameInput.addEventListener('input', handleInlineSearch);
-        nameInput.addEventListener('blur', handleIngredientBlur);
+        newNameInput.addEventListener('input', handleInlineSearch);
+        newNameInput.addEventListener('blur', handleIngredientBlur);
+        
+        // Update currentIngredientInput reference to use the new input
+        currentIngredientInput = ingredientInput;
+    }
+}
+
+// Function to open the ingredient search modal
+function openIngredientSearchModal() {
+    const searchModal = document.getElementById('ingredient-search-modal');
+    const ingredientSearchInput = document.getElementById('ingredient-search-input');
+    const searchResultsElement = document.getElementById('search-results');
+    
+    if (searchModal) {
+        searchModal.classList.add('active');
+        if (ingredientSearchInput) {
+            ingredientSearchInput.focus();
+            ingredientSearchInput.value = '';
+        }
+        if (searchResultsElement) {
+            searchResultsElement.innerHTML = '';
+        }
     }
 }
 
@@ -1405,6 +1459,7 @@ function closeIngredientSearch() {
 
 // Inline search handlers
 let searchTimeout;
+let modalSearchTimeout;
 let currentSearchDropdown = null;
 
 function handleInlineSearch(event) {
@@ -1610,10 +1665,16 @@ async function searchAllIngredients(query) {
 
 // Modified Ingredient Search Result Handler
 async function displaySearchResults(results) {
-    searchResults.innerHTML = '';
+    const searchResultsElement = document.getElementById('search-results');
+    if (!searchResultsElement) {
+        console.error('Search results element not found');
+        return;
+    }
+    
+    searchResultsElement.innerHTML = '';
     
     if (results.length === 0) {
-        searchResults.innerHTML = '<div class="no-results">No matching ingredients found</div>';
+        searchResultsElement.innerHTML = '<div class="no-results">No matching ingredients found</div>';
         return;
     }
     
@@ -1685,7 +1746,7 @@ async function displaySearchResults(results) {
             }
         });
         
-        searchResults.appendChild(div);
+        searchResultsElement.appendChild(div);
     }
 }
 
@@ -1770,7 +1831,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         // Fallback: hide the modal directly
                         modal.classList.remove('active');
-                        modal.style.display = 'none';
                     }
                 }
             });
@@ -1792,7 +1852,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         } else {
                             // Fallback: hide the modal directly
                             modal.classList.remove('active');
-                            modal.style.display = 'none';
                         }
                     }
                 }
