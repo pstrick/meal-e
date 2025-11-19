@@ -258,12 +258,6 @@ function updateTotalNutrition() {
     if (recipeTotalProtein) recipeTotalProtein.textContent = `${totalRecipe.protein}g`;
     if (recipeTotalCarbs) recipeTotalCarbs.textContent = `${totalRecipe.carbs}g`;
     if (recipeTotalFat) recipeTotalFat.textContent = `${totalRecipe.fat}g`;
-
-    // Show/hide totals section based on whether there are ingredients
-    if (recipeTotalsSection) {
-        const hasIngredients = ingredientItems.length > 0 && totalWeight > 0;
-        recipeTotalsSection.style.display = hasIngredients ? 'block' : 'none';
-    }
 }
 
 function calculateTotalWeight() {
