@@ -2142,6 +2142,15 @@ function selectIngredient(ingredient) {
         
         selectedIngredients.set(storageId, ingredientData);
         
+        // CRITICAL: Set the fdcId in the dataset to match the storageId used in selectedIngredients
+        // This ensures the amount change handler can find the ingredient
+        nameInput.dataset.fdcId = storageId;
+        console.log('✅ Set nameInput.dataset.fdcId to storageId:', {
+            storageId: storageId,
+            fdcId: nameInput.dataset.fdcId,
+            storedInSelectedIngredients: selectedIngredients.has(storageId)
+        });
+        
         // Update nutrition display
         console.log('Calling updateIngredientMacros with:', {
             ingredientName: ingredientData.name,
