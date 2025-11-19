@@ -107,30 +107,30 @@ function releaseThemePreload() {
 // Modal Management
 function openModal() {
     try {
-        const recipeModal = document.getElementById('recipe-modal');
-        if (!recipeModal) {
-            console.log('Recipe modal not found');
-            return;
-        }
-        recipeModal.classList.add('active');
-        // Add first ingredient input if none exists
+    const recipeModal = document.getElementById('recipe-modal');
+    if (!recipeModal) {
+        console.log('Recipe modal not found');
+        return;
+    }
+    recipeModal.classList.add('active');
+    // Add first ingredient input if none exists
         const ingredientsList = document.getElementById('ingredients-list');
         if (ingredientsList && ingredientsList.children.length === 0) {
             try {
-                addIngredientInput();
+        addIngredientInput();
             } catch (error) {
                 console.error('Error adding ingredient input:', error);
             }
-        }
-        // Set up serving size event listener
+    }
+    // Set up serving size event listener
         try {
-            setupServingSizeListener();
+    setupServingSizeListener();
         } catch (error) {
             console.error('Error setting up serving size listener:', error);
         }
-        // Initialize nutrition display
+    // Initialize nutrition display
         try {
-            updateTotalNutrition();
+    updateTotalNutrition();
         } catch (error) {
             console.error('Error updating total nutrition:', error);
         }
@@ -148,11 +148,11 @@ function closeModalHandler() {
     recipeModal.classList.remove('active');
     const recipeForm = document.getElementById('recipe-form');
     if (recipeForm) {
-        recipeForm.reset();
+    recipeForm.reset();
     }
     const ingredientsList = document.getElementById('ingredients-list');
     if (ingredientsList) {
-        ingredientsList.innerHTML = '';
+    ingredientsList.innerHTML = '';
     }
     selectedIngredients.clear();
     currentEditRecipeId = null;
@@ -896,7 +896,7 @@ function initializeApp() {
         // Initialize recipe list if we're on the recipes page
         if (elements.recipeList && document.getElementById('category-filter')) {
             try {
-                updateRecipeList();
+            updateRecipeList();
             } catch (error) {
                 console.error('Error updating recipe list:', error);
             }
@@ -905,7 +905,7 @@ function initializeApp() {
         // Initialize meal planner if available
         if (typeof initializeMealPlanner === 'function') {
             try {
-                initializeMealPlanner();
+            initializeMealPlanner();
             } catch (error) {
                 console.error('Error initializing meal planner:', error);
             }
@@ -914,7 +914,7 @@ function initializeApp() {
         // Initialize recipe form if available
         if (elements.recipeForm) {
             try {
-                elements.recipeForm.addEventListener('submit', handleRecipeSubmit);
+            elements.recipeForm.addEventListener('submit', handleRecipeSubmit);
             } catch (error) {
                 console.error('Error setting up recipe form:', error);
             }
@@ -923,7 +923,7 @@ function initializeApp() {
         // Initialize add meal button if available
         if (elements.addRecipeBtn) {
             try {
-                elements.addRecipeBtn.addEventListener('click', openModal);
+            elements.addRecipeBtn.addEventListener('click', openModal);
                 console.log('Add recipe button initialized');
             } catch (error) {
                 console.error('Error setting up add recipe button:', error);
@@ -1644,6 +1644,8 @@ function openIngredientSearch(ingredientInput) {
         // Add event listeners for inline search
         newNameInput.addEventListener('input', handleInlineSearch);
         newNameInput.addEventListener('blur', handleIngredientBlur);
+        // Re-add click handler so user can edit again after selection
+        newNameInput.addEventListener('click', () => openIngredientSearch(ingredientInput));
         
         // Update currentIngredientInput reference to use the new input
         currentIngredientInput = ingredientInput;
@@ -1836,6 +1838,13 @@ function selectIngredient(ingredient) {
         nameInput.value = displayName;
         nameInput.readOnly = true;
         nameInput.placeholder = 'Search for ingredient';
+        
+        // Ensure click and focus handlers are present so user can edit again
+        // Remove existing handlers and re-add
+        const newNameInput = nameInput.cloneNode(true);
+        nameInput.parentNode.replaceChild(newNameInput, nameInput);
+        newNameInput.addEventListener('click', () => openIngredientSearch(currentIngredientInput));
+        newNameInput.addEventListener('focus', () => openIngredientSearch(currentIngredientInput));
         
         // Store ingredient data - ensure nutrition is properly structured
         const nutrition = ingredient.nutrition || {
@@ -2116,8 +2125,8 @@ async function searchAllIngredients(query) {
     // Search USDA and Open Food Facts APIs in parallel for faster results
     const [usdaResults, offResults] = await Promise.allSettled([
         (async () => {
-            try {
-                console.log('Searching USDA API for:', query);
+    try {
+        console.log('Searching USDA API for:', query);
                 const results = await searchUSDAIngredients(query, 5); // Reduced to 5 for speed
                 console.log('USDA API returned', results.length, 'results');
                 return results || [];
@@ -2147,7 +2156,7 @@ async function searchAllIngredients(query) {
         if (!text || !query) return 0;
         
         const textLower = text.toLowerCase().trim();
-        const queryLower = query.toLowerCase().trim();
+            const queryLower = query.toLowerCase().trim();
         const queryWords = queryLower.split(/\s+/).filter(w => w.length > 0);
         
         let score = 0;
@@ -2209,7 +2218,7 @@ async function searchAllIngredients(query) {
     // Process USDA results
     if (usdaResults.status === 'fulfilled' && usdaResults.value && usdaResults.value.length > 0) {
         const scoredUSDAResults = usdaResults.value
-            .map(result => {
+                .map(result => {
                 const name = result.name || '';
                 const brandOwner = result.brandOwner || '';
                 const fullText = `${name} ${brandOwner}`.trim();
@@ -2222,18 +2231,18 @@ async function searchAllIngredients(query) {
                     relevance += calculateRelevance(brandOwner, query) * 0.3;
                 }
                 
-                // Boost relevance if it has nutrition data
-                if (result.nutrition && (result.nutrition.calories > 0 || result.nutrition.protein > 0)) {
-                    relevance += 0.5;
-                }
+                    // Boost relevance if it has nutrition data
+                    if (result.nutrition && (result.nutrition.calories > 0 || result.nutrition.protein > 0)) {
+                        relevance += 0.5;
+                    }
                 
                 // Penalize very long names (less specific)
                 if (name.length > 100) {
                     relevance -= 0.5;
                 }
                 
-                return { result, relevance };
-            })
+                    return { result, relevance };
+                })
             .filter(item => item.relevance > 0)
             .sort((a, b) => {
                 // Sort by relevance first
@@ -2249,10 +2258,10 @@ async function searchAllIngredients(query) {
                 // Then by name length (shorter = more specific)
                 return a.result.name.length - b.result.name.length;
             })
-            .map(item => item.result);
-        
-        results.push(...scoredUSDAResults);
-        console.log('Added', scoredUSDAResults.length, 'USDA results');
+                .map(item => item.result);
+            
+            results.push(...scoredUSDAResults);
+            console.log('Added', scoredUSDAResults.length, 'USDA results');
     }
     
     // Process Open Food Facts results
@@ -2271,18 +2280,18 @@ async function searchAllIngredients(query) {
                     relevance += calculateRelevance(brandOwner, query) * 0.3;
                 }
                 
-                // Boost relevance if it has nutrition data
-                if (result.nutrition && (result.nutrition.calories > 0 || result.nutrition.protein > 0)) {
-                    relevance += 0.5;
-                }
+                    // Boost relevance if it has nutrition data
+                    if (result.nutrition && (result.nutrition.calories > 0 || result.nutrition.protein > 0)) {
+                        relevance += 0.5;
+                    }
                 
                 // Penalize very long names (less specific)
                 if (name.length > 100) {
                     relevance -= 0.5;
                 }
                 
-                return { result, relevance };
-            })
+                    return { result, relevance };
+                })
             .filter(item => item.relevance > 0)
             .sort((a, b) => {
                 // Sort by relevance first
@@ -2298,10 +2307,10 @@ async function searchAllIngredients(query) {
                 // Then by name length (shorter = more specific)
                 return a.result.name.length - b.result.name.length;
             })
-            .map(item => item.result);
-        
-        results.push(...scoredOFFResults);
-        console.log('Added', scoredOFFResults.length, 'Open Food Facts results');
+                .map(item => item.result);
+            
+            results.push(...scoredOFFResults);
+            console.log('Added', scoredOFFResults.length, 'Open Food Facts results');
     }
     
     // Sort results: custom ingredients first, then by calculated relevance score
@@ -2469,6 +2478,14 @@ async function displaySearchResults(results) {
                     nameField.dataset.fdcId = storageId;
                     nameField.dataset.storeSection = ingredient.storeSection || '';
                     nameField.dataset.emoji = emoji;
+                    nameField.readOnly = true;
+                    nameField.placeholder = 'Search for ingredient';
+                    
+                    // Ensure click and focus handlers are present so user can edit again
+                    const newNameField = nameField.cloneNode(true);
+                    nameField.parentNode.replaceChild(newNameField, nameField);
+                    newNameField.addEventListener('click', () => openIngredientSearch(currentIngredientInput));
+                    newNameField.addEventListener('focus', () => openIngredientSearch(currentIngredientInput));
                 }
                 
                 // Update ingredient macros
