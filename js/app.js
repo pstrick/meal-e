@@ -1751,8 +1751,16 @@ function selectIngredient(ingredient) {
         console.log('Calling updateIngredientMacros with:', {
             ingredientName: ingredientData.name,
             amount: ingredientData.amount,
-            nutrition: ingredientData.nutrition
+            nutrition: ingredientData.nutrition,
+            currentIngredientInput: currentIngredientInput,
+            hasMacrosContainer: currentIngredientInput ? !!currentIngredientInput.querySelector('.ingredient-macros') : false
         });
+        
+        if (!currentIngredientInput) {
+            console.error('⚠️ CRITICAL: currentIngredientInput is null! Cannot update macros.');
+            return;
+        }
+        
         updateIngredientMacros(currentIngredientInput, ingredientData);
         updateServingSizeDefault();
         
