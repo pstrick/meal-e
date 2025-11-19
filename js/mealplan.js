@@ -123,6 +123,13 @@ async function searchAllIngredients(query) {
     customMatches.forEach(ingredient => {
         // Convert nutrition from total serving size to per-gram values
         const servingSize = ingredient.servingSize || 100; // Default to 100g if not specified
+        
+        // Calculate pricePer100g from pricePerGram if available
+        let pricePer100g = null;
+        if (ingredient.pricePerGram) {
+            pricePer100g = ingredient.pricePerGram * 100;
+        }
+        
         results.push({
             id: ingredient.id,
             fdcId: `custom-${ingredient.id}`,
@@ -138,7 +145,8 @@ async function searchAllIngredients(query) {
             servingSize: ingredient.servingSize,
             brandOwner: 'Custom Ingredient',
             storeSection: ingredient.storeSection || '',
-            pricePerGram: ingredient.pricePerGram,
+            pricePerGram: ingredient.pricePerGram || null,
+            pricePer100g: pricePer100g,
             totalPrice: ingredient.totalPrice,
             totalWeight: ingredient.totalWeight,
             emoji: ingredient.emoji
