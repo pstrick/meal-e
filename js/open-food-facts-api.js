@@ -1,6 +1,7 @@
 // Open Food Facts API Service
 // Free, open database of food products with barcode and nutrition data
 // Documentation: https://world.openfoodfacts.org/data
+import { getCachedResults, setCachedResults } from './food-cache.js';
 
 /**
  * Search for foods using Open Food Facts API
@@ -255,6 +256,16 @@ export function formatOpenFoodFactsProduct(product) {
 export async function searchOpenFoodFactsIngredients(query, maxResults = 10) {
     try {
         console.log('searchOpenFoodFactsIngredients called with query:', query, 'maxResults:', maxResults);
+        
+        // Check cache first
+        const cachedResults = await getCachedResults(query, 'openfoodfacts', maxResults);
+        if (cachedResults !== null) {
+            console.log('Returning cached Open Food Facts results:', cachedResults.length, 'items');
+            return cachedResults;
+        }
+        
+        // Cache miss - make API call
+        console.log('Cache miss for Open Food Facts query:', query, '- making API call');
         const products = await searchOpenFoodFacts(query, maxResults);
         console.log('searchOpenFoodFacts returned', products.length, 'products');
         
@@ -267,6 +278,10 @@ export async function searchOpenFoodFactsIngredients(query, maxResults = 10) {
             .map(formatOpenFoodFactsProduct)
             .filter(product => product !== null);
         console.log('Formatted', formatted.length, 'Open Food Facts ingredients (filtered out nulls)');
+        
+        // Cache the results for future use
+        await setCachedResults(query, 'openfoodfacts', formatted, maxResults);
+        
         return formatted;
     } catch (error) {
         console.error('Error searching Open Food Facts ingredients:', error);

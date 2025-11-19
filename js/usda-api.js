@@ -1,5 +1,6 @@
 // USDA FoodData Central API Service
 import config from './config.js';
+import { getCachedResults, setCachedResults } from './food-cache.js';
 
 /**
  * Search for foods using USDA FoodData Central API
@@ -262,6 +263,16 @@ export function formatUSDAFood(food) {
 export async function searchUSDAIngredients(query, maxResults = 10) {
     try {
         console.log('searchUSDAIngredients called with query:', query, 'maxResults:', maxResults);
+        
+        // Check cache first
+        const cachedResults = await getCachedResults(query, 'usda', maxResults);
+        if (cachedResults !== null) {
+            console.log('Returning cached USDA results:', cachedResults.length, 'items');
+            return cachedResults;
+        }
+        
+        // Cache miss - make API call
+        console.log('Cache miss for USDA query:', query, '- making API call');
         const foods = await searchUSDAFoods(query, maxResults);
         console.log('searchUSDAFoods returned', foods.length, 'foods');
         
@@ -272,6 +283,10 @@ export async function searchUSDAIngredients(query, maxResults = 10) {
         
         const formatted = foods.map(formatUSDAFood).filter(food => food !== null);
         console.log('Formatted', formatted.length, 'USDA ingredients (filtered out nulls)');
+        
+        // Cache the results for future use
+        await setCachedResults(query, 'usda', formatted, maxResults);
+        
         return formatted;
     } catch (error) {
         console.error('Error searching USDA ingredients:', error);
