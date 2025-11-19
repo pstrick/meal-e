@@ -2892,7 +2892,7 @@ function addIngredientInput() {
     const handleAmountInput = function() {
         console.log('🔔 Amount input event fired!', { value: amountInput.value });
         const fdcId = nameInput.dataset.fdcId;
-        const newAmount = parseFloat(amountInput.value) || 0;
+            const newAmount = parseFloat(amountInput.value) || 0;
         console.log('🔔 Processing amount change:', { fdcId, newAmount });
         
         // Try to get ingredient from selectedIngredients
@@ -2974,7 +2974,12 @@ function addIngredientInput() {
             updateServingSizeDefault();
             updateTotalNutrition();
         }
-    });
+    };
+    
+    // Remove any existing listener first to prevent duplicates
+    amountInput.removeEventListener('input', handleAmountInput);
+    // Add the listener
+    amountInput.addEventListener('input', handleAmountInput);
 
     ingredientItem.querySelector('.remove-ingredient').addEventListener('click', () => {
         if (ingredientsList.children.length > 1) {

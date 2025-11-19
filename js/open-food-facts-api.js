@@ -373,7 +373,29 @@ export async function searchOpenFoodFactsIngredients(query, maxResults = 10) {
         const cachedResults = await getCachedResults(query, 'openfoodfacts', maxResults);
         if (cachedResults !== null) {
             console.log('Returning cached Open Food Facts results:', cachedResults.length, 'items');
-            return cachedResults;
+            // Filter cached results to ensure they have valid nutrition data
+            // (in case cache was created before filtering was added)
+            const filteredCached = cachedResults.filter(product => {
+                if (!product || !product.nutrition) {
+                    return false;
+                }
+                const hasValidNutrition = 
+                    (product.nutrition.calories && product.nutrition.calories > 0) || 
+                    (product.nutrition.protein && product.nutrition.protein > 0) || 
+                    (product.nutrition.carbs && product.nutrition.carbs > 0) || 
+                    (product.nutrition.fat && product.nutrition.fat > 0);
+                
+                if (!hasValidNutrition) {
+                    console.log('Filtering out cached Open Food Facts product without valid nutrition:', product.name);
+                }
+                return hasValidNutrition;
+            });
+            
+            if (filteredCached.length !== cachedResults.length) {
+                console.log(`Filtered ${cachedResults.length - filteredCached.length} cached products without valid nutrition`);
+            }
+            
+            return filteredCached;
         }
         
         // Cache miss - make API call
