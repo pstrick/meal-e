@@ -1505,6 +1505,7 @@ function editRecipe(id) {
         };
         selectedIngredients.set(fdcId, ingredientData);
         nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
+        nameInput.addEventListener('focus', () => openIngredientSearch(ingredientItem));
         amountInput.addEventListener('input', () => {
             const fdcId = nameInput.dataset.fdcId;
             const newAmount = parseFloat(amountInput.value) || 0;
@@ -2510,7 +2511,7 @@ function addIngredientInput() {
     ingredientItem.className = 'ingredient-item';
     ingredientItem.innerHTML = `
         <div class="ingredient-main">
-            <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly>
+            <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly tabindex="0">
             <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="100">
             <button type="button" class="remove-ingredient btn btn-ghost btn-icon" aria-label="Remove ingredient">&times;</button>
         </div>
@@ -2527,6 +2528,7 @@ function addIngredientInput() {
     const amountInput = ingredientItem.querySelector('.ingredient-amount');
 
     nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
+    nameInput.addEventListener('focus', () => openIngredientSearch(ingredientItem));
     
     // Update nutrition and serving size when amount changes
     amountInput.addEventListener('input', () => {
@@ -2914,6 +2916,7 @@ function duplicateRecipe(id) {
         
         // Add event listeners
         nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
+        nameInput.addEventListener('focus', () => openIngredientSearch(ingredientItem));
         amountInput.addEventListener('input', () => {
             const fdcId = nameInput.dataset.fdcId;
             const newAmount = parseFloat(amountInput.value) || 0;
