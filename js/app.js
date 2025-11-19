@@ -1494,14 +1494,12 @@ function openIngredientSearch(ingredientInput) {
     // Store reference to the input being edited
     currentIngredientInput = ingredientInput;
     
-    // Open the modal for easier search experience
-    openIngredientSearchModal();
-    
-    // Also enable inline search as a fallback
+    // Enable inline search directly in the text box (no modal)
     const nameInput = ingredientInput.querySelector('.ingredient-name');
     if (nameInput) {
         nameInput.readOnly = false;
-        nameInput.placeholder = 'Type to search custom ingredients or USDA database...';
+        nameInput.placeholder = 'Type to search custom ingredients, USDA database, or Open Food Facts...';
+        nameInput.focus();
         
         // Remove existing event listeners by cloning (clean way to remove all listeners)
         const oldValue = nameInput.value;
@@ -1579,9 +1577,15 @@ function handleInlineSearch(event) {
 
 function handleIngredientBlur(event) {
     // Delay hiding dropdown to allow clicking on results
+    // Use a longer delay to ensure click events on dropdown items fire first
     setTimeout(() => {
-        removeSearchDropdown();
-    }, 200);
+        // Only remove if the focus didn't move to the dropdown
+        const activeElement = document.activeElement;
+        const dropdown = document.querySelector('.ingredient-search-dropdown');
+        if (!dropdown || !dropdown.contains(activeElement)) {
+            removeSearchDropdown();
+        }
+    }, 300);
 }
 
 function showInlineSearchResults(input, results) {
@@ -1628,7 +1632,8 @@ function showInlineSearchResults(input, results) {
             <div style="font-size: 0.8em; color: #666;">${result.brandOwner || sourceLabel}</div>
         `;
         
-        item.addEventListener('click', () => {
+        item.addEventListener('mousedown', (e) => {
+            e.preventDefault(); // Prevent blur event from firing before click
             selectIngredient(result);
             removeSearchDropdown();
         });
@@ -2071,7 +2076,7 @@ async function displaySearchResults(results) {
                 
                 // Update nutrition display
                 updateTotalNutrition();
-                closeIngredientSearch();
+                removeSearchDropdown();
             } catch (error) {
                 console.error('Error selecting ingredient:', error);
                 showAlert('Error selecting ingredient. Please try again.', { type: 'error' });
