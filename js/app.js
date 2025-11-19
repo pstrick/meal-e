@@ -1871,12 +1871,23 @@ function selectIngredient(ingredient) {
         }
         
         // Ensure nutrition values are numbers (handle any string conversions)
+        // IMPORTANT: Nutrition should already be per-gram from search results
+        // (USDA and Open Food Facts APIs return per-gram, custom ingredients are converted to per-gram)
         const safeNutrition = {
             calories: Number(nutrition.calories) || 0,
             protein: Number(nutrition.protein) || 0,
             carbs: Number(nutrition.carbs) || 0,
             fat: Number(nutrition.fat) || 0
         };
+        
+        // Log to verify nutrition format
+        console.log('🔍 Storing ingredient nutrition:', {
+            name: ingredient.name,
+            source: ingredient.source,
+            nutritionValues: safeNutrition,
+            expectedFormat: 'per-gram',
+            check: safeNutrition.calories > 10 ? '⚠️ WARNING: Calories seem high for per-gram (might be per-100g?)' : '✅ Looks like per-gram values'
+        });
         
         const ingredientData = {
             name: ingredient.name,
@@ -2573,17 +2584,21 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         fat: Math.round((safeNutrition.fat * amount) * 10) / 10          // Round to 1 decimal
     };
     
+    // Log detailed calculation info
     console.log('📊 updateIngredientMacros calculation:', {
         ingredientName: ingredient.name,
         amountInGrams: amount,
         nutritionPerGram: safeNutrition,
+        rawNutrition: nutrition,
         calculation: {
             calories: `${safeNutrition.calories} cal/g × ${amount}g = ${macros.calories} cal`,
             protein: `${safeNutrition.protein}g/g × ${amount}g = ${macros.protein}g`,
             carbs: `${safeNutrition.carbs}g/g × ${amount}g = ${macros.carbs}g`,
             fat: `${safeNutrition.fat}g/g × ${amount}g = ${macros.fat}g`
         },
-        calculatedMacros: macros
+        calculatedMacros: macros,
+        // Check if values look like per-100g instead of per-gram
+        warning: safeNutrition.calories > 10 ? '⚠️ Calories per gram seems high - might be per-100g?' : null
     });
     
     // Log if macros are zero but we have nutrition data
