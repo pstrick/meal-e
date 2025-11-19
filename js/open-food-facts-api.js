@@ -189,14 +189,21 @@ export function formatOpenFoodFactsProduct(product) {
     
     const nutrition = extractOpenFoodFactsNutrition(product);
     
-    // Validate nutrition data - filter out products with no nutrition information
-    if (!nutrition || 
-        (nutrition.calories === 0 && nutrition.protein === 0 && nutrition.carbs === 0 && nutrition.fat === 0)) {
-        console.warn('Open Food Facts product has no nutrition data - filtering out:', {
+    // Validate nutrition data - require at least calories OR at least one macro
+    const hasValidNutrition = nutrition && (
+        nutrition.calories > 0 || 
+        nutrition.protein > 0 || 
+        nutrition.carbs > 0 || 
+        nutrition.fat > 0
+    );
+    
+    if (!hasValidNutrition) {
+        console.warn('Open Food Facts product has no valid nutrition data (calories or macros) - filtering out:', {
             code: product.code,
             product_name: product.product_name,
             hasNutriments: !!product.nutriments,
-            nutrimentsKeys: product.nutriments ? Object.keys(product.nutriments) : []
+            nutrimentsKeys: product.nutriments ? Object.keys(product.nutriments) : [],
+            extractedNutrition: nutrition
         });
         // Return null to filter out products with no nutrition data
         return null;
@@ -377,14 +384,32 @@ export async function searchOpenFoodFactsIngredients(query, maxResults = 10) {
             return [];
         }
         
-        const formatted = products
+        let formatted = products
             .map(formatOpenFoodFactsProduct)
             .filter(product => product !== null);
+        
+        // Double-check: filter out any products that still don't have valid nutrition data
+        formatted = formatted.filter(product => {
+            if (!product || !product.nutrition) {
+                return false;
+            }
+            const hasValidNutrition = 
+                product.nutrition.calories > 0 || 
+                product.nutrition.protein > 0 || 
+                product.nutrition.carbs > 0 || 
+                product.nutrition.fat > 0;
+            
+            if (!hasValidNutrition) {
+                console.log('Filtering out Open Food Facts product without valid nutrition:', product.name);
+            }
+            return hasValidNutrition;
+        });
+        
         const filteredCount = products.length - formatted.length;
         if (filteredCount > 0) {
-            console.log(`Filtered out ${filteredCount} Open Food Facts products with no nutrition data`);
+            console.log(`Filtered out ${filteredCount} Open Food Facts products with no valid nutrition data`);
         }
-        console.log('Formatted', formatted.length, 'Open Food Facts ingredients (filtered out nulls)');
+        console.log('After filtering for valid nutrition:', formatted.length, 'Open Food Facts ingredients remain');
         
         // Cache the results for future use
         await setCachedResults(query, 'openfoodfacts', formatted, maxResults);
