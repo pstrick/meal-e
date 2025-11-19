@@ -1945,18 +1945,48 @@ function selectIngredient(ingredient) {
             amountInput.value = '100';
         }
         
-        // Ensure nutrition values are numbers (handle any string conversions)
-        // IMPORTANT: Nutrition should already be per-gram from search results
-        // (USDA and Open Food Facts APIs return per-gram, custom ingredients are converted to per-gram)
-        const safeNutrition = {
+        // CRITICAL: Normalize nutrition to per-gram format ONCE and store statically
+        // Nutrition from APIs should be per-gram, but we'll ensure it's normalized
+        let nutritionPerGram = {
             calories: Number(nutrition.calories) || 0,
             protein: Number(nutrition.protein) || 0,
             carbs: Number(nutrition.carbs) || 0,
             fat: Number(nutrition.fat) || 0
         };
         
+        // Detect if nutrition is per-100g and convert to per-gram
+        // Typical per-gram: calories < 10, protein/carbs/fat < 1
+        // Typical per-100g: calories > 50, protein/carbs/fat > 1
+        const looksLikePer100g = nutritionPerGram.calories > 20 || 
+                                 nutritionPerGram.protein > 2 || 
+                                 nutritionPerGram.carbs > 2 || 
+                                 nutritionPerGram.fat > 2;
+        
+        if (looksLikePer100g) {
+            console.warn('⚠️ Converting nutrition from per-100g to per-gram during storage:', {
+                before: nutritionPerGram,
+                ingredientName: ingredient.name
+            });
+            nutritionPerGram = {
+                calories: nutritionPerGram.calories / 100,
+                protein: nutritionPerGram.protein / 100,
+                carbs: nutritionPerGram.carbs / 100,
+                fat: nutritionPerGram.fat / 100
+            };
+            console.log('✅ Converted to per-gram:', nutritionPerGram);
+        }
+        
+        // Store with high precision (don't round - keep as decimals)
+        // These values will be STATIC and never change - only multiplied by amount
+        const staticNutritionPerGram = {
+            calories: nutritionPerGram.calories,
+            protein: nutritionPerGram.protein,
+            carbs: nutritionPerGram.carbs,
+            fat: nutritionPerGram.fat
+        };
+        
         // Log to verify nutrition format
-        console.group('💾 Storing ingredient in selectedIngredients');
+        console.group('💾 Storing ingredient in selectedIngredients (STATIC per-gram values)');
         console.log('Ingredient details:', {
             name: ingredient.name,
             source: ingredient.source,
@@ -1964,26 +1994,15 @@ function selectIngredient(ingredient) {
             id: ingredient.id
         });
         console.log('Raw nutrition from ingredient:', nutrition);
-        console.log('Validated nutrition (will be stored):', safeNutrition);
-        console.log('Expected format: per-gram');
-        console.log('Format check:', {
-            calories: safeNutrition.calories,
-            protein: safeNutrition.protein,
-            carbs: safeNutrition.carbs,
-            fat: safeNutrition.fat,
-            warning: safeNutrition.calories > 10 ? '⚠️ WARNING: Calories seem high for per-gram (might be per-100g?)' : 
-                    safeNutrition.protein > 1 ? '⚠️ WARNING: Protein seems high for per-gram (might be per-100g?)' :
-                    safeNutrition.carbs > 1 ? '⚠️ WARNING: Carbs seem high for per-gram (might be per-100g?)' :
-                    safeNutrition.fat > 1 ? '⚠️ WARNING: Fat seems high for per-gram (might be per-100g?)' :
-                    '✅ Looks like per-gram values'
-        });
+        console.log('✅ STATIC nutrition per gram (will NEVER change):', staticNutritionPerGram);
+        console.log('These values will be multiplied by amount when calculating macros');
         console.log('Default amount:', defaultAmount);
         console.groupEnd();
         
         const ingredientData = {
             name: ingredient.name,
             amount: defaultAmount,
-            nutrition: safeNutrition,
+            nutrition: staticNutritionPerGram, // STATIC per-gram values - never change
             source: ingredient.source || 'custom',
             id: ingredient.id || ingredient.fdcId,
             fdcId: ingredient.fdcId || storageId,
@@ -2641,15 +2660,45 @@ async function displaySearchResults(results) {
                     return; // Don't select ingredients without valid nutrition
                 }
                 
+                // CRITICAL: Normalize nutrition to per-gram format ONCE and store statically
+                let nutritionPerGram = {
+                    calories: Number(nutrition.calories) || 0,
+                    protein: Number(nutrition.protein) || 0,
+                    carbs: Number(nutrition.carbs) || 0,
+                    fat: Number(nutrition.fat) || 0
+                };
+                
+                // Detect if nutrition is per-100g and convert to per-gram
+                const looksLikePer100g = nutritionPerGram.calories > 20 || 
+                                         nutritionPerGram.protein > 2 || 
+                                         nutritionPerGram.carbs > 2 || 
+                                         nutritionPerGram.fat > 2;
+                
+                if (looksLikePer100g) {
+                    console.warn('⚠️ Converting nutrition from per-100g to per-gram during storage:', {
+                        before: nutritionPerGram,
+                        ingredientName: ingredient.name
+                    });
+                    nutritionPerGram = {
+                        calories: nutritionPerGram.calories / 100,
+                        protein: nutritionPerGram.protein / 100,
+                        carbs: nutritionPerGram.carbs / 100,
+                        fat: nutritionPerGram.fat / 100
+                    };
+                }
+                
+                // Store static per-gram values (high precision, never change)
+                const staticNutritionPerGram = {
+                    calories: nutritionPerGram.calories,
+                    protein: nutritionPerGram.protein,
+                    carbs: nutritionPerGram.carbs,
+                    fat: nutritionPerGram.fat
+                };
+                
                 const ingredientData = {
                     name: ingredient.name,
                     amount: parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0,
-                    nutrition: {
-                        calories: nutrition.calories || 0,
-                        protein: nutrition.protein || 0,
-                        carbs: nutrition.carbs || 0,
-                        fat: nutrition.fat || 0
-                    },
+                    nutrition: staticNutritionPerGram, // STATIC per-gram values - never change
                     source: ingredient.source || 'custom',
                     id: ingredient.id || ingredient.fdcId,
                     fdcId: ingredient.fdcId || `custom-${ingredient.id}`,
@@ -3017,102 +3066,11 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         });
     }
     
-    // CRITICAL: Detect and normalize nutrition format
-    // Nutrition should be per-gram, but might be stored as per-100g in some cases
-    // We'll test by calculating what the result would be and checking if it's reasonable
-    
-    console.log('🧪 Testing nutrition format...');
-    if (amount > 0) {
-        // Test calculation: if nutrition is per-gram, multiplying by amount should give reasonable values
-        // If nutrition is per-100g, multiplying by amount would give 100x the correct value
-        const testCalories = safeNutrition.calories * amount;
-        const testProtein = safeNutrition.protein * amount;
-        const testCarbs = safeNutrition.carbs * amount;
-        const testFat = safeNutrition.fat * amount;
-        
-        console.log('🧮 Test calculations (assuming current format is correct):', {
-            calories: `${safeNutrition.calories} × ${amount} = ${testCalories} cal`,
-            protein: `${safeNutrition.protein} × ${amount} = ${testProtein}g`,
-            carbs: `${safeNutrition.carbs} × ${amount} = ${testCarbs}g`,
-            fat: `${safeNutrition.fat} × ${amount} = ${testFat}g`
-        });
-        
-        // Reasonable ranges for most foods per 100g:
-        // Calories: 0-900 (most foods are 0-600, but some like oils can be 900)
-        // Protein: 0-100g (most foods are 0-50g)
-        // If our test calculation exceeds these, it's likely per-100g format being multiplied incorrectly
-        
-        const maxReasonableCalories = Math.max(amount * 9, 1000); // 9 cal/g is very high (pure fat)
-        const maxReasonableProtein = Math.max(amount * 1, 100); // 1g protein per gram is very high
-        const maxReasonableCarbs = Math.max(amount * 1, 100);
-        const maxReasonableFat = Math.max(amount * 1, 100);
-        
-        console.log('📐 Reasonable maximums for this amount:', {
-            calories: maxReasonableCalories,
-            protein: maxReasonableProtein,
-            carbs: maxReasonableCarbs,
-            fat: maxReasonableFat
-        });
-        
-        const looksLikePer100g = (safeNutrition.calories > 1 && testCalories > maxReasonableCalories) ||
-                                 (safeNutrition.protein > 0.1 && testProtein > maxReasonableProtein) ||
-                                 (safeNutrition.carbs > 0.1 && testCarbs > maxReasonableCarbs) ||
-                                 (safeNutrition.fat > 0.1 && testFat > maxReasonableFat) ||
-                                 (safeNutrition.calories > 50) || // Very high per-gram calories unlikely
-                                 (safeNutrition.protein > 5) ||   // Very high per-gram protein unlikely
-                                 (safeNutrition.carbs > 5) ||     // Very high per-gram carbs unlikely
-                                 (safeNutrition.fat > 5);         // Very high per-gram fat unlikely
-        
-        console.log('🔍 Format detection:', {
-            looksLikePer100g: looksLikePer100g,
-            checks: {
-                caloriesTooHigh: safeNutrition.calories > 1 && testCalories > maxReasonableCalories,
-                proteinTooHigh: safeNutrition.protein > 0.1 && testProtein > maxReasonableProtein,
-                carbsTooHigh: safeNutrition.carbs > 0.1 && testCarbs > maxReasonableCarbs,
-                fatTooHigh: safeNutrition.fat > 0.1 && testFat > maxReasonableFat,
-                rawCaloriesHigh: safeNutrition.calories > 50,
-                rawProteinHigh: safeNutrition.protein > 5,
-                rawCarbsHigh: safeNutrition.carbs > 5,
-                rawFatHigh: safeNutrition.fat > 5
-            }
-        });
-        
-        if (looksLikePer100g) {
-            console.warn('⚠️ DETECTED: Nutrition appears to be per-100g format!', {
-                ingredientName: ingredient.name,
-                originalValues: safeNutrition,
-                testCalculations: { 
-                    calories: testCalories, 
-                    protein: testProtein,
-                    carbs: testCarbs,
-                    fat: testFat
-                },
-                amount: amount,
-                maxReasonable: { 
-                    calories: maxReasonableCalories, 
-                    protein: maxReasonableProtein,
-                    carbs: maxReasonableCarbs,
-                    fat: maxReasonableFat
-                }
-            });
-            // Convert from per-100g to per-gram
-            const beforeConversion = { ...safeNutrition };
-            safeNutrition = {
-                calories: safeNutrition.calories / 100,
-                protein: safeNutrition.protein / 100,
-                carbs: safeNutrition.carbs / 100,
-                fat: safeNutrition.fat / 100
-            };
-            console.log('✅ CONVERTED from per-100g to per-gram:', {
-                before: beforeConversion,
-                after: safeNutrition
-            });
-        } else {
-            console.log('✅ Nutrition format appears correct (per-gram)');
-        }
-    } else {
-        console.warn('⚠️ Amount is 0 or invalid, skipping format detection');
-    }
+    // CRITICAL: Nutrition values are STATIC per-gram values stored when ingredient was selected
+    // DO NOT modify or recalculate them - just use them as-is for multiplication
+    // The nutrition values should already be normalized to per-gram format
+    console.log('✅ Using STATIC nutrition per-gram values (never modified):', safeNutrition);
+    console.log('These values were calculated ONCE when ingredient was selected and stored statically');
     
     // Calculate total macros: nutrition per gram × amount in grams
     console.log('🧮 Final calculation step:');
