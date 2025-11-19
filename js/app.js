@@ -2019,28 +2019,107 @@ async function searchAllIngredients(query) {
         })()
     ]);
     
+    // Helper function to calculate relevance score
+    function calculateRelevance(text, query) {
+        if (!text || !query) return 0;
+        
+        const textLower = text.toLowerCase().trim();
+        const queryLower = query.toLowerCase().trim();
+        const queryWords = queryLower.split(/\s+/).filter(w => w.length > 0);
+        
+        let score = 0;
+        
+        // Exact match (highest priority)
+        if (textLower === queryLower) {
+            score += 10;
+        }
+        // Starts with query (very high priority)
+        else if (textLower.startsWith(queryLower)) {
+            score += 8;
+        }
+        // Contains query as whole phrase
+        else if (textLower.includes(queryLower)) {
+            score += 5;
+        }
+        // Word-based matching - check if all query words appear
+        else if (queryWords.length > 1) {
+            const textWords = textLower.split(/\s+/);
+            const matchingWords = queryWords.filter(qw => 
+                textWords.some(tw => tw === qw || tw.startsWith(qw) || tw.includes(qw))
+            );
+            const wordMatchRatio = matchingWords.length / queryWords.length;
+            score += wordMatchRatio * 4; // Up to 4 points for word matching
+            
+            // Bonus if words appear in order
+            let wordsInOrder = 0;
+            let lastIndex = -1;
+            for (const qw of queryWords) {
+                const index = textWords.findIndex(tw => tw === qw || tw.startsWith(qw));
+                if (index > lastIndex) {
+                    wordsInOrder++;
+                    lastIndex = index;
+                }
+            }
+            if (wordsInOrder === queryWords.length) {
+                score += 2; // Bonus for words in order
+            }
+        }
+        // Single word - check for word boundaries
+        else if (queryWords.length === 1) {
+            const queryWord = queryWords[0];
+            const wordBoundaryRegex = new RegExp(`\\b${queryWord}`, 'i');
+            if (wordBoundaryRegex.test(textLower)) {
+                score += 4; // Word boundary match
+            } else if (textLower.includes(queryWord)) {
+                score += 2; // Partial match
+            }
+        }
+        
+        // Boost for shorter names (more specific matches)
+        if (textLower.length < queryLower.length * 2) {
+            score += 1;
+        }
+        
+        return score;
+    }
+    
     // Process USDA results
     if (usdaResults.status === 'fulfilled' && usdaResults.value && usdaResults.value.length > 0) {
-        const queryLower = query.toLowerCase().trim();
         const scoredUSDAResults = usdaResults.value
             .map(result => {
-                const nameLower = (result.name || '').toLowerCase();
-                let relevance = 0;
-                if (nameLower === queryLower) {
-                    relevance = 3; // Exact match
-                } else if (nameLower.startsWith(queryLower)) {
-                    relevance = 2; // Starts with
-                } else if (nameLower.includes(queryLower)) {
-                    relevance = 1; // Contains
+                const name = result.name || '';
+                const brandOwner = result.brandOwner || '';
+                const fullText = `${name} ${brandOwner}`.trim();
+                
+                // Calculate base relevance from name
+                let relevance = calculateRelevance(name, query);
+                
+                // Boost if brand/owner also matches
+                if (brandOwner) {
+                    relevance += calculateRelevance(brandOwner, query) * 0.3;
                 }
+                
                 // Boost relevance if it has nutrition data
                 if (result.nutrition && (result.nutrition.calories > 0 || result.nutrition.protein > 0)) {
                     relevance += 0.5;
                 }
+                
+                // Penalize very long names (less specific)
+                if (name.length > 100) {
+                    relevance -= 0.5;
+                }
+                
                 return { result, relevance };
             })
             .filter(item => item.relevance > 0)
-            .sort((a, b) => b.relevance - a.relevance)
+            .sort((a, b) => {
+                // Sort by relevance first
+                if (b.relevance !== a.relevance) {
+                    return b.relevance - a.relevance;
+                }
+                // Then by name length (shorter = more specific)
+                return a.result.name.length - b.result.name.length;
+            })
             .map(item => item.result);
         
         results.push(...scoredUSDAResults);
@@ -2049,26 +2128,41 @@ async function searchAllIngredients(query) {
     
     // Process Open Food Facts results
     if (offResults.status === 'fulfilled' && offResults.value && offResults.value.length > 0) {
-        const queryLower = query.toLowerCase().trim();
         const scoredOFFResults = offResults.value
             .map(result => {
-                const nameLower = (result.name || '').toLowerCase();
-                let relevance = 0;
-                if (nameLower === queryLower) {
-                    relevance = 3; // Exact match
-                } else if (nameLower.startsWith(queryLower)) {
-                    relevance = 2; // Starts with
-                } else if (nameLower.includes(queryLower)) {
-                    relevance = 1; // Contains
+                const name = result.name || '';
+                const brandOwner = result.brandOwner || '';
+                const fullText = `${name} ${brandOwner}`.trim();
+                
+                // Calculate base relevance from name
+                let relevance = calculateRelevance(name, query);
+                
+                // Boost if brand/owner also matches
+                if (brandOwner) {
+                    relevance += calculateRelevance(brandOwner, query) * 0.3;
                 }
+                
                 // Boost relevance if it has nutrition data
                 if (result.nutrition && (result.nutrition.calories > 0 || result.nutrition.protein > 0)) {
                     relevance += 0.5;
                 }
+                
+                // Penalize very long names (less specific)
+                if (name.length > 100) {
+                    relevance -= 0.5;
+                }
+                
                 return { result, relevance };
             })
             .filter(item => item.relevance > 0)
-            .sort((a, b) => b.relevance - a.relevance)
+            .sort((a, b) => {
+                // Sort by relevance first
+                if (b.relevance !== a.relevance) {
+                    return b.relevance - a.relevance;
+                }
+                // Then by name length (shorter = more specific)
+                return a.result.name.length - b.result.name.length;
+            })
             .map(item => item.result);
         
         results.push(...scoredOFFResults);
@@ -2399,6 +2493,7 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     }
     
     // Ensure nutrition object exists and has all required fields
+    // Nutrition data is stored as per-gram values (calories per gram, protein per gram, etc.)
     const nutrition = ingredient.nutrition || {
         calories: 0,
         protein: 0,
@@ -2414,17 +2509,25 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         fat: Number.isFinite(nutrition.fat) ? nutrition.fat : 0
     };
     
+    // Calculate total macros: nutrition per gram × amount in grams
+    // Round to nearest whole number for calories, keep 1 decimal for macros
     const macros = {
         calories: Math.round(safeNutrition.calories * amount),
-        protein: Math.round(safeNutrition.protein * amount),
-        carbs: Math.round(safeNutrition.carbs * amount),
-        fat: Math.round(safeNutrition.fat * amount)
+        protein: Math.round((safeNutrition.protein * amount) * 10) / 10, // Round to 1 decimal
+        carbs: Math.round((safeNutrition.carbs * amount) * 10) / 10,     // Round to 1 decimal
+        fat: Math.round((safeNutrition.fat * amount) * 10) / 10          // Round to 1 decimal
     };
     
-    console.log('updateIngredientMacros calculation:', {
+    console.log('📊 updateIngredientMacros calculation:', {
         ingredientName: ingredient.name,
-        amount: amount,
+        amountInGrams: amount,
         nutritionPerGram: safeNutrition,
+        calculation: {
+            calories: `${safeNutrition.calories} cal/g × ${amount}g = ${macros.calories} cal`,
+            protein: `${safeNutrition.protein}g/g × ${amount}g = ${macros.protein}g`,
+            carbs: `${safeNutrition.carbs}g/g × ${amount}g = ${macros.carbs}g`,
+            fat: `${safeNutrition.fat}g/g × ${amount}g = ${macros.fat}g`
+        },
         calculatedMacros: macros
     });
     
