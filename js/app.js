@@ -1648,7 +1648,7 @@ function openIngredientSearch(ingredientInput) {
     if (nameInput) {
         // Always make the field editable when clicked/focused
         nameInput.readOnly = false;
-        nameInput.placeholder = 'Type to search custom ingredients, USDA database, or Open Food Facts...';
+        nameInput.placeholder = 'Type to search my ingredients, USDA database, or Open Food Facts...';
         
         // Remove existing event listeners by cloning (clean way to remove all listeners)
         const oldValue = nameInput.value;
@@ -1801,7 +1801,7 @@ function showInlineSearchResults(input, results) {
             cursor: pointer;
             border-bottom: 1px solid #eee;
         `;
-        let sourceLabel = 'Custom Ingredient';
+        let sourceLabel = 'My Ingredient';
         let sourceIcon = '🏠';
         if (result.source === 'usda') {
             sourceLabel = 'USDA Database';
@@ -2102,10 +2102,25 @@ function selectIngredient(ingredient) {
 async function searchAllIngredients(query) {
     const results = [];
     
-    // Search custom ingredients first (faster, local)
+    // Helper function to get my ingredients with migration support
+    function getMyIngredients() {
+        const oldKey = 'meale-custom-ingredients';
+        const newKey = 'meale-my-ingredients';
+        const oldData = localStorage.getItem(oldKey);
+        const newData = localStorage.getItem(newKey);
+        
+        if (!newData && oldData) {
+            localStorage.setItem(newKey, oldData);
+            localStorage.removeItem(oldKey);
+        }
+        
+        return JSON.parse(localStorage.getItem(newKey) || '[]');
+    }
+    
+    // Search my ingredients first (faster, local) - show immediately
     // Prioritize exact matches and starts-with matches
     const queryLower = query.toLowerCase().trim();
-    const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
+    const customIngredients = getMyIngredients();
     
     // Helper function to calculate relevance score (defined before use)
     function calculateRelevance(text, query) {
@@ -2454,7 +2469,7 @@ async function searchAllIngredients(query) {
             console.log('Added', scoredOFFResults.length, 'Open Food Facts results');
     }
     
-    // Sort results: custom ingredients first, then by calculated relevance score
+    // Sort results: my ingredients first (already added first), then API results by relevance and shortest name
     results.sort((a, b) => {
         // Custom ingredients first
         if (a.source === 'custom' && b.source !== 'custom') return -1;
@@ -2599,6 +2614,90 @@ async function displaySearchResults(results) {
                     nutrition: ingredientData.nutrition,
                     amount: ingredientData.amount
                 });
+                
+                // Automatically save API ingredients to "my ingredients" when selected
+                if (ingredient.source === 'usda' || ingredient.source === 'openfoodfacts') {
+                    try {
+                        // Helper function to get my ingredients with migration support
+                        function getMyIngredients() {
+                            const oldKey = 'meale-custom-ingredients';
+                            const newKey = 'meale-my-ingredients';
+                            const oldData = localStorage.getItem(oldKey);
+                            const newData = localStorage.getItem(newKey);
+                            
+                            if (!newData && oldData) {
+                                localStorage.setItem(newKey, oldData);
+                                localStorage.removeItem(oldKey);
+                            }
+                            
+                            return JSON.parse(localStorage.getItem(newKey) || '[]');
+                        }
+                        
+                        const myIngredients = getMyIngredients();
+                        const servingSize = ingredient.servingSize || 100;
+                        
+                        // Check if ingredient already exists (by name, case-insensitive)
+                        const existingIndex = myIngredients.findIndex(ing => 
+                            ing.name.toLowerCase() === ingredient.name.toLowerCase()
+                        );
+                        
+                        // Convert nutrition from per-gram to per-serving-size for storage
+                        const nutritionPerServing = {
+                            calories: (ingredient.nutrition?.calories || 0) * servingSize,
+                            protein: (ingredient.nutrition?.protein || 0) * servingSize,
+                            carbs: (ingredient.nutrition?.carbs || 0) * servingSize,
+                            fat: (ingredient.nutrition?.fat || 0) * servingSize
+                        };
+                        
+                        const ingredientToSave = {
+                            id: existingIndex >= 0 ? myIngredients[existingIndex].id : Date.now().toString(),
+                            name: ingredient.name,
+                            totalPrice: ingredient.totalPrice || null,
+                            totalWeight: ingredient.totalWeight || null,
+                            servingSize: servingSize,
+                            nutrition: nutritionPerServing,
+                            isCustom: false, // Mark as API-sourced but editable
+                            storeSection: ingredient.storeSection || '',
+                            emoji: ingredient.emoji || '',
+                            icon: ingredient.icon || '',
+                            iconLabel: ingredient.iconLabel || '',
+                            pricePerGram: ingredient.pricePerGram || null,
+                            source: ingredient.source, // Track original source
+                            fdcId: ingredient.fdcId || ingredient.id // Keep original ID for reference
+                        };
+                        
+                        // Calculate price per gram if we have price data
+                        if (ingredientToSave.totalPrice && ingredientToSave.totalWeight) {
+                            ingredientToSave.pricePerGram = ingredientToSave.totalPrice / ingredientToSave.totalWeight;
+                        } else if (ingredient.pricePerGram) {
+                            ingredientToSave.pricePerGram = ingredient.pricePerGram;
+                        }
+                        
+                        if (existingIndex >= 0) {
+                            // Update existing ingredient
+                            myIngredients[existingIndex] = ingredientToSave;
+                            console.log('Updated existing ingredient in my ingredients:', ingredient.name);
+                        } else {
+                            // Add new ingredient
+                            myIngredients.push(ingredientToSave);
+                            console.log('Added API ingredient to my ingredients:', ingredient.name);
+                        }
+                        
+                        // Save to localStorage
+                        localStorage.setItem('meale-my-ingredients', JSON.stringify(myIngredients));
+                        
+                        // Update global reference
+                        if (window.customIngredients) {
+                            window.customIngredients = myIngredients;
+                        }
+                        if (window.myIngredients) {
+                            window.myIngredients = myIngredients;
+                        }
+                    } catch (error) {
+                        console.error('Error saving API ingredient to my ingredients:', error);
+                        // Continue even if save fails
+                    }
+                }
                 
                 // Store in selectedIngredients with appropriate ID
                 let storageId;
@@ -2792,7 +2891,6 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     }
     
     // Ensure nutrition object exists and has all required fields
-    // Nutrition data is stored as per-gram values (calories per gram, protein per gram, etc.)
     const nutrition = ingredient.nutrition || {
         calories: 0,
         protein: 0,
@@ -2801,12 +2899,42 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     };
     
     // Validate nutrition values are numbers
-    const safeNutrition = {
+    let safeNutrition = {
         calories: Number.isFinite(nutrition.calories) ? nutrition.calories : 0,
         protein: Number.isFinite(nutrition.protein) ? nutrition.protein : 0,
         carbs: Number.isFinite(nutrition.carbs) ? nutrition.carbs : 0,
         fat: Number.isFinite(nutrition.fat) ? nutrition.fat : 0
     };
+    
+    // CRITICAL: Detect and normalize nutrition format
+    // Nutrition should be per-gram, but might be stored as per-100g in some cases
+    // Typical per-gram values: calories < 10, protein/carbs/fat < 1
+    // Typical per-100g values: calories > 50, protein/carbs/fat > 1
+    // We'll use a more conservative threshold to avoid false positives
+    const looksLikePer100g = safeNutrition.calories > 20 || 
+                             safeNutrition.protein > 2 || 
+                             safeNutrition.carbs > 2 || 
+                             safeNutrition.fat > 2;
+    
+    if (looksLikePer100g && amount > 0) {
+        // Test: if we multiply by amount and get unreasonably high values, it's likely per-100g
+        const testCalories = safeNutrition.calories * amount;
+        if (testCalories > 10000) { // Unreasonably high for most foods
+            console.warn('⚠️ Detected per-100g format, converting to per-gram:', {
+                original: safeNutrition,
+                testCalculation: testCalories,
+                amount: amount
+            });
+            // Convert from per-100g to per-gram
+            safeNutrition = {
+                calories: safeNutrition.calories / 100,
+                protein: safeNutrition.protein / 100,
+                carbs: safeNutrition.carbs / 100,
+                fat: safeNutrition.fat / 100
+            };
+            console.log('✅ Converted to per-gram:', safeNutrition);
+        }
+    }
     
     // Calculate total macros: nutrition per gram × amount in grams
     // Round to nearest whole number for calories, keep 1 decimal for macros

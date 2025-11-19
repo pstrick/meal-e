@@ -496,7 +496,7 @@ async function updateUnifiedList() {
             if (category === 'all' || ingredientCategory === category) {
                 // Determine icon and label based on source
                 let icon = '🥩';
-                let label = 'Custom Ingredient';
+                let label = 'My Ingredient';
                 let id;
                 if (ingredient.source === 'usda') {
                     icon = '🌾';

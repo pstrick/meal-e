@@ -356,11 +356,26 @@ async function handleFoodSearch() {
 async function searchFoods(query) {
     const results = [];
     
-    // Search custom ingredients first (faster, local)
+    // Helper function to get my ingredients with migration support
+    function getMyIngredients() {
+        const oldKey = 'meale-custom-ingredients';
+        const newKey = 'meale-my-ingredients';
+        const oldData = localStorage.getItem(oldKey);
+        const newData = localStorage.getItem(newKey);
+        
+        if (!newData && oldData) {
+            localStorage.setItem(newKey, oldData);
+            localStorage.removeItem(oldKey);
+        }
+        
+        return JSON.parse(localStorage.getItem(newKey) || '[]');
+    }
+    
+    // Search my ingredients first (faster, local) - show immediately
     // Prioritize exact matches and starts-with matches
     const queryLower = query.toLowerCase().trim();
-    const ingredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
-    console.log('Searching custom ingredients:', ingredients.length, 'found');
+    const ingredients = getMyIngredients();
+    console.log('Searching my ingredients:', ingredients.length, 'found');
     
     // Sort custom ingredients by relevance: exact match > starts with > contains
     const customMatches = ingredients
@@ -529,7 +544,7 @@ async function searchFoods(query) {
         }
     });
     
-    // Sort results: custom ingredients first, then USDA, then recipes
+    // Sort results: my ingredients first, then USDA, then recipes
     results.sort((a, b) => {
         if (a.type === 'recipe' && b.type !== 'recipe') return 1;
         if (a.type !== 'recipe' && b.type === 'recipe') return -1;
@@ -565,7 +580,7 @@ function displaySearchResults(results) {
                 sourceLabel = 'Open Food Facts';
                 sourceIcon = '🏷️ ';
             } else {
-                sourceLabel = 'Custom Ingredient';
+                sourceLabel = 'My Ingredient';
                 sourceIcon = '🏠 ';
             }
         }
