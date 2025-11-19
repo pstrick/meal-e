@@ -480,14 +480,24 @@ async function handleRecipeSubmit(e) {
             const ingredientData = selectedIngredients.get(fdcId);
             console.log('Gathering ingredient:', { fdcId, ingredientData });
             if (!fdcId || !ingredientData || !ingredientData.name || !ingredientData.nutrition) return null;
+            const amount = parseFloat(item.querySelector('.ingredient-amount').value) || 0;
+            // Calculate total price for this ingredient amount if pricePerGram is available
+            let totalPrice = null;
+            if (ingredientData.pricePerGram && amount > 0) {
+                totalPrice = ingredientData.pricePerGram * amount;
+            }
+            
             return {
                 fdcId: fdcId,
                 name: ingredientData.name,
-                amount: parseFloat(item.querySelector('.ingredient-amount').value) || 0,
+                amount: amount,
                 nutrition: ingredientData.nutrition,
                 source: ingredientData.source || 'usda', // Default to usda for backward compatibility
                 storeSection: ingredientData.storeSection || '',
-                emoji: ingredientData.emoji || ''
+                emoji: ingredientData.emoji || '',
+                pricePerGram: ingredientData.pricePerGram || null,
+                pricePer100g: ingredientData.pricePer100g || null,
+                totalPrice: totalPrice
             };
         })
         .filter(ing => ing !== null && ing.amount > 0);
@@ -1417,7 +1427,10 @@ function editRecipe(id) {
             nutrition: ing.nutrition,
             source: ing.source || 'usda', // Default to usda for backward compatibility
             storeSection: ing.storeSection || '',
-            emoji: emoji
+            emoji: emoji,
+            pricePerGram: ing.pricePerGram || null,
+            pricePer100g: ing.pricePer100g || null,
+            totalPrice: ing.totalPrice || null
         };
         selectedIngredients.set(fdcId, ingredientData);
         nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
@@ -1722,7 +1735,10 @@ function selectIngredient(ingredient) {
             id: ingredient.id || ingredient.fdcId,
             fdcId: ingredient.fdcId || storageId,
             storeSection: ingredient.storeSection || '',
-            emoji: emoji
+            emoji: emoji,
+            pricePerGram: ingredient.pricePerGram || null,
+            pricePer100g: ingredient.pricePer100g || null,
+            totalPrice: ingredient.totalPrice || null
         };
         
         console.log('Storing ingredient data:', {
@@ -2016,7 +2032,10 @@ async function displaySearchResults(results) {
                     id: ingredient.id || ingredient.fdcId,
                     fdcId: ingredient.fdcId || `custom-${ingredient.id}`,
                     storeSection: ingredient.storeSection || '',
-                    emoji: emoji
+                    emoji: emoji,
+                    pricePerGram: ingredient.pricePerGram || null,
+                    pricePer100g: ingredient.pricePer100g || null,
+                    totalPrice: ingredient.totalPrice || null
                 };
                 
                 console.log('Storing ingredient from modal:', {

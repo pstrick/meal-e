@@ -24,7 +24,7 @@ export async function searchOpenFoodFacts(query, pageSize = 20) {
             search_terms: query.trim(),
             page_size: Math.min(pageSize, 20), // Open Food Facts limits to 20 per page
             json: '1',
-            fields: 'code,product_name,product_name_en,product_name_fr,generic_name,brands,quantity,nutriments,serving_size,nutrition_grade_fr,image_url,image_small_url'
+            fields: 'code,product_name,product_name_en,product_name_fr,generic_name,brands,quantity,nutriments,serving_size,nutrition_grade_fr,image_url,image_small_url,prices,price,price_per_unit,price_per_100g'
         });
 
         const url = `https://world.openfoodfacts.org/cgi/search.pl?${searchParams.toString()}`;
@@ -250,6 +250,70 @@ export function formatOpenFoodFactsProduct(product) {
         return null;
     }
     
+    // Extract pricing information
+    // Open Food Facts may have prices in various formats
+    let pricePerGram = null;
+    let pricePer100g = null;
+    let totalPrice = null;
+    
+    // Try to get price per 100g first (most useful for our use case)
+    if (product.price_per_100g) {
+        pricePer100g = parseFloat(product.price_per_100g);
+        pricePerGram = pricePer100g / 100;
+    } else if (product.price_per_unit) {
+        // If price_per_unit exists, try to extract it
+        const priceUnit = parseFloat(product.price_per_unit);
+        if (priceUnit > 0) {
+            // Assume it's per 100g if no other info
+            pricePer100g = priceUnit;
+            pricePerGram = priceUnit / 100;
+        }
+    } else if (product.price) {
+        // If there's a single price field, try to use it
+        const price = parseFloat(product.price);
+        if (price > 0) {
+            // Try to get quantity to calculate per gram
+            const qtyMatch = quantity.match(/(\d+(?:\.\d+)?)\s*(g|kg|ml|l|oz|lb)/i);
+            if (qtyMatch) {
+                const qtyValue = parseFloat(qtyMatch[1]);
+                const qtyUnit = qtyMatch[2].toLowerCase();
+                // Convert to grams
+                let qtyInGrams = qtyValue;
+                if (qtyUnit === 'kg') qtyInGrams = qtyValue * 1000;
+                else if (qtyUnit === 'ml') qtyInGrams = qtyValue; // Approximate 1ml = 1g
+                else if (qtyUnit === 'l') qtyInGrams = qtyValue * 1000; // 1 liter = 1000ml ≈ 1000g
+                else if (qtyUnit === 'oz') qtyInGrams = qtyValue * 28.35;
+                else if (qtyUnit === 'lb') qtyInGrams = qtyValue * 453.592;
+                
+                if (qtyInGrams > 0) {
+                    pricePerGram = price / qtyInGrams;
+                    pricePer100g = pricePerGram * 100;
+                    totalPrice = price;
+                }
+            }
+        }
+    } else if (product.prices && Array.isArray(product.prices) && product.prices.length > 0) {
+        // If prices is an array, use the first available price
+        const firstPrice = product.prices[0];
+        if (firstPrice && firstPrice.price) {
+            const price = parseFloat(firstPrice.price);
+            if (price > 0) {
+                // Try to get the unit/quantity from the price object
+                if (firstPrice.unit && firstPrice.unit === '100g') {
+                    pricePer100g = price;
+                    pricePerGram = price / 100;
+                } else if (firstPrice.quantity) {
+                    const qty = parseFloat(firstPrice.quantity);
+                    if (qty > 0) {
+                        pricePerGram = price / qty;
+                        pricePer100g = pricePerGram * 100;
+                        totalPrice = price;
+                    }
+                }
+            }
+        }
+    }
+    
     const formatted = {
         id: product.code,
         fdcId: `off-${product.code}`, // Open Food Facts uses barcode as ID
@@ -268,13 +332,19 @@ export function formatOpenFoodFactsProduct(product) {
         imageUrl: product.image_url || product.image_small_url || '',
         nutritionGrade: product.nutrition_grade_fr || '',
         storeSection: '', // Open Food Facts doesn't provide store sections
-        emoji: '' // Open Food Facts doesn't provide emojis
+        emoji: '', // Open Food Facts doesn't provide emojis
+        pricePerGram: pricePerGram,
+        pricePer100g: pricePer100g,
+        totalPrice: totalPrice
     };
     
-    console.log('Formatted Open Food Facts product with nutrition:', {
+    console.log('Formatted Open Food Facts product with nutrition and pricing:', {
         name: formatted.name,
         nutrition: formatted.nutrition,
-        code: formatted.barcode
+        code: formatted.barcode,
+        pricePerGram: formatted.pricePerGram,
+        pricePer100g: formatted.pricePer100g,
+        totalPrice: formatted.totalPrice
     });
     return formatted;
 }
