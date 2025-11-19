@@ -1634,13 +1634,13 @@ function showInlineSearchResults(input, results) {
         border: 1px solid #ddd;
         border-radius: 4px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        max-height: 200px;
+        max-height: 400px;
         overflow-y: auto;
         z-index: 1000;
     `;
     
-    // Add results
-    results.slice(0, 5).forEach(result => {
+    // Add results (already limited to 10 in searchAllIngredients)
+    results.forEach(result => {
         const item = document.createElement('div');
         item.className = 'search-result-item';
         item.style.cssText = `
@@ -1875,16 +1875,16 @@ async function searchAllIngredients(query) {
     });
     
     // Search USDA API (async, network call) - for generic foods
-    // Only get the most relevant result
+    // Get multiple results and sort by relevance
     try {
         console.log('Searching USDA API for:', query);
-        const usdaResults = await searchUSDAIngredients(query, 20); // Get more to find best match
+        const usdaResults = await searchUSDAIngredients(query, 10);
         console.log('USDA API returned', usdaResults.length, 'results');
         
         if (usdaResults && usdaResults.length > 0) {
-            // Find the most relevant USDA result
+            // Score and sort all USDA results by relevance
             const queryLower = query.toLowerCase().trim();
-            const bestUSDAResult = usdaResults
+            const scoredUSDAResults = usdaResults
                 .map(result => {
                     const nameLower = (result.name || '').toLowerCase();
                     let relevance = 0;
@@ -1901,12 +1901,12 @@ async function searchAllIngredients(query) {
                     }
                     return { result, relevance };
                 })
-                .sort((a, b) => b.relevance - a.relevance)[0];
+                .filter(item => item.relevance > 0) // Only include relevant results
+                .sort((a, b) => b.relevance - a.relevance)
+                .map(item => item.result);
             
-            if (bestUSDAResult && bestUSDAResult.relevance > 0) {
-                results.push(bestUSDAResult.result);
-                console.log('Added best USDA result:', bestUSDAResult.result.name, 'relevance:', bestUSDAResult.relevance);
-            }
+            results.push(...scoredUSDAResults);
+            console.log('Added', scoredUSDAResults.length, 'USDA results');
         } else {
             console.warn('USDA API returned empty results for query:', query);
         }
@@ -1927,16 +1927,16 @@ async function searchAllIngredients(query) {
     }
     
     // Search Open Food Facts API (async, network call) - for branded products
-    // Only get the most relevant result
+    // Get multiple results and sort by relevance
     try {
         console.log('Searching Open Food Facts API for:', query);
-        const offResults = await searchOpenFoodFactsIngredients(query, 20); // Get more to find best match
+        const offResults = await searchOpenFoodFactsIngredients(query, 10);
         console.log('Open Food Facts API returned', offResults.length, 'results');
         
         if (offResults && offResults.length > 0) {
-            // Find the most relevant Open Food Facts result
+            // Score and sort all Open Food Facts results by relevance
             const queryLower = query.toLowerCase().trim();
-            const bestOFFResult = offResults
+            const scoredOFFResults = offResults
                 .map(result => {
                     const nameLower = (result.name || '').toLowerCase();
                     let relevance = 0;
@@ -1953,12 +1953,12 @@ async function searchAllIngredients(query) {
                     }
                     return { result, relevance };
                 })
-                .sort((a, b) => b.relevance - a.relevance)[0];
+                .filter(item => item.relevance > 0) // Only include relevant results
+                .sort((a, b) => b.relevance - a.relevance)
+                .map(item => item.result);
             
-            if (bestOFFResult && bestOFFResult.relevance > 0) {
-                results.push(bestOFFResult.result);
-                console.log('Added best Open Food Facts result:', bestOFFResult.result.name, 'relevance:', bestOFFResult.relevance);
-            }
+            results.push(...scoredOFFResults);
+            console.log('Added', scoredOFFResults.length, 'Open Food Facts results');
         } else {
             console.warn('Open Food Facts API returned empty results for query:', query);
         }
@@ -1972,22 +1972,52 @@ async function searchAllIngredients(query) {
         // Continue with other sources if Open Food Facts fails
     }
     
-    // Sort results: custom ingredients first, then Open Food Facts (branded), then USDA (generic), then alphabetically
+    // Sort results: custom ingredients first, then by relevance (exact match > starts with > contains), then alphabetically
+    const queryLower = query.toLowerCase().trim();
     results.sort((a, b) => {
         // Custom ingredients first
         if (a.source === 'custom' && b.source !== 'custom') return -1;
         if (a.source !== 'custom' && b.source === 'custom') return 1;
-        // Then Open Food Facts (branded products)
-        if (a.source === 'openfoodfacts' && b.source !== 'openfoodfacts') return -1;
-        if (a.source !== 'openfoodfacts' && b.source === 'openfoodfacts') return 1;
-        // Then USDA (generic foods)
-        if (a.source === 'usda' && b.source !== 'usda') return -1;
-        if (a.source !== 'usda' && b.source === 'usda') return 1;
+        
+        // Within same source, sort by relevance to query
+        const aNameLower = (a.name || '').toLowerCase();
+        const bNameLower = (b.name || '').toLowerCase();
+        
+        let aRelevance = 0;
+        let bRelevance = 0;
+        
+        if (aNameLower === queryLower) aRelevance = 3;
+        else if (aNameLower.startsWith(queryLower)) aRelevance = 2;
+        else if (aNameLower.includes(queryLower)) aRelevance = 1;
+        
+        if (bNameLower === queryLower) bRelevance = 3;
+        else if (bNameLower.startsWith(queryLower)) bRelevance = 2;
+        else if (bNameLower.includes(queryLower)) bRelevance = 1;
+        
+        // Boost relevance if it has nutrition data
+        if (a.nutrition && (a.nutrition.calories > 0 || a.nutrition.protein > 0)) aRelevance += 0.5;
+        if (b.nutrition && (b.nutrition.calories > 0 || b.nutrition.protein > 0)) bRelevance += 0.5;
+        
+        if (aRelevance !== bRelevance) return bRelevance - aRelevance;
+        
+        // If same relevance, sort by source priority: Open Food Facts > USDA
+        if (a.source === 'openfoodfacts' && b.source === 'usda') return -1;
+        if (a.source === 'usda' && b.source === 'openfoodfacts') return 1;
+        
         // Then alphabetically
         return a.name.localeCompare(b.name);
     });
     
-    return results;
+    // Limit to 10 results total
+    const limitedResults = results.slice(0, 10);
+    console.log('Final results (limited to 10):', {
+        total: limitedResults.length,
+        custom: limitedResults.filter(r => r.source === 'custom').length,
+        usda: limitedResults.filter(r => r.source === 'usda').length,
+        openfoodfacts: limitedResults.filter(r => r.source === 'openfoodfacts').length
+    });
+    
+    return limitedResults;
 }
 
 // Modified Ingredient Search Result Handler
