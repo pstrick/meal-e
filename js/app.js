@@ -2145,7 +2145,25 @@ async function searchAllIngredients(query) {
     // Search my ingredients first (faster, local) - show immediately
     // Prioritize exact matches and starts-with matches
     const queryLower = query.toLowerCase().trim();
-    const customIngredients = getMyIngredients();
+    const allMyIngredients = getMyIngredients();
+    
+    // Filter out ingredients without valid nutrition data
+    const customIngredients = allMyIngredients.filter(ingredient => {
+        if (!ingredient.nutrition) {
+            return false;
+        }
+        const nutrition = ingredient.nutrition;
+        const hasValidNutrition = 
+            nutrition.calories > 0 || 
+            nutrition.protein > 0 || 
+            nutrition.carbs > 0 || 
+            nutrition.fat > 0;
+        
+        if (!hasValidNutrition) {
+            console.log('Filtering out ingredient from "my ingredients" without valid nutrition:', ingredient.name);
+        }
+        return hasValidNutrition;
+    });
     
     // Helper function to calculate relevance score (defined before use)
     function calculateRelevance(text, query) {
@@ -2605,13 +2623,22 @@ async function displaySearchResults(results) {
                     fat: 0
                 };
                 
-                // Validate nutrition data exists
-                if (!nutrition || (nutrition.calories === 0 && nutrition.protein === 0 && nutrition.carbs === 0 && nutrition.fat === 0)) {
-                    console.warn('Ingredient has no nutrition data:', {
+                // Validate nutrition data exists - filter out ingredients with no valid nutrition
+                const hasValidNutrition = nutrition && (
+                    nutrition.calories > 0 || 
+                    nutrition.protein > 0 || 
+                    nutrition.carbs > 0 || 
+                    nutrition.fat > 0
+                );
+                
+                if (!hasValidNutrition) {
+                    console.warn('⚠️ Ingredient has no valid nutrition data - rejecting selection:', {
                         name: ingredient.name,
                         source: ingredient.source,
                         nutrition: nutrition
                     });
+                    showAlert(`Cannot select "${ingredient.name}" - no nutrition data available.`, { type: 'warning' });
+                    return; // Don't select ingredients without valid nutrition
                 }
                 
                 const ingredientData = {
@@ -2979,44 +3006,15 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     };
     console.log('✅ Validated nutrition:', safeNutrition);
     
-    // Check if all values are zero
+    // Final check if all values are still zero after fallback
     if (safeNutrition.calories === 0 && safeNutrition.protein === 0 && safeNutrition.carbs === 0 && safeNutrition.fat === 0) {
-        console.error('❌ CRITICAL: All nutrition values are ZERO!', {
+        console.error('❌ CRITICAL: All nutrition values are ZERO after all fallbacks!', {
             ingredientName: ingredient.name,
             rawNutrition: nutrition,
             validatedNutrition: safeNutrition,
             ingredientObject: ingredient,
-            possibleIssue: 'Nutrition data might not be stored correctly or ingredient was not properly selected'
+            possibleIssue: 'Nutrition data is missing or not stored correctly. Ingredient may need to be re-selected.'
         });
-        
-        // Try to get nutrition from selectedIngredients if available
-        const nameInput = ingredientItem.querySelector('.ingredient-name');
-        if (nameInput) {
-            const fdcId = nameInput.dataset.fdcId;
-            if (fdcId && selectedIngredients.has(fdcId)) {
-                const storedIngredient = selectedIngredients.get(fdcId);
-                console.log('🔍 Found ingredient in selectedIngredients:', {
-                    fdcId: fdcId,
-                    storedNutrition: storedIngredient.nutrition,
-                    storedAmount: storedIngredient.amount
-                });
-                if (storedIngredient.nutrition) {
-                    console.warn('⚠️ Using nutrition from selectedIngredients instead');
-                    safeNutrition = {
-                        calories: Number.isFinite(storedIngredient.nutrition.calories) ? storedIngredient.nutrition.calories : 0,
-                        protein: Number.isFinite(storedIngredient.nutrition.protein) ? storedIngredient.nutrition.protein : 0,
-                        carbs: Number.isFinite(storedIngredient.nutrition.carbs) ? storedIngredient.nutrition.carbs : 0,
-                        fat: Number.isFinite(storedIngredient.nutrition.fat) ? storedIngredient.nutrition.fat : 0
-                    };
-                    console.log('✅ Updated nutrition from selectedIngredients:', safeNutrition);
-                }
-            } else {
-                console.warn('⚠️ Ingredient not found in selectedIngredients:', {
-                    fdcId: fdcId,
-                    availableKeys: Array.from(selectedIngredients.keys())
-                });
-            }
-        }
     }
     
     // CRITICAL: Detect and normalize nutrition format

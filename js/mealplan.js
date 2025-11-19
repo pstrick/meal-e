@@ -105,7 +105,27 @@ async function searchAllIngredients(query) {
     // Search my ingredients first (faster, local) - show immediately
     // Prioritize exact matches and starts-with matches
     const queryLower = query.toLowerCase().trim();
-    const customIngredients = getMyIngredients().map(ingredient => ({
+    const allMyIngredients = getMyIngredients();
+    
+    // Filter out ingredients without valid nutrition data
+    const validMyIngredients = allMyIngredients.filter(ingredient => {
+        if (!ingredient.nutrition) {
+            return false;
+        }
+        const nutrition = ingredient.nutrition;
+        const hasValidNutrition = 
+            nutrition.calories > 0 || 
+            nutrition.protein > 0 || 
+            nutrition.carbs > 0 || 
+            nutrition.fat > 0;
+        
+        if (!hasValidNutrition) {
+            console.log('Filtering out ingredient from "my ingredients" without valid nutrition:', ingredient.name);
+        }
+        return hasValidNutrition;
+    });
+    
+    const customIngredients = validMyIngredients.map(ingredient => ({
         ...ingredient,
         storeSection: ingredient.storeSection || '',
         emoji: (ingredient.emoji || '').trim(),
