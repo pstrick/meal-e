@@ -2908,22 +2908,36 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     
     // CRITICAL: Detect and normalize nutrition format
     // Nutrition should be per-gram, but might be stored as per-100g in some cases
-    // Typical per-gram values: calories < 10, protein/carbs/fat < 1
-    // Typical per-100g values: calories > 50, protein/carbs/fat > 1
-    // We'll use a more conservative threshold to avoid false positives
-    const looksLikePer100g = safeNutrition.calories > 20 || 
-                             safeNutrition.protein > 2 || 
-                             safeNutrition.carbs > 2 || 
-                             safeNutrition.fat > 2;
+    // We'll test by calculating what the result would be and checking if it's reasonable
     
-    if (looksLikePer100g && amount > 0) {
-        // Test: if we multiply by amount and get unreasonably high values, it's likely per-100g
+    if (amount > 0) {
+        // Test calculation: if nutrition is per-gram, multiplying by amount should give reasonable values
+        // If nutrition is per-100g, multiplying by amount would give 100x the correct value
         const testCalories = safeNutrition.calories * amount;
-        if (testCalories > 10000) { // Unreasonably high for most foods
+        const testProtein = safeNutrition.protein * amount;
+        
+        // Reasonable ranges for most foods per 100g:
+        // Calories: 0-900 (most foods are 0-600, but some like oils can be 900)
+        // Protein: 0-100g (most foods are 0-50g)
+        // If our test calculation exceeds these, it's likely per-100g format being multiplied incorrectly
+        
+        const maxReasonableCalories = Math.max(amount * 9, 1000); // 9 cal/g is very high (pure fat)
+        const maxReasonableProtein = Math.max(amount * 1, 100); // 1g protein per gram is very high
+        
+        const looksLikePer100g = (safeNutrition.calories > 1 && testCalories > maxReasonableCalories) ||
+                                 (safeNutrition.protein > 0.1 && testProtein > maxReasonableProtein) ||
+                                 (safeNutrition.calories > 50) || // Very high per-gram calories unlikely
+                                 (safeNutrition.protein > 5) ||   // Very high per-gram protein unlikely
+                                 (safeNutrition.carbs > 5) ||     // Very high per-gram carbs unlikely
+                                 (safeNutrition.fat > 5);         // Very high per-gram fat unlikely
+        
+        if (looksLikePer100g) {
             console.warn('⚠️ Detected per-100g format, converting to per-gram:', {
+                ingredientName: ingredient.name,
                 original: safeNutrition,
-                testCalculation: testCalories,
-                amount: amount
+                testCalculation: { calories: testCalories, protein: testProtein },
+                amount: amount,
+                maxReasonable: { calories: maxReasonableCalories, protein: maxReasonableProtein }
             });
             // Convert from per-100g to per-gram
             safeNutrition = {
