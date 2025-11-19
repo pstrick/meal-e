@@ -2902,8 +2902,18 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         name: ingredient?.name,
         amount: ingredient?.amount,
         nutrition: ingredient?.nutrition,
-        source: ingredient?.source
+        source: ingredient?.source,
+        hasNutrition: !!ingredient?.nutrition,
+        nutritionType: typeof ingredient?.nutrition,
+        nutritionKeys: ingredient?.nutrition ? Object.keys(ingredient.nutrition) : []
     });
+    
+    // Check if ingredient is null/undefined
+    if (!ingredient) {
+        console.error('❌ CRITICAL: ingredient parameter is null or undefined!');
+        console.groupEnd();
+        return;
+    }
     
     // Read amount directly from input field to ensure it's current
     const amountInput = ingredientItem.querySelector('.ingredient-amount');
@@ -2936,6 +2946,46 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         fat: Number.isFinite(nutrition.fat) ? nutrition.fat : 0
     };
     console.log('✅ Validated nutrition:', safeNutrition);
+    
+    // Check if all values are zero
+    if (safeNutrition.calories === 0 && safeNutrition.protein === 0 && safeNutrition.carbs === 0 && safeNutrition.fat === 0) {
+        console.error('❌ CRITICAL: All nutrition values are ZERO!', {
+            ingredientName: ingredient.name,
+            rawNutrition: nutrition,
+            validatedNutrition: safeNutrition,
+            ingredientObject: ingredient,
+            possibleIssue: 'Nutrition data might not be stored correctly or ingredient was not properly selected'
+        });
+        
+        // Try to get nutrition from selectedIngredients if available
+        const nameInput = ingredientItem.querySelector('.ingredient-name');
+        if (nameInput) {
+            const fdcId = nameInput.dataset.fdcId;
+            if (fdcId && selectedIngredients.has(fdcId)) {
+                const storedIngredient = selectedIngredients.get(fdcId);
+                console.log('🔍 Found ingredient in selectedIngredients:', {
+                    fdcId: fdcId,
+                    storedNutrition: storedIngredient.nutrition,
+                    storedAmount: storedIngredient.amount
+                });
+                if (storedIngredient.nutrition) {
+                    console.warn('⚠️ Using nutrition from selectedIngredients instead');
+                    safeNutrition = {
+                        calories: Number.isFinite(storedIngredient.nutrition.calories) ? storedIngredient.nutrition.calories : 0,
+                        protein: Number.isFinite(storedIngredient.nutrition.protein) ? storedIngredient.nutrition.protein : 0,
+                        carbs: Number.isFinite(storedIngredient.nutrition.carbs) ? storedIngredient.nutrition.carbs : 0,
+                        fat: Number.isFinite(storedIngredient.nutrition.fat) ? storedIngredient.nutrition.fat : 0
+                    };
+                    console.log('✅ Updated nutrition from selectedIngredients:', safeNutrition);
+                }
+            } else {
+                console.warn('⚠️ Ingredient not found in selectedIngredients:', {
+                    fdcId: fdcId,
+                    availableKeys: Array.from(selectedIngredients.keys())
+                });
+            }
+        }
+    }
     
     // CRITICAL: Detect and normalize nutrition format
     // Nutrition should be per-gram, but might be stored as per-100g in some cases
