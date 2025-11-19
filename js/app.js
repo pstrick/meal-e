@@ -2231,6 +2231,12 @@ async function searchAllIngredients(query) {
                 if (b.relevance !== a.relevance) {
                     return b.relevance - a.relevance;
                 }
+                // Then by word count (fewer words = simpler/better)
+                const aWords = (a.result.name || '').split(/\s+/).length;
+                const bWords = (b.result.name || '').split(/\s+/).length;
+                if (aWords !== bWords) {
+                    return aWords - bWords;
+                }
                 // Then by name length (shorter = more specific)
                 return a.result.name.length - b.result.name.length;
             })
@@ -2273,6 +2279,12 @@ async function searchAllIngredients(query) {
                 // Sort by relevance first
                 if (b.relevance !== a.relevance) {
                     return b.relevance - a.relevance;
+                }
+                // Then by word count (fewer words = simpler/better)
+                const aWords = (a.result.name || '').split(/\s+/).length;
+                const bWords = (b.result.name || '').split(/\s+/).length;
+                if (aWords !== bWords) {
+                    return aWords - bWords;
                 }
                 // Then by name length (shorter = more specific)
                 return a.result.name.length - b.result.name.length;
