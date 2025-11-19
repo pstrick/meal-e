@@ -380,6 +380,10 @@ export async function searchOpenFoodFactsIngredients(query, maxResults = 10) {
         const formatted = products
             .map(formatOpenFoodFactsProduct)
             .filter(product => product !== null);
+        const filteredCount = products.length - formatted.length;
+        if (filteredCount > 0) {
+            console.log(`Filtered out ${filteredCount} Open Food Facts products with no nutrition data`);
+        }
         console.log('Formatted', formatted.length, 'Open Food Facts ingredients (filtered out nulls)');
         
         // Cache the results for future use
