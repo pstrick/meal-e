@@ -3241,42 +3241,70 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         cost = ingredient.pricePerGram * amount;
     }
     
+    // Get the current amount from the input field
+    const amountInput = ingredientItem.querySelector('.ingredient-amount');
+    const currentAmount = amountInput ? amountInput.value : 'N/A';
+    
     // Update all macro values
-    console.log('🖥️ Updating DOM elements with calculated macros:', macros);
+    console.log('🖥️ Updating DOM elements with calculated macros:', {
+        macros: macros,
+        amountInField: currentAmount,
+        amountInGrams: amount
+    });
     
     // Verify elements exist before updating
     if (caloriesEl) {
         const beforeCalories = caloriesEl.textContent;
-    caloriesEl.textContent = macros.calories;
+        caloriesEl.textContent = macros.calories;
         const afterCalories = caloriesEl.textContent;
-        console.log('   Calories:', { before: beforeCalories, setTo: macros.calories, after: afterCalories });
+        console.log('   Calories:', { 
+            before: beforeCalories, 
+            setTo: macros.calories, 
+            after: afterCalories,
+            amount: currentAmount
+        });
     } else {
         console.error('   ❌ caloriesEl not found!');
     }
     
     if (proteinEl) {
         const beforeProtein = proteinEl.textContent;
-    proteinEl.textContent = macros.protein;
+        proteinEl.textContent = macros.protein;
         const afterProtein = proteinEl.textContent;
-        console.log('   Protein:', { before: beforeProtein, setTo: macros.protein, after: afterProtein });
+        console.log('   Protein:', { 
+            before: beforeProtein, 
+            setTo: macros.protein, 
+            after: afterProtein,
+            amount: currentAmount
+        });
     } else {
         console.error('   ❌ proteinEl not found!');
     }
     
     if (carbsEl) {
         const beforeCarbs = carbsEl.textContent;
-    carbsEl.textContent = macros.carbs;
+        carbsEl.textContent = macros.carbs;
         const afterCarbs = carbsEl.textContent;
-        console.log('   Carbs:', { before: beforeCarbs, setTo: macros.carbs, after: afterCarbs });
+        console.log('   Carbs:', { 
+            before: beforeCarbs, 
+            setTo: macros.carbs, 
+            after: afterCarbs,
+            amount: currentAmount
+        });
     } else {
         console.error('   ❌ carbsEl not found!');
     }
     
     if (fatEl) {
         const beforeFat = fatEl.textContent;
-    fatEl.textContent = macros.fat;
+        fatEl.textContent = macros.fat;
         const afterFat = fatEl.textContent;
-        console.log('   Fat:', { before: beforeFat, setTo: macros.fat, after: afterFat });
+        console.log('   Fat:', { 
+            before: beforeFat, 
+            setTo: macros.fat, 
+            after: afterFat,
+            amount: currentAmount
+        });
     } else {
         console.error('   ❌ fatEl not found!');
     }
@@ -3302,6 +3330,8 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         carbs: verifyCarbs,
         fat: verifyFat,
         expected: macros,
+        amountInField: currentAmount,
+        amountInGrams: amount,
         match: verifyCalories == macros.calories && 
                verifyProtein == macros.protein && 
                verifyCarbs == macros.carbs && 
