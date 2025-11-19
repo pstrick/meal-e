@@ -1520,7 +1520,9 @@ function editRecipe(id) {
         selectedIngredients.set(fdcId, ingredientData);
         nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
         nameInput.addEventListener('focus', () => openIngredientSearch(ingredientItem));
-        amountInput.addEventListener('input', () => {
+        
+        // Use a named function to prevent duplicate listeners
+        const handleAmountInput = function() {
             const fdcId = nameInput.dataset.fdcId;
             const newAmount = parseFloat(amountInput.value) || 0;
             
@@ -1593,6 +1595,11 @@ function editRecipe(id) {
                 updateTotalNutrition();
             }
         };
+        
+        // Remove any existing listener first to prevent duplicates
+        amountInput.removeEventListener('input', handleAmountInput);
+        // Add the listener
+        amountInput.addEventListener('input', handleAmountInput);
         
         // Remove any existing listener first to prevent duplicates
         amountInput.removeEventListener('input', handleAmountInput);
