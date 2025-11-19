@@ -1601,11 +1601,6 @@ function editRecipe(id) {
         // Add the listener
         amountInput.addEventListener('input', handleAmountInput);
         
-        // Remove any existing listener first to prevent duplicates
-        amountInput.removeEventListener('input', handleAmountInput);
-        // Add the listener
-        amountInput.addEventListener('input', handleAmountInput);
-        
         ingredientItem.querySelector('.remove-ingredient').addEventListener('click', () => {
             if (ingredientsList.children.length > 1) {
                 const fdcId = nameInput.dataset.fdcId;
