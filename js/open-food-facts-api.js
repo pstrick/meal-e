@@ -190,11 +190,13 @@ export function formatOpenFoodFactsProduct(product) {
     const nutrition = extractOpenFoodFactsNutrition(product);
     
     // Validate nutrition data - require at least calories OR at least one macro
+    // Note: nutrition values are per-gram, so we check for meaningful values
+    // For per-gram values, even 0.01 per gram = 1 per 100g, which is meaningful
     const hasValidNutrition = nutrition && (
-        nutrition.calories > 0 || 
-        nutrition.protein > 0 || 
-        nutrition.carbs > 0 || 
-        nutrition.fat > 0
+        (nutrition.calories && nutrition.calories > 0) || 
+        (nutrition.protein && nutrition.protein > 0) || 
+        (nutrition.carbs && nutrition.carbs > 0) || 
+        (nutrition.fat && nutrition.fat > 0)
     );
     
     if (!hasValidNutrition) {
@@ -389,18 +391,27 @@ export async function searchOpenFoodFactsIngredients(query, maxResults = 10) {
             .filter(product => product !== null);
         
         // Double-check: filter out any products that still don't have valid nutrition data
+        // This is a safety net in case any products with zero nutrition slipped through
         formatted = formatted.filter(product => {
             if (!product || !product.nutrition) {
+                console.log('Filtering out Open Food Facts product - missing product or nutrition object:', product?.name || 'unknown');
                 return false;
             }
+            
+            // Check for valid nutrition - at least one value must be > 0
             const hasValidNutrition = 
-                product.nutrition.calories > 0 || 
-                product.nutrition.protein > 0 || 
-                product.nutrition.carbs > 0 || 
-                product.nutrition.fat > 0;
+                (product.nutrition.calories && product.nutrition.calories > 0) || 
+                (product.nutrition.protein && product.nutrition.protein > 0) || 
+                (product.nutrition.carbs && product.nutrition.carbs > 0) || 
+                (product.nutrition.fat && product.nutrition.fat > 0);
             
             if (!hasValidNutrition) {
-                console.log('Filtering out Open Food Facts product without valid nutrition:', product.name);
+                console.log('Filtering out Open Food Facts product without valid nutrition:', product.name, {
+                    calories: product.nutrition.calories,
+                    protein: product.nutrition.protein,
+                    carbs: product.nutrition.carbs,
+                    fat: product.nutrition.fat
+                });
             }
             return hasValidNutrition;
         });
