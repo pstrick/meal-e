@@ -1964,29 +1964,50 @@ async function searchAllIngredients(query) {
         const textLower = text.toLowerCase().trim();
         const queryLower = query.toLowerCase().trim();
         const queryWords = queryLower.split(/\s+/).filter(w => w.length > 0);
+        const textWords = textLower.split(/\s+/).filter(w => w.length > 0);
+        const wordCount = textWords.length;
         
         let score = 0;
         
-        // Exact match (highest priority)
+        // Exact match (highest priority) - huge boost
         if (textLower === queryLower) {
-            score += 10;
+            score += 100;
         }
-        // Starts with query (very high priority)
+        // Starts with query (very high priority) - major boost
         else if (textLower.startsWith(queryLower)) {
-            score += 8;
+            score += 50;
+            // Extra boost if it's a single word or very short
+            if (wordCount <= 2) {
+                score += 20; // "rice" or "rice cakes" get extra boost
+            } else if (wordCount <= 3) {
+                score += 10; // "rice, cooked" gets moderate boost
+            }
+        }
+        // First word matches query (high priority)
+        else if (textWords.length > 0 && textWords[0] === queryLower) {
+            score += 30;
+            // Boost for fewer words
+            if (wordCount <= 2) score += 15;
+            else if (wordCount <= 3) score += 8;
+        }
+        // First word starts with query
+        else if (textWords.length > 0 && textWords[0].startsWith(queryLower)) {
+            score += 20;
+            // Boost for fewer words
+            if (wordCount <= 2) score += 10;
+            else if (wordCount <= 3) score += 5;
         }
         // Contains query as whole phrase
         else if (textLower.includes(queryLower)) {
-            score += 5;
+            score += 10;
         }
         // Word-based matching - check if all query words appear
         else if (queryWords.length > 1) {
-            const textWords = textLower.split(/\s+/);
             const matchingWords = queryWords.filter(qw => 
                 textWords.some(tw => tw === qw || tw.startsWith(qw) || tw.includes(qw))
             );
             const wordMatchRatio = matchingWords.length / queryWords.length;
-            score += wordMatchRatio * 4; // Up to 4 points for word matching
+            score += wordMatchRatio * 5; // Up to 5 points for word matching
             
             // Bonus if words appear in order
             let wordsInOrder = 0;
@@ -2007,18 +2028,30 @@ async function searchAllIngredients(query) {
             const queryWord = queryWords[0];
             const wordBoundaryRegex = new RegExp(`\\b${queryWord}`, 'i');
             if (wordBoundaryRegex.test(textLower)) {
-                score += 4; // Word boundary match
+                score += 8; // Word boundary match
             } else if (textLower.includes(queryWord)) {
-                score += 2; // Partial match
+                score += 3; // Partial match
             }
         }
         
-        // Boost for shorter names (more specific matches)
-        if (textLower.length < queryLower.length * 2) {
-            score += 1;
+        // Penalty for longer names (heavily favor shorter/simpler names)
+        // This is the key to showing "rice" before "Brown Rice, Long Grain, Cooked"
+        if (wordCount > 5) {
+            score -= 15; // Heavy penalty for very long names
+        } else if (wordCount > 3) {
+            score -= 8; // Moderate penalty for longer names
+        } else if (wordCount === 1) {
+            score += 10; // Big boost for single-word matches
+        } else if (wordCount === 2) {
+            score += 5; // Boost for two-word matches
         }
         
-        return score;
+        // Penalty for very long character length
+        if (textLower.length > 50) {
+            score -= 5;
+        }
+        
+        return Math.max(0, score); // Ensure score is never negative
     }
     
     // Sort custom ingredients by relevance using improved algorithm
@@ -2972,4 +3005,5 @@ window.recipes = recipes;
 window.addRecipe = addRecipe;
 window.editRecipe = editRecipe;
 window.duplicateRecipe = duplicateRecipe;
+window.deleteRecipe = deleteRecipe; 
 window.deleteRecipe = deleteRecipe; 
