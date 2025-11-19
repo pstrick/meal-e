@@ -116,6 +116,8 @@ function openModal() {
     if (ingredientsList.children.length === 0) {
         addIngredientInput();
     }
+    // Set up serving size event listener
+    setupServingSizeListener();
     // Initialize nutrition display
     updateTotalNutrition();
 }
@@ -131,6 +133,12 @@ function closeModalHandler() {
     ingredientsList.innerHTML = '';
     selectedIngredients.clear();
     currentEditRecipeId = null;
+    // Reset serving size listener flag for next time
+    const servingSizeInput = document.getElementById('recipe-serving-size');
+    if (servingSizeInput) {
+        servingSizeInput.removeAttribute('data-listener-added');
+    }
+    servingSizeListenerSetup = false;
 }
 
 // USDA API Functions
@@ -219,11 +227,17 @@ function updateTotalNutrition() {
     });
 
     // Calculate per-serving values based on serving size
-    const perServing = {
+    // Handle division by zero case
+    const perServing = totalWeight > 0 ? {
         calories: Math.round(totals.calories * (servingSize / totalWeight)),
-        protein: Math.round(totals.protein * (servingSize / totalWeight)),
-        carbs: Math.round(totals.carbs * (servingSize / totalWeight)),
-        fat: Math.round(totals.fat * (servingSize / totalWeight))
+        protein: Math.round(totals.protein * (servingSize / totalWeight) * 10) / 10,
+        carbs: Math.round(totals.carbs * (servingSize / totalWeight) * 10) / 10,
+        fat: Math.round(totals.fat * (servingSize / totalWeight) * 10) / 10
+    } : {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0
     };
 
     // Round total recipe values
@@ -247,17 +261,17 @@ function updateTotalNutrition() {
     if (totalFat) totalFat.textContent = perServing.fat;
     if (recipeServings) recipeServings.textContent = numberOfServings;
 
-    // Update total recipe nutrition display
+    // Update recipe totals display - show per-serving values
     const recipeTotalsSection = document.getElementById('recipe-totals');
     const recipeTotalCalories = document.getElementById('recipe-total-calories');
     const recipeTotalProtein = document.getElementById('recipe-total-protein');
     const recipeTotalCarbs = document.getElementById('recipe-total-carbs');
     const recipeTotalFat = document.getElementById('recipe-total-fat');
 
-    if (recipeTotalCalories) recipeTotalCalories.textContent = totalRecipe.calories;
-    if (recipeTotalProtein) recipeTotalProtein.textContent = `${totalRecipe.protein}g`;
-    if (recipeTotalCarbs) recipeTotalCarbs.textContent = `${totalRecipe.carbs}g`;
-    if (recipeTotalFat) recipeTotalFat.textContent = `${totalRecipe.fat}g`;
+    if (recipeTotalCalories) recipeTotalCalories.textContent = perServing.calories;
+    if (recipeTotalProtein) recipeTotalProtein.textContent = `${perServing.protein}g`;
+    if (recipeTotalCarbs) recipeTotalCarbs.textContent = `${perServing.carbs}g`;
+    if (recipeTotalFat) recipeTotalFat.textContent = `${perServing.fat}g`;
 }
 
 function calculateTotalWeight() {
@@ -275,6 +289,25 @@ function calculateTotalWeight() {
     });
 
     return totalWeight;
+}
+
+// Set up event listener for serving size input
+let servingSizeListenerSetup = false;
+function setupServingSizeListener() {
+    const servingSizeInput = document.getElementById('recipe-serving-size');
+    if (!servingSizeInput) return;
+    
+    // Only set up listener once to avoid duplicates
+    if (servingSizeListenerSetup && servingSizeInput.dataset.listenerAdded === 'true') {
+        return;
+    }
+    
+    // Add event listener to update nutrition when serving size changes
+    servingSizeInput.addEventListener('input', () => {
+        updateTotalNutrition();
+    });
+    servingSizeInput.dataset.listenerAdded = 'true';
+    servingSizeListenerSetup = true;
 }
 
 // Update serving size when ingredients change
@@ -1416,6 +1449,8 @@ function editRecipe(id) {
     currentEditRecipeId = id;
     // Set the form handler
     recipeForm.onsubmit = handleRecipeSubmit;
+    // Set up serving size event listener
+    setupServingSizeListener();
     recipeModal.classList.add('active');
     updateTotalNutrition();
 }
@@ -2104,28 +2139,55 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         });
     }
 
-    const caloriesEl = ingredientItem.querySelector('.calories');
-    const proteinEl = ingredientItem.querySelector('.protein');
-    const carbsEl = ingredientItem.querySelector('.carbs');
-    const fatEl = ingredientItem.querySelector('.fat');
+    // Find the macros container first
+    const macrosContainer = ingredientItem.querySelector('.ingredient-macros');
+    if (!macrosContainer) {
+        console.error('⚠️ CRITICAL: .ingredient-macros container not found!', {
+            ingredientItem: ingredientItem,
+            ingredientItemHTML: ingredientItem.innerHTML.substring(0, 200),
+            ingredientName: ingredient.name
+        });
+        return; // Can't update if structure is wrong
+    }
+    
+    const caloriesEl = macrosContainer.querySelector('.calories');
+    const proteinEl = macrosContainer.querySelector('.protein');
+    const carbsEl = macrosContainer.querySelector('.carbs');
+    const fatEl = macrosContainer.querySelector('.fat');
     
     console.log('DOM elements found:', {
+        macrosContainer: !!macrosContainer,
         caloriesEl: !!caloriesEl,
         proteinEl: !!proteinEl,
         carbsEl: !!carbsEl,
         fatEl: !!fatEl,
-        macrosToSet: macros
+        macrosToSet: macros,
+        ingredientItemClasses: ingredientItem.className
     });
     
-    if (caloriesEl) {
-        caloriesEl.textContent = macros.calories;
-        console.log('Set calories element to:', macros.calories);
-    } else {
-        console.warn('⚠️ Calories element not found in ingredient item!');
+    if (!caloriesEl || !proteinEl || !carbsEl || !fatEl) {
+        console.error('⚠️ CRITICAL: One or more macro elements not found!', {
+            caloriesEl: !!caloriesEl,
+            proteinEl: !!proteinEl,
+            carbsEl: !!carbsEl,
+            fatEl: !!fatEl,
+            macrosHTML: macrosContainer.innerHTML
+        });
+        return;
     }
-    if (proteinEl) proteinEl.textContent = macros.protein;
-    if (carbsEl) carbsEl.textContent = macros.carbs;
-    if (fatEl) fatEl.textContent = macros.fat;
+    
+    // Update all macro values
+    caloriesEl.textContent = macros.calories;
+    proteinEl.textContent = macros.protein;
+    carbsEl.textContent = macros.carbs;
+    fatEl.textContent = macros.fat;
+    
+    console.log('✅ Successfully updated macros:', {
+        calories: macros.calories,
+        protein: macros.protein,
+        carbs: macros.carbs,
+        fat: macros.fat
+    });
 }
 
 // Initialize modal close handlers when DOM is ready
