@@ -3146,18 +3146,78 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     }
     
     // Update all macro values
+    console.log('🖥️ Updating DOM elements with calculated macros:', macros);
+    
+    // Verify elements exist before updating
+    if (caloriesEl) {
+        const beforeCalories = caloriesEl.textContent;
         caloriesEl.textContent = macros.calories;
-    proteinEl.textContent = macros.protein;
-    carbsEl.textContent = macros.carbs;
-    fatEl.textContent = macros.fat;
+        const afterCalories = caloriesEl.textContent;
+        console.log('   Calories:', { before: beforeCalories, setTo: macros.calories, after: afterCalories });
+    } else {
+        console.error('   ❌ caloriesEl not found!');
+    }
+    
+    if (proteinEl) {
+        const beforeProtein = proteinEl.textContent;
+        proteinEl.textContent = macros.protein;
+        const afterProtein = proteinEl.textContent;
+        console.log('   Protein:', { before: beforeProtein, setTo: macros.protein, after: afterProtein });
+    } else {
+        console.error('   ❌ proteinEl not found!');
+    }
+    
+    if (carbsEl) {
+        const beforeCarbs = carbsEl.textContent;
+        carbsEl.textContent = macros.carbs;
+        const afterCarbs = carbsEl.textContent;
+        console.log('   Carbs:', { before: beforeCarbs, setTo: macros.carbs, after: afterCarbs });
+    } else {
+        console.error('   ❌ carbsEl not found!');
+    }
+    
+    if (fatEl) {
+        const beforeFat = fatEl.textContent;
+        fatEl.textContent = macros.fat;
+        const afterFat = fatEl.textContent;
+        console.log('   Fat:', { before: beforeFat, setTo: macros.fat, after: afterFat });
+    } else {
+        console.error('   ❌ fatEl not found!');
+    }
     
     // Update cost if element exists
     if (costEl) {
         if (cost > 0) {
             costEl.textContent = `$${cost.toFixed(2)}`;
-    } else {
+        } else {
             costEl.textContent = 'N/A';
         }
+    }
+    
+    // Verify the update worked by reading back from DOM
+    const verifyCalories = caloriesEl ? caloriesEl.textContent : 'NOT FOUND';
+    const verifyProtein = proteinEl ? proteinEl.textContent : 'NOT FOUND';
+    const verifyCarbs = carbsEl ? carbsEl.textContent : 'NOT FOUND';
+    const verifyFat = fatEl ? fatEl.textContent : 'NOT FOUND';
+    
+    console.log('✅ Verification - Values in DOM after update:', {
+        calories: verifyCalories,
+        protein: verifyProtein,
+        carbs: verifyCarbs,
+        fat: verifyFat,
+        expected: macros,
+        match: verifyCalories == macros.calories && 
+               verifyProtein == macros.protein && 
+               verifyCarbs == macros.carbs && 
+               verifyFat == macros.fat
+    });
+    
+    if (verifyCalories != macros.calories || verifyProtein != macros.protein || 
+        verifyCarbs != macros.carbs || verifyFat != macros.fat) {
+        console.error('❌ MISMATCH: DOM values do not match calculated macros!', {
+            calculated: macros,
+            inDOM: { calories: verifyCalories, protein: verifyProtein, carbs: verifyCarbs, fat: verifyFat }
+        });
     }
     
     console.log('✅ Successfully updated macros:', {
