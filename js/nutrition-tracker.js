@@ -386,6 +386,13 @@ async function searchFoods(query) {
     customMatches.forEach(ingredient => {
             // Convert nutrition to per-gram format for consistency
             const servingSize = ingredient.servingSize || 100;
+            
+            // Calculate pricePer100g from pricePerGram if available
+            let pricePer100g = ingredient.pricePer100g || null;
+            if (!pricePer100g && ingredient.pricePerGram) {
+                pricePer100g = ingredient.pricePerGram * 100;
+            }
+            
             results.push({
                 type: 'ingredient',
                 data: {
@@ -398,7 +405,7 @@ async function searchFoods(query) {
                     },
                     source: 'custom',
                     pricePerGram: ingredient.pricePerGram || null,
-                    pricePer100g: ingredient.pricePer100g || null
+                    pricePer100g: pricePer100g
                 }
             });
         }
