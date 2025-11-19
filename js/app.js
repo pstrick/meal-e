@@ -3241,8 +3241,7 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         cost = ingredient.pricePerGram * amount;
     }
     
-    // Get the current amount from the input field
-    const amountInput = ingredientItem.querySelector('.ingredient-amount');
+    // Get the current amount from the input field (amountInput already declared above)
     const currentAmount = amountInput ? amountInput.value : 'N/A';
     
     // Update all macro values
