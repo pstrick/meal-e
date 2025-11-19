@@ -326,14 +326,15 @@ function openIngredientModal(ingredient = null) {
     const storeSectionInput = document.getElementById('store-section');
 
     if (ingredient) {
-        document.getElementById('ingredient-name').value = ingredient.name;
-        document.getElementById('total-price').value = ingredient.totalPrice;
-        document.getElementById('total-weight').value = ingredient.totalWeight;
-        document.getElementById('serving-size').value = ingredient.servingSize;
-        document.getElementById('calories').value = ingredient.nutrition.calories;
-        document.getElementById('fat').value = ingredient.nutrition.fat;
-        document.getElementById('carbs').value = ingredient.nutrition.carbs;
-        document.getElementById('protein').value = ingredient.nutrition.protein;
+        document.getElementById('ingredient-name').value = ingredient.name || '';
+        document.getElementById('total-price').value = ingredient.totalPrice || '';
+        document.getElementById('total-weight').value = ingredient.totalWeight || '';
+        document.getElementById('serving-size').value = ingredient.servingSize || 100;
+        const nutrition = ingredient.nutrition || { calories: 0, fat: 0, carbs: 0, protein: 0 };
+        document.getElementById('calories').value = Math.round(nutrition.calories || 0);
+        document.getElementById('fat').value = nutrition.fat || 0;
+        document.getElementById('carbs').value = nutrition.carbs || 0;
+        document.getElementById('protein').value = nutrition.protein || 0;
         if (storeSectionInput) {
             storeSectionInput.value = ingredient.storeSection || '';
         }
@@ -469,16 +470,43 @@ function renderIngredientsList(filteredIngredients = null) {
             const nameHTML = iconMarkup
                 ? `${iconMarkup}<span class="ingredient-name-text">${ingredient.name}</span>`
                 : `<span class="ingredient-name-text">${ingredient.name}</span>`;
+            
+            // Handle price and weight display - API ingredients might not have these
+            const servingSize = ingredient.servingSize || 100;
+            let priceDisplay = 'N/A';
+            if (ingredient.totalPrice !== null && ingredient.totalPrice !== undefined && 
+                ingredient.totalWeight !== null && ingredient.totalWeight !== undefined) {
+                priceDisplay = `$${ingredient.totalPrice.toFixed(2)} (${ingredient.totalWeight}g)`;
+            } else if (ingredient.pricePerGram !== null && ingredient.pricePerGram !== undefined) {
+                // Calculate estimated price for 100g if we have price per gram
+                const estimatedPrice = ingredient.pricePerGram * 100;
+                priceDisplay = `~$${estimatedPrice.toFixed(2)}/100g`;
+            }
+            
+            // Nutrition is stored per serving size, so display it correctly
+            const nutrition = ingredient.nutrition || { calories: 0, fat: 0, carbs: 0, protein: 0 };
+            const caloriesPerServing = Math.round(nutrition.calories || 0);
+            const fatPerServing = (nutrition.fat || 0).toFixed(1);
+            const carbsPerServing = (nutrition.carbs || 0).toFixed(1);
+            const proteinPerServing = (nutrition.protein || 0).toFixed(1);
+            
+            // Add source indicator for API-sourced ingredients
+            let sourceBadge = '';
+            if (ingredient.source === 'usda' || ingredient.source === 'openfoodfacts') {
+                const sourceLabel = ingredient.source === 'usda' ? 'USDA' : 'OFF';
+                sourceBadge = `<span class="source-badge" title="Imported from ${sourceLabel}">${sourceLabel}</span>`;
+            }
+            
             row.innerHTML = `
-                <td class="ingredient-name-cell">${nameHTML}</td>
+                <td class="ingredient-name-cell">${nameHTML} ${sourceBadge}</td>
                 <td>${ingredient.storeSection || 'Uncategorized'}</td>
-                <td>$${ingredient.totalPrice.toFixed(2)} (${ingredient.totalWeight}g)</td>
-                <td>${ingredient.nutrition.calories}</td>
+                <td>${priceDisplay}</td>
+                <td>${caloriesPerServing} <small>(${servingSize}g)</small></td>
                 <td>
                     <div class="macro-info">
-                        <span>F: ${ingredient.nutrition.fat}g</span>
-                        <span>C: ${ingredient.nutrition.carbs}g</span>
-                        <span>P: ${ingredient.nutrition.protein}g</span>
+                        <span>F: ${fatPerServing}g</span>
+                        <span>C: ${carbsPerServing}g</span>
+                        <span>P: ${proteinPerServing}g</span>
                     </div>
                 </td>
                 <td>
