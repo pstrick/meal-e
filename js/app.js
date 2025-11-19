@@ -1494,8 +1494,10 @@ function editRecipe(id) {
             
             if (ingredient) {
                 ingredient.amount = newAmount;
-                if (fdcId) {
-                    selectedIngredients.set(fdcId, ingredient);
+                // Use the actual key from selectedIngredients (which might be different from fdcId)
+                const actualKey = nameInput.dataset.fdcId;
+                if (actualKey) {
+                    selectedIngredients.set(actualKey, ingredient);
                 }
                 updateIngredientMacros(ingredientItem, ingredient);
                 updateServingSizeDefault();
@@ -2252,8 +2254,10 @@ function addIngredientInput() {
         
         if (ingredient) {
             ingredient.amount = newAmount;
-            if (fdcId) {
-                selectedIngredients.set(fdcId, ingredient);
+            // Use the actual key from selectedIngredients (which might be different from fdcId)
+            const actualKey = nameInput.dataset.fdcId;
+            if (actualKey) {
+                selectedIngredients.set(actualKey, ingredient);
             }
             console.log('Amount changed for', ingredient.name, 'to', newAmount, 'g');
             updateIngredientMacros(ingredientItem, ingredient);
@@ -2577,8 +2581,10 @@ function duplicateRecipe(id) {
             
             if (ingredient) {
                 ingredient.amount = newAmount;
-                if (fdcId) {
-                    selectedIngredients.set(fdcId, ingredient);
+                // Use the actual key from selectedIngredients (which might be different from fdcId)
+                const actualKey = nameInput.dataset.fdcId;
+                if (actualKey) {
+                    selectedIngredients.set(actualKey, ingredient);
                 }
                 updateIngredientMacros(ingredientItem, ingredient);
                 updateServingSizeDefault();
