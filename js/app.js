@@ -1681,12 +1681,22 @@ function selectIngredient(ingredient) {
             fat: 0
         };
         
+        // Log the raw nutrition data we received
+        console.log('Raw nutrition data from ingredient:', {
+            ingredientName: ingredient.name,
+            source: ingredient.source,
+            rawNutrition: nutrition,
+            hasNutrition: !!ingredient.nutrition,
+            nutritionKeys: ingredient.nutrition ? Object.keys(ingredient.nutrition) : []
+        });
+        
         // Validate nutrition data exists
         if (!nutrition || (nutrition.calories === 0 && nutrition.protein === 0 && nutrition.carbs === 0 && nutrition.fat === 0)) {
-            console.warn('Ingredient has no nutrition data:', {
+            console.warn('⚠️ Ingredient has no nutrition data:', {
                 name: ingredient.name,
                 source: ingredient.source,
-                nutrition: nutrition
+                nutrition: nutrition,
+                fullIngredient: ingredient
             });
         }
         
@@ -1696,15 +1706,18 @@ function selectIngredient(ingredient) {
             amountInput.value = '100';
         }
         
+        // Ensure nutrition values are numbers (handle any string conversions)
+        const safeNutrition = {
+            calories: Number(nutrition.calories) || 0,
+            protein: Number(nutrition.protein) || 0,
+            carbs: Number(nutrition.carbs) || 0,
+            fat: Number(nutrition.fat) || 0
+        };
+        
         const ingredientData = {
             name: ingredient.name,
             amount: defaultAmount,
-            nutrition: {
-                calories: nutrition.calories || 0,
-                protein: nutrition.protein || 0,
-                carbs: nutrition.carbs || 0,
-                fat: nutrition.fat || 0
-            },
+            nutrition: safeNutrition,
             source: ingredient.source || 'custom',
             id: ingredient.id || ingredient.fdcId,
             fdcId: ingredient.fdcId || storageId,
