@@ -212,12 +212,20 @@ export function formatUSDAFood(food) {
     
     const nutrition = extractUSDANutrition(food);
     
+    // Convert nutrition values to numbers and validate
+    // Note: per-gram values can be very small (e.g., 0.003 cal/g), so we check for any positive value
+    const caloriesNum = Number(nutrition.calories) || 0;
+    const proteinNum = Number(nutrition.protein) || 0;
+    const carbsNum = Number(nutrition.carbs) || 0;
+    const fatNum = Number(nutrition.fat) || 0;
+    
     // Validate nutrition data - require at least calories OR at least one macro
-    const hasValidNutrition = nutrition && (
-        nutrition.calories > 0 || 
-        nutrition.protein > 0 || 
-        nutrition.carbs > 0 || 
-        nutrition.fat > 0
+    // Check if any value is a positive number (even very small per-gram values are valid)
+    const hasValidNutrition = (
+        (Number.isFinite(caloriesNum) && caloriesNum > 0) || 
+        (Number.isFinite(proteinNum) && proteinNum > 0) || 
+        (Number.isFinite(carbsNum) && carbsNum > 0) || 
+        (Number.isFinite(fatNum) && fatNum > 0)
     );
     
     if (!hasValidNutrition) {
@@ -226,7 +234,8 @@ export function formatUSDAFood(food) {
             description: food.description,
             hasFoodNutrients: !!food.foodNutrients,
             foodNutrientsCount: food.foodNutrients?.length || 0,
-            extractedNutrition: nutrition
+            rawNutrition: nutrition,
+            numericValues: { calories: caloriesNum, protein: proteinNum, carbs: carbsNum, fat: fatNum }
         });
         // Return null to filter out foods without nutrition data
         return null;
@@ -304,14 +313,25 @@ export async function searchUSDAIngredients(query, maxResults = 10) {
             if (!food || !food.nutrition) {
                 return false;
             }
-            const hasValidNutrition = 
-                food.nutrition.calories > 0 || 
-                food.nutrition.protein > 0 || 
-                food.nutrition.carbs > 0 || 
-                food.nutrition.fat > 0;
+            
+            // Convert nutrition values to numbers and validate
+            const caloriesNum = Number(food.nutrition.calories) || 0;
+            const proteinNum = Number(food.nutrition.protein) || 0;
+            const carbsNum = Number(food.nutrition.carbs) || 0;
+            const fatNum = Number(food.nutrition.fat) || 0;
+            
+            const hasValidNutrition = (
+                (Number.isFinite(caloriesNum) && caloriesNum > 0) || 
+                (Number.isFinite(proteinNum) && proteinNum > 0) || 
+                (Number.isFinite(carbsNum) && carbsNum > 0) || 
+                (Number.isFinite(fatNum) && fatNum > 0)
+            );
             
             if (!hasValidNutrition) {
-                console.log('Filtering out USDA food without valid nutrition:', food.name);
+                console.log('Filtering out USDA food without valid nutrition:', food.name, {
+                    rawNutrition: food.nutrition,
+                    numericValues: { calories: caloriesNum, protein: proteinNum, carbs: carbsNum, fat: fatNum }
+                });
             }
             return hasValidNutrition;
         });

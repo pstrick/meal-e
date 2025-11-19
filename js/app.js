@@ -2956,9 +2956,19 @@ function addIngredientInput() {
     // Update nutrition and serving size when amount changes
     // Use a named function and ensure it's only added once
     const handleAmountInput = function() {
-        console.log('🔔 Amount input event fired!', { value: amountInput.value });
-        const fdcId = nameInput.dataset.fdcId;
-            const newAmount = parseFloat(amountInput.value) || 0;
+        // CRITICAL: Get the current nameInput from the ingredientItem, not from closure
+        // This ensures we get the element even if it was replaced
+        const currentNameInput = ingredientItem.querySelector('.ingredient-name');
+        const currentAmountInput = ingredientItem.querySelector('.ingredient-amount');
+        
+        console.log('🔔 Amount input event fired!', { 
+            value: currentAmountInput?.value,
+            fdcId: currentNameInput?.dataset.fdcId,
+            nameInputExists: !!currentNameInput
+        });
+        
+        const fdcId = currentNameInput?.dataset.fdcId;
+        const newAmount = parseFloat(currentAmountInput?.value) || 0;
         console.log('🔔 Processing amount change:', { fdcId, newAmount });
         
         // Try to get ingredient from selectedIngredients
@@ -2974,7 +2984,9 @@ function addIngredientInput() {
                     if (key === fdcId || key.endsWith(fdcId) || fdcId.endsWith(key)) {
                         ingredient = value;
                         // Update the dataset to match the actual key
-                        nameInput.dataset.fdcId = key;
+                        if (currentNameInput) {
+                            currentNameInput.dataset.fdcId = key;
+                        }
                         break;
                     }
                 }
@@ -2984,7 +2996,7 @@ function addIngredientInput() {
         if (ingredient) {
             ingredient.amount = newAmount;
             // Use the actual key from selectedIngredients (which might be different from fdcId)
-            const actualKey = nameInput.dataset.fdcId;
+            const actualKey = currentNameInput?.dataset.fdcId;
             if (actualKey) {
                 selectedIngredients.set(actualKey, ingredient);
             }
@@ -3011,8 +3023,7 @@ function addIngredientInput() {
                 const oldFat = fatEl ? parseFloat(fatEl.textContent) || 0 : 0;
                 
                 // Get the old amount from the input's default value or current stored amount
-                const oldAmountInput = ingredientItem.querySelector('.ingredient-amount');
-                const oldAmount = oldAmountInput ? (parseFloat(oldAmountInput.defaultValue) || parseFloat(oldAmountInput.value) || 100) : 100;
+                const oldAmount = currentAmountInput ? (parseFloat(currentAmountInput.defaultValue) || parseFloat(currentAmountInput.value) || 100) : 100;
                 
                 // If we have old values, try to calculate nutrition per gram
                 if (oldAmount > 0) {
@@ -3024,7 +3035,7 @@ function addIngredientInput() {
                     };
                     
                     const fallbackIngredient = {
-                        name: nameInput.value || 'Unknown',
+                        name: currentNameInput?.value || 'Unknown',
                         amount: newAmount,
                         nutrition: nutritionPerGram
                     };
