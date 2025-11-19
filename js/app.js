@@ -1920,14 +1920,23 @@ function selectIngredient(ingredient) {
             nutritionKeys: ingredient.nutrition ? Object.keys(ingredient.nutrition) : []
         });
         
-        // Validate nutrition data exists
-        if (!nutrition || (nutrition.calories === 0 && nutrition.protein === 0 && nutrition.carbs === 0 && nutrition.fat === 0)) {
-            console.warn('⚠️ Ingredient has no nutrition data:', {
+        // Validate nutrition data exists - filter out ingredients with no valid nutrition
+        const hasValidNutrition = nutrition && (
+            nutrition.calories > 0 || 
+            nutrition.protein > 0 || 
+            nutrition.carbs > 0 || 
+            nutrition.fat > 0
+        );
+        
+        if (!hasValidNutrition) {
+            console.warn('⚠️ Ingredient has no valid nutrition data - rejecting selection:', {
                 name: ingredient.name,
                 source: ingredient.source,
                 nutrition: nutrition,
                 fullIngredient: ingredient
             });
+            showAlert(`Cannot select "${ingredient.name}" - no nutrition data available.`, { type: 'warning' });
+            return; // Don't select ingredients without valid nutrition
         }
         
         // Set default amount to 100g if empty
@@ -2929,14 +2938,37 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         ingredient.amount = amount;
     }
     
-    // Ensure nutrition object exists and has all required fields
-    const nutrition = ingredient.nutrition || {
+    // Try to get nutrition from ingredient parameter first, but fallback to selectedIngredients
+    let nutrition = ingredient.nutrition;
+    
+    // If nutrition is missing or all zeros, try to get it from selectedIngredients
+    if (!nutrition || (nutrition.calories === 0 && nutrition.protein === 0 && nutrition.carbs === 0 && nutrition.fat === 0)) {
+        const nameInput = ingredientItem.querySelector('.ingredient-name');
+        if (nameInput) {
+            const fdcId = nameInput.dataset.fdcId;
+            if (fdcId && selectedIngredients.has(fdcId)) {
+                const storedIngredient = selectedIngredients.get(fdcId);
+                if (storedIngredient && storedIngredient.nutrition) {
+                    console.log('🔍 Nutrition missing from ingredient parameter, using selectedIngredients:', {
+                        fdcId: fdcId,
+                        storedNutrition: storedIngredient.nutrition
+                    });
+                    nutrition = storedIngredient.nutrition;
+                    // Also update the ingredient object so it has nutrition
+                    ingredient.nutrition = nutrition;
+                }
+            }
+        }
+    }
+    
+    // Final fallback to empty object
+    nutrition = nutrition || {
         calories: 0,
         protein: 0,
         carbs: 0,
         fat: 0
     };
-    console.log('📊 Raw nutrition object:', nutrition);
+    console.log('📊 Raw nutrition object (after fallback):', nutrition);
     
     // Validate nutrition values are numbers
     let safeNutrition = {

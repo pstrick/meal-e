@@ -2,7 +2,7 @@
 export const version = {
     year: 2025,
     month: 11,
-    build: 106,
+    build: 107,
     toString: function() {
         return `${this.year}.${this.month}.${this.build}`;
     }
