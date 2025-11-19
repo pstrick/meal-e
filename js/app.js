@@ -3530,7 +3530,12 @@ function duplicateRecipe(id) {
                 updateServingSizeDefault();
                 updateTotalNutrition();
             }
-        });
+        };
+        
+        // Remove any existing listener first to prevent duplicates
+        amountInput.removeEventListener('input', handleAmountInput);
+        // Add the listener
+        amountInput.addEventListener('input', handleAmountInput);
         
         ingredientItem.querySelector('.remove-ingredient').addEventListener('click', () => {
             if (ingredientsList.children.length > 1) {
