@@ -3103,6 +3103,37 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     console.log('✅ Using STATIC nutrition per-gram values (never modified):', safeNutrition);
     console.log('These values were calculated ONCE when ingredient was selected and stored statically');
     
+    // Verify the values look correct for per-gram format
+    const looksLikePer100g = safeNutrition.calories > 10 || 
+                             safeNutrition.protein > 1 || 
+                             safeNutrition.carbs > 1 || 
+                             safeNutrition.fat > 1;
+    
+    if (looksLikePer100g) {
+        console.error('❌ ERROR: Nutrition values look like per-100g instead of per-gram!', {
+            nutritionPerGram: safeNutrition,
+            expectedRange: {
+                calories: '0-10 cal/g (typical: 0.5-4)',
+                protein: '0-1 g/g (typical: 0.01-0.5)',
+                carbs: '0-1 g/g (typical: 0.01-0.8)',
+                fat: '0-1 g/g (typical: 0.01-0.9)'
+            },
+            issue: 'These values should have been converted to per-gram when ingredient was selected'
+        });
+    }
+    
+    // Show what the calculation will be
+    console.log('📐 Calculation preview:', {
+        amount: amount,
+        nutritionPerGram: safeNutrition,
+        willCalculate: {
+            calories: `${safeNutrition.calories} × ${amount} = ${safeNutrition.calories * amount}`,
+            protein: `${safeNutrition.protein} × ${amount} = ${safeNutrition.protein * amount}`,
+            carbs: `${safeNutrition.carbs} × ${amount} = ${safeNutrition.carbs * amount}`,
+            fat: `${safeNutrition.fat} × ${amount} = ${safeNutrition.fat * amount}`
+        }
+    });
+    
     // Calculate total macros: nutrition per gram × amount in grams
     console.log('🧮 Final calculation step:');
     const caloriesCalc = safeNutrition.calories * amount;
