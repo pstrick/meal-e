@@ -2879,6 +2879,7 @@ async function displaySearchResults(results) {
                 if (nameField) {
                     const displayName = emoji ? `${emoji} ${ingredient.name}` : ingredient.name;
                     nameField.value = displayName;
+                    // CRITICAL: Set fdcId to match storageId used in selectedIngredients
                     nameField.dataset.fdcId = storageId;
                     nameField.dataset.storeSection = ingredient.storeSection || '';
                     nameField.dataset.emoji = emoji;
@@ -2886,14 +2887,24 @@ async function displaySearchResults(results) {
                     nameField.placeholder = 'Click to search for ingredient';
                     nameField.setAttribute('tabindex', '0');
                     
+                    console.log('✅ Set nameField.dataset.fdcId to storageId:', {
+                        storageId: storageId,
+                        fdcId: nameField.dataset.fdcId,
+                        storedInSelectedIngredients: selectedIngredients.has(storageId)
+                    });
+                    
                     // Ensure click and focus handlers are present so user can edit again
                     const newNameField = nameField.cloneNode(true);
-                    // Preserve all data attributes
+                    // CRITICAL: Preserve fdcId - use storageId directly, not from nameField (which might be stale)
                     newNameField.dataset.fdcId = storageId;
                     newNameField.dataset.storeSection = ingredient.storeSection || '';
                     newNameField.dataset.emoji = emoji;
                     newNameField.setAttribute('tabindex', '0');
                     nameField.parentNode.replaceChild(newNameField, nameField);
+                    
+                    // Verify the fdcId is still set after replacement
+                    console.log('✅ After replacement, newNameField.dataset.fdcId:', newNameField.dataset.fdcId);
+                    
                     newNameField.addEventListener('click', (e) => {
                         e.preventDefault();
                         openIngredientSearch(currentIngredientInput);
