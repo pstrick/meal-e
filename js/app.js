@@ -201,7 +201,8 @@ function updateTotalNutrition() {
         calories: 0,
         protein: 0,
         carbs: 0,
-        fat: 0
+        fat: 0,
+        cost: 0
     };
 
     // Get all ingredient inputs
@@ -222,6 +223,10 @@ function updateTotalNutrition() {
                 totals.protein += ingredient.nutrition.protein * amount;
                 totals.carbs += ingredient.nutrition.carbs * amount;
                 totals.fat += ingredient.nutrition.fat * amount;
+            }
+            // Calculate cost
+            if (ingredient && ingredient.pricePerGram && amount > 0) {
+                totals.cost += ingredient.pricePerGram * amount;
             }
         }
     });
@@ -261,17 +266,40 @@ function updateTotalNutrition() {
     if (totalFat) totalFat.textContent = perServing.fat;
     if (recipeServings) recipeServings.textContent = numberOfServings;
 
+    // Calculate cost per serving
+    const costPerServing = totalWeight > 0 && totals.cost > 0 
+        ? totals.cost * (servingSize / totalWeight) 
+        : 0;
+
     // Update recipe totals display - show per-serving values
     const recipeTotalsSection = document.getElementById('recipe-totals');
     const recipeTotalCalories = document.getElementById('recipe-total-calories');
     const recipeTotalProtein = document.getElementById('recipe-total-protein');
     const recipeTotalCarbs = document.getElementById('recipe-total-carbs');
     const recipeTotalFat = document.getElementById('recipe-total-fat');
+    const recipeTotalCost = document.getElementById('recipe-total-cost');
+    const recipeCostPerServing = document.getElementById('recipe-cost-per-serving');
 
     if (recipeTotalCalories) recipeTotalCalories.textContent = perServing.calories;
     if (recipeTotalProtein) recipeTotalProtein.textContent = `${perServing.protein}g`;
     if (recipeTotalCarbs) recipeTotalCarbs.textContent = `${perServing.carbs}g`;
     if (recipeTotalFat) recipeTotalFat.textContent = `${perServing.fat}g`;
+    
+    // Update cost displays
+    if (recipeTotalCost) {
+        if (totals.cost > 0) {
+            recipeTotalCost.textContent = `$${totals.cost.toFixed(2)}`;
+        } else {
+            recipeTotalCost.textContent = 'N/A';
+        }
+    }
+    if (recipeCostPerServing) {
+        if (costPerServing > 0) {
+            recipeCostPerServing.textContent = `$${costPerServing.toFixed(2)}`;
+        } else {
+            recipeCostPerServing.textContent = 'N/A';
+        }
+    }
 }
 
 function calculateTotalWeight() {
@@ -1412,6 +1440,7 @@ function editRecipe(id) {
                 <span class="macro-item">Protein: <span class="protein">0</span>g</span>
                 <span class="macro-item">Carbs: <span class="carbs">0</span>g</span>
                 <span class="macro-item">Fat: <span class="fat">0</span>g</span>
+                <span class="macro-item">Cost: <span class="cost">$0.00</span></span>
             </div>
         `;
         const nameInput = ingredientItem.querySelector('.ingredient-name');
@@ -1442,6 +1471,7 @@ function editRecipe(id) {
                 selectedIngredients.set(fdcId, ingredient);
                 updateIngredientMacros(ingredientItem, ingredient);
                 updateServingSizeDefault();
+                updateTotalNutrition();
             }
         });
         ingredientItem.querySelector('.remove-ingredient').addEventListener('click', () => {
@@ -2121,6 +2151,7 @@ function addIngredientInput() {
             console.log('Amount changed for', ingredient.name, 'to', newAmount, 'g');
             updateIngredientMacros(ingredientItem, ingredient);
             updateServingSizeDefault();
+            updateTotalNutrition();
         } else {
             console.warn('Amount changed but ingredient not found in selectedIngredients:', fdcId);
         }
@@ -2199,6 +2230,7 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     const proteinEl = macrosContainer.querySelector('.protein');
     const carbsEl = macrosContainer.querySelector('.carbs');
     const fatEl = macrosContainer.querySelector('.fat');
+    const costEl = macrosContainer.querySelector('.cost');
     
     console.log('DOM elements found:', {
         macrosContainer: !!macrosContainer,
@@ -2206,6 +2238,7 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         proteinEl: !!proteinEl,
         carbsEl: !!carbsEl,
         fatEl: !!fatEl,
+        costEl: !!costEl,
         macrosToSet: macros,
         ingredientItemClasses: ingredientItem.className
     });
@@ -2221,11 +2254,26 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         return;
     }
     
+    // Calculate cost
+    let cost = 0;
+    if (ingredient.pricePerGram && amount > 0) {
+        cost = ingredient.pricePerGram * amount;
+    }
+    
     // Update all macro values
     caloriesEl.textContent = macros.calories;
     proteinEl.textContent = macros.protein;
     carbsEl.textContent = macros.carbs;
     fatEl.textContent = macros.fat;
+    
+    // Update cost if element exists
+    if (costEl) {
+        if (cost > 0) {
+            costEl.textContent = `$${cost.toFixed(2)}`;
+        } else {
+            costEl.textContent = 'N/A';
+        }
+    }
     
     console.log('✅ Successfully updated macros:', {
         calories: macros.calories,
@@ -2363,6 +2411,7 @@ function duplicateRecipe(id) {
                 <span class="macro-item">Protein: <span class="protein">0</span>g</span>
                 <span class="macro-item">Carbs: <span class="carbs">0</span>g</span>
                 <span class="macro-item">Fat: <span class="fat">0</span>g</span>
+                <span class="macro-item">Cost: <span class="cost">$0.00</span></span>
             </div>
         `;
         const nameInput = ingredientItem.querySelector('.ingredient-name');
@@ -2394,6 +2443,7 @@ function duplicateRecipe(id) {
                 selectedIngredients.set(fdcId, ingredient);
                 updateIngredientMacros(ingredientItem, ingredient);
                 updateServingSizeDefault();
+                updateTotalNutrition();
             }
         });
         
