@@ -1946,25 +1946,89 @@ async function searchAllIngredients(query) {
     const queryLower = query.toLowerCase().trim();
     const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
     
-    // Sort custom ingredients by relevance: exact match > starts with > contains
+    // Helper function to calculate relevance score (defined before use)
+    function calculateRelevance(text, query) {
+        if (!text || !query) return 0;
+        
+        const textLower = text.toLowerCase().trim();
+        const queryLower = query.toLowerCase().trim();
+        const queryWords = queryLower.split(/\s+/).filter(w => w.length > 0);
+        
+        let score = 0;
+        
+        // Exact match (highest priority)
+        if (textLower === queryLower) {
+            score += 10;
+        }
+        // Starts with query (very high priority)
+        else if (textLower.startsWith(queryLower)) {
+            score += 8;
+        }
+        // Contains query as whole phrase
+        else if (textLower.includes(queryLower)) {
+            score += 5;
+        }
+        // Word-based matching - check if all query words appear
+        else if (queryWords.length > 1) {
+            const textWords = textLower.split(/\s+/);
+            const matchingWords = queryWords.filter(qw => 
+                textWords.some(tw => tw === qw || tw.startsWith(qw) || tw.includes(qw))
+            );
+            const wordMatchRatio = matchingWords.length / queryWords.length;
+            score += wordMatchRatio * 4; // Up to 4 points for word matching
+            
+            // Bonus if words appear in order
+            let wordsInOrder = 0;
+            let lastIndex = -1;
+            for (const qw of queryWords) {
+                const index = textWords.findIndex(tw => tw === qw || tw.startsWith(qw));
+                if (index > lastIndex) {
+                    wordsInOrder++;
+                    lastIndex = index;
+                }
+            }
+            if (wordsInOrder === queryWords.length) {
+                score += 2; // Bonus for words in order
+            }
+        }
+        // Single word - check for word boundaries
+        else if (queryWords.length === 1) {
+            const queryWord = queryWords[0];
+            const wordBoundaryRegex = new RegExp(`\\b${queryWord}`, 'i');
+            if (wordBoundaryRegex.test(textLower)) {
+                score += 4; // Word boundary match
+            } else if (textLower.includes(queryWord)) {
+                score += 2; // Partial match
+            }
+        }
+        
+        // Boost for shorter names (more specific matches)
+        if (textLower.length < queryLower.length * 2) {
+            score += 1;
+        }
+        
+        return score;
+    }
+    
+    // Sort custom ingredients by relevance using improved algorithm
     const customMatches = customIngredients
         .filter(ingredient => {
             const nameLower = ingredient.name.toLowerCase();
             return nameLower.includes(queryLower);
         })
         .map(ingredient => {
-            const nameLower = ingredient.name.toLowerCase();
-            let relevance = 0;
-            if (nameLower === queryLower) {
-                relevance = 3; // Exact match
-            } else if (nameLower.startsWith(queryLower)) {
-                relevance = 2; // Starts with
-            } else {
-                relevance = 1; // Contains
-            }
+            const relevance = calculateRelevance(ingredient.name, query);
             return { ingredient, relevance };
         })
-        .sort((a, b) => b.relevance - a.relevance)
+        .filter(item => item.relevance > 0) // Only include relevant matches
+        .sort((a, b) => {
+            // Sort by relevance first
+            if (b.relevance !== a.relevance) {
+                return b.relevance - a.relevance;
+            }
+            // Then by name length (shorter = more specific)
+            return a.ingredient.name.length - b.ingredient.name.length;
+        })
         .map(item => item.ingredient);
     
     // Add custom ingredients to results
@@ -2169,39 +2233,30 @@ async function searchAllIngredients(query) {
         console.log('Added', scoredOFFResults.length, 'Open Food Facts results');
     }
     
-    // Sort results: custom ingredients first, then by relevance (exact match > starts with > contains), then alphabetically
-    // queryLower is already declared at the top of the function
+    // Sort results: custom ingredients first, then by calculated relevance score
     results.sort((a, b) => {
         // Custom ingredients first
         if (a.source === 'custom' && b.source !== 'custom') return -1;
         if (a.source !== 'custom' && b.source === 'custom') return 1;
         
-        // Within same source, sort by relevance to query
-        const aNameLower = (a.name || '').toLowerCase();
-        const bNameLower = (b.name || '').toLowerCase();
-        
-        let aRelevance = 0;
-        let bRelevance = 0;
-        
-        if (aNameLower === queryLower) aRelevance = 3;
-        else if (aNameLower.startsWith(queryLower)) aRelevance = 2;
-        else if (aNameLower.includes(queryLower)) aRelevance = 1;
-        
-        if (bNameLower === queryLower) bRelevance = 3;
-        else if (bNameLower.startsWith(queryLower)) bRelevance = 2;
-        else if (bNameLower.includes(queryLower)) bRelevance = 1;
+        // Calculate relevance scores for both
+        const aRelevance = calculateRelevance(a.name, query);
+        const bRelevance = calculateRelevance(b.name, query);
         
         // Boost relevance if it has nutrition data
-        if (a.nutrition && (a.nutrition.calories > 0 || a.nutrition.protein > 0)) aRelevance += 0.5;
-        if (b.nutrition && (b.nutrition.calories > 0 || b.nutrition.protein > 0)) bRelevance += 0.5;
+        const aFinalRelevance = aRelevance + (a.nutrition && (a.nutrition.calories > 0 || a.nutrition.protein > 0) ? 0.5 : 0);
+        const bFinalRelevance = bRelevance + (b.nutrition && (b.nutrition.calories > 0 || b.nutrition.protein > 0) ? 0.5 : 0);
         
-        if (aRelevance !== bRelevance) return bRelevance - aRelevance;
+        if (aFinalRelevance !== bFinalRelevance) return bFinalRelevance - aFinalRelevance;
         
         // If same relevance, sort by source priority: Open Food Facts > USDA
         if (a.source === 'openfoodfacts' && b.source === 'usda') return -1;
         if (a.source === 'usda' && b.source === 'openfoodfacts') return 1;
         
-        // Then alphabetically
+        // Then by name length (shorter = more specific)
+        if (a.name.length !== b.name.length) return a.name.length - b.name.length;
+        
+        // Finally alphabetically
         return a.name.localeCompare(b.name);
     });
     
