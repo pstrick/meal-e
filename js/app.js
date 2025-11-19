@@ -3089,6 +3089,33 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         isReasonable: isReasonable
     });
     
+    // EXPANDED NUTRITION VALUES FOR DEBUGGING
+    console.log('🔍 EXPANDED NUTRITION VALUES:', {
+        'nutritionPerGram (used in calculation)': {
+            calories: safeNutrition.calories,
+            protein: safeNutrition.protein,
+            carbs: safeNutrition.carbs,
+            fat: safeNutrition.fat
+        },
+        'rawNutrition (from ingredient object)': {
+            calories: nutrition.calories,
+            protein: nutrition.protein,
+            carbs: nutrition.carbs,
+            fat: nutrition.fat
+        },
+        'amount (grams)': amount,
+        'expected per 100g (if per-gram is correct)': {
+            calories: safeNutrition.calories * 100,
+            protein: safeNutrition.protein * 100,
+            carbs: safeNutrition.carbs * 100,
+            fat: safeNutrition.fat * 100
+        },
+        'calculated total for this amount': macros,
+        'WARNING': safeNutrition.calories < 0.1 ? '⚠️ Calories per gram is VERY LOW (< 0.1). This might indicate nutrition is stored incorrectly.' : 
+                  safeNutrition.calories > 10 ? '⚠️ Calories per gram is VERY HIGH (> 10). This might be per-100g format.' :
+                  '✅ Calories per gram looks reasonable'
+    });
+    
     // Log if macros are zero but we have nutrition data
     if (amount > 0 && macros.calories === 0 && macros.protein === 0 && macros.carbs === 0 && macros.fat === 0) {
         console.warn('⚠️ updateIngredientMacros: All macros are zero', {
