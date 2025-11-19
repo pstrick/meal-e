@@ -2070,6 +2070,12 @@ async function searchAllIngredients(query) {
             if (b.relevance !== a.relevance) {
                 return b.relevance - a.relevance;
             }
+            // Then by word count (fewer words = simpler/better)
+            const aWords = (a.ingredient.name || '').split(/\s+/).length;
+            const bWords = (b.ingredient.name || '').split(/\s+/).length;
+            if (aWords !== bWords) {
+                return aWords - bWords;
+            }
             // Then by name length (shorter = more specific)
             return a.ingredient.name.length - b.ingredient.name.length;
         })
@@ -2296,6 +2302,11 @@ async function searchAllIngredients(query) {
         // If same relevance, sort by source priority: Open Food Facts > USDA
         if (a.source === 'openfoodfacts' && b.source === 'usda') return -1;
         if (a.source === 'usda' && b.source === 'openfoodfacts') return 1;
+        
+        // Then by word count (fewer words = simpler/better)
+        const aWords = (a.name || '').split(/\s+/).length;
+        const bWords = (b.name || '').split(/\s+/).length;
+        if (aWords !== bWords) return aWords - bWords;
         
         // Then by name length (shorter = more specific)
         if (a.name.length !== b.name.length) return a.name.length - b.name.length;
