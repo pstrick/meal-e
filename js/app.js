@@ -1537,8 +1537,44 @@ function editRecipe(id) {
                 updateIngredientMacros(ingredientItem, ingredient);
                 updateServingSizeDefault();
                 updateTotalNutrition();
-            } else if (fdcId) {
-                console.warn('Amount changed but ingredient not found in selectedIngredients:', fdcId);
+            } else {
+                // If ingredient not found, try fallback approach
+                console.warn('Amount changed but ingredient not found in selectedIngredients:', fdcId, 'Available keys:', Array.from(selectedIngredients.keys()));
+                
+                const macrosContainer = ingredientItem.querySelector('.ingredient-macros');
+                if (macrosContainer) {
+                    const caloriesEl = macrosContainer.querySelector('.calories');
+                    const proteinEl = macrosContainer.querySelector('.protein');
+                    const carbsEl = macrosContainer.querySelector('.carbs');
+                    const fatEl = macrosContainer.querySelector('.fat');
+                    
+                    const oldCalories = caloriesEl ? parseFloat(caloriesEl.textContent) || 0 : 0;
+                    const oldProtein = proteinEl ? parseFloat(proteinEl.textContent) || 0 : 0;
+                    const oldCarbs = carbsEl ? parseFloat(carbsEl.textContent) || 0 : 0;
+                    const oldFat = fatEl ? parseFloat(fatEl.textContent) || 0 : 0;
+                    
+                    const oldAmountInput = ingredientItem.querySelector('.ingredient-amount');
+                    const oldAmount = oldAmountInput ? (parseFloat(oldAmountInput.defaultValue) || parseFloat(oldAmountInput.value) || 100) : 100;
+                    
+                    if (oldAmount > 0) {
+                        const nutritionPerGram = {
+                            calories: oldCalories / oldAmount,
+                            protein: oldProtein / oldAmount,
+                            carbs: oldCarbs / oldAmount,
+                            fat: oldFat / oldAmount
+                        };
+                        
+                        const fallbackIngredient = {
+                            name: nameInput.value || 'Unknown',
+                            amount: newAmount,
+                            nutrition: nutritionPerGram
+                        };
+                        
+                        updateIngredientMacros(ingredientItem, fallbackIngredient);
+                    }
+                }
+                
+                updateServingSizeDefault();
                 updateTotalNutrition();
             }
         });
@@ -2241,6 +2277,7 @@ function addIngredientInput() {
             <span class="macro-item">Protein: <span class="protein">0</span>g</span>
             <span class="macro-item">Carbs: <span class="carbs">0</span>g</span>
             <span class="macro-item">Fat: <span class="fat">0</span>g</span>
+            <span class="macro-item">Cost: <span class="cost">$0.00</span></span>
         </div>
     `;
 
@@ -2285,11 +2322,52 @@ function addIngredientInput() {
             updateIngredientMacros(ingredientItem, ingredient);
             updateServingSizeDefault();
             updateTotalNutrition();
-        } else if (fdcId) {
-            // If we have an fdcId but no ingredient, try to update anyway
-            // This handles cases where ingredient data might be stored differently
-            console.warn('Amount changed but ingredient not found in selectedIngredients:', fdcId);
-            // Still try to update totals in case other ingredients changed
+        } else {
+            // If ingredient not found, try to construct a minimal ingredient object from existing data
+            // This can happen if the ingredient was added but not properly stored
+            console.warn('Amount changed but ingredient not found in selectedIngredients:', fdcId, 'Available keys:', Array.from(selectedIngredients.keys()));
+            
+            // Try to get existing macro values to reverse-calculate nutrition per gram
+            const macrosContainer = ingredientItem.querySelector('.ingredient-macros');
+            if (macrosContainer) {
+                const caloriesEl = macrosContainer.querySelector('.calories');
+                const proteinEl = macrosContainer.querySelector('.protein');
+                const carbsEl = macrosContainer.querySelector('.carbs');
+                const fatEl = macrosContainer.querySelector('.fat');
+                
+                const oldCalories = caloriesEl ? parseFloat(caloriesEl.textContent) || 0 : 0;
+                const oldProtein = proteinEl ? parseFloat(proteinEl.textContent) || 0 : 0;
+                const oldCarbs = carbsEl ? parseFloat(carbsEl.textContent) || 0 : 0;
+                const oldFat = fatEl ? parseFloat(fatEl.textContent) || 0 : 0;
+                
+                // Get the old amount from the input's default value or current stored amount
+                const oldAmountInput = ingredientItem.querySelector('.ingredient-amount');
+                const oldAmount = oldAmountInput ? (parseFloat(oldAmountInput.defaultValue) || parseFloat(oldAmountInput.value) || 100) : 100;
+                
+                // If we have old values, try to calculate nutrition per gram
+                if (oldAmount > 0) {
+                    const nutritionPerGram = {
+                        calories: oldCalories / oldAmount,
+                        protein: oldProtein / oldAmount,
+                        carbs: oldCarbs / oldAmount,
+                        fat: oldFat / oldAmount
+                    };
+                    
+                    const fallbackIngredient = {
+                        name: nameInput.value || 'Unknown',
+                        amount: newAmount,
+                        nutrition: nutritionPerGram
+                    };
+                    
+                    console.log('Using fallback ingredient with reverse-calculated nutrition:', fallbackIngredient);
+                    updateIngredientMacros(ingredientItem, fallbackIngredient);
+                } else {
+                    console.warn('Cannot calculate nutrition - old amount is 0 or invalid');
+                }
+            }
+            
+            // Always update totals
+            updateServingSizeDefault();
             updateTotalNutrition();
         }
     });
@@ -2611,8 +2689,44 @@ function duplicateRecipe(id) {
                 updateIngredientMacros(ingredientItem, ingredient);
                 updateServingSizeDefault();
                 updateTotalNutrition();
-            } else if (fdcId) {
-                console.warn('Amount changed but ingredient not found in selectedIngredients:', fdcId);
+            } else {
+                // If ingredient not found, try fallback approach
+                console.warn('Amount changed but ingredient not found in selectedIngredients:', fdcId, 'Available keys:', Array.from(selectedIngredients.keys()));
+                
+                const macrosContainer = ingredientItem.querySelector('.ingredient-macros');
+                if (macrosContainer) {
+                    const caloriesEl = macrosContainer.querySelector('.calories');
+                    const proteinEl = macrosContainer.querySelector('.protein');
+                    const carbsEl = macrosContainer.querySelector('.carbs');
+                    const fatEl = macrosContainer.querySelector('.fat');
+                    
+                    const oldCalories = caloriesEl ? parseFloat(caloriesEl.textContent) || 0 : 0;
+                    const oldProtein = proteinEl ? parseFloat(proteinEl.textContent) || 0 : 0;
+                    const oldCarbs = carbsEl ? parseFloat(carbsEl.textContent) || 0 : 0;
+                    const oldFat = fatEl ? parseFloat(fatEl.textContent) || 0 : 0;
+                    
+                    const oldAmountInput = ingredientItem.querySelector('.ingredient-amount');
+                    const oldAmount = oldAmountInput ? (parseFloat(oldAmountInput.defaultValue) || parseFloat(oldAmountInput.value) || 100) : 100;
+                    
+                    if (oldAmount > 0) {
+                        const nutritionPerGram = {
+                            calories: oldCalories / oldAmount,
+                            protein: oldProtein / oldAmount,
+                            carbs: oldCarbs / oldAmount,
+                            fat: oldFat / oldAmount
+                        };
+                        
+                        const fallbackIngredient = {
+                            name: nameInput.value || 'Unknown',
+                            amount: newAmount,
+                            nutrition: nutritionPerGram
+                        };
+                        
+                        updateIngredientMacros(ingredientItem, fallbackIngredient);
+                    }
+                }
+                
+                updateServingSizeDefault();
                 updateTotalNutrition();
             }
         });
