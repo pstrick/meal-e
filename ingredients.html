@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom Ingredients - Meal-E</title>
+    <title>My Ingredients - Meal-E</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <script>
         (function () {
@@ -64,7 +64,7 @@
                 <div class="nav-links">
                     <a href="mealplan.html">Meal Plan</a>
                     <a href="recipes.html">Custom Recipes</a>
-                    <a href="ingredients.html" class="active">Custom Ingredients</a>
+                    <a href="ingredients.html" class="active">My Ingredients</a>
                     <a href="shopping-lists.html">Shopping Lists</a>
                     <a href="nutrition-tracker.html">Nutrition Tracker</a>
                     <a href="settings.html">Settings</a>
@@ -75,12 +75,12 @@
 
     <main>
         <div class="container">
-            <h1>Custom Ingredients</h1>
+            <h1>My Ingredients</h1>
             
-            <!-- Custom Ingredients List -->
+            <!-- My Ingredients List -->
             <div class="card">
                 <div class="card-header">
-                    <h2>Custom Ingredients</h2>
+                    <h2>My Ingredients</h2>
                     <div class="card-header-actions">
                         <button id="download-csv-template-btn" class="btn btn-secondary">
                             <i class="fas fa-download"></i> Download CSV Template
@@ -89,12 +89,12 @@
                             <i class="fas fa-upload"></i> Upload CSV
                         </button>
                         <button id="add-ingredient-btn" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Add New Custom Ingredient
+                            <i class="fas fa-plus"></i> Add New Ingredient
                         </button>
                     </div>
                 </div>
                 <div class="search-bar">
-                    <input type="text" id="ingredient-search" placeholder="Search custom ingredients...">
+                    <input type="text" id="ingredient-search" placeholder="Search my ingredients...">
                 </div>
                 <div class="table-container">
                     <table id="custom-ingredients-list" class="ingredients-table">
@@ -121,10 +121,10 @@
     <div id="ingredient-modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h2>Add New Custom Ingredient</h2>
+            <h2>Add New Ingredient</h2>
             <form id="custom-ingredient-form">
                 <div class="form-group">
-                    <label for="ingredient-name">Custom Ingredient Name</label>
+                    <label for="ingredient-name">Ingredient Name</label>
                     <input type="text" id="ingredient-name" required>
                 </div>
                 
@@ -189,7 +189,7 @@
                 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" id="cancel-ingredient">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Custom Ingredient</button>
+                    <button type="submit" class="btn btn-primary">Save Ingredient</button>
                 </div>
             </form>
         </div>

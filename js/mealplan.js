@@ -2,6 +2,22 @@ import { showAlert } from './alert.js';
 import { searchUSDAIngredients } from './usda-api.js';
 import { searchOpenFoodFactsIngredients } from './open-food-facts-api.js';
 
+// Helper function to get my ingredients with migration support
+function getMyIngredients() {
+    // Migrate old storage key if needed
+    const oldKey = 'meale-custom-ingredients';
+    const newKey = 'meale-my-ingredients';
+    const oldData = localStorage.getItem(oldKey);
+    const newData = localStorage.getItem(newKey);
+    
+    if (!newData && oldData) {
+        localStorage.setItem(newKey, oldData);
+        localStorage.removeItem(oldKey);
+    }
+    
+    return JSON.parse(localStorage.getItem(newKey) || '[]');
+}
+
 // Meal Planning functionality
 let currentWeekOffset = 0;  // Track week offset instead of modifying date directly
 let baseStartOfWeekTimestamp = null; // Anchor for week navigation as timestamp
@@ -86,10 +102,10 @@ function resetWeekOffset() {
 async function searchAllIngredients(query) {
     const results = [];
     
-    // Search custom ingredients first (faster, local)
+    // Search my ingredients first (faster, local) - show immediately
     // Prioritize exact matches and starts-with matches
     const queryLower = query.toLowerCase().trim();
-    const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]').map(ingredient => ({
+    const customIngredients = getMyIngredients().map(ingredient => ({
         ...ingredient,
         storeSection: ingredient.storeSection || '',
         emoji: (ingredient.emoji || '').trim(),
@@ -143,7 +159,7 @@ async function searchAllIngredients(query) {
                 fat: ingredient.nutrition.fat / servingSize
             },
             servingSize: ingredient.servingSize,
-            brandOwner: 'Custom Ingredient',
+            brandOwner: 'My Ingredient',
             storeSection: ingredient.storeSection || '',
             pricePerGram: ingredient.pricePerGram || null,
             pricePer100g: pricePer100g,
@@ -233,18 +249,44 @@ async function searchAllIngredients(query) {
         // Continue with other sources if Open Food Facts fails
     }
     
-    // Sort results: custom ingredients first, then Open Food Facts (branded), then USDA (generic), then alphabetically
+    // Sort results: my ingredients first (already added first), then API results by relevance and shortest name
     results.sort((a, b) => {
-        // Custom ingredients first
+        // My ingredients first (source === 'custom')
         if (a.source === 'custom' && b.source !== 'custom') return -1;
         if (a.source !== 'custom' && b.source === 'custom') return 1;
-        // Then Open Food Facts (branded products)
-        if (a.source === 'openfoodfacts' && b.source !== 'openfoodfacts') return -1;
-        if (a.source !== 'openfoodfacts' && b.source === 'openfoodfacts') return 1;
-        // Then USDA (generic foods)
-        if (a.source === 'usda' && b.source !== 'usda') return -1;
-        if (a.source !== 'usda' && b.source === 'usda') return 1;
-        // Then alphabetically
+        
+        // For API results, sort by relevance (exact match > starts with > contains) then by shortest name
+        if (a.source !== 'custom' && b.source !== 'custom') {
+            const aNameLower = a.name.toLowerCase();
+            const bNameLower = b.name.toLowerCase();
+            
+            // Calculate relevance scores
+            let aRelevance = 0;
+            let bRelevance = 0;
+            
+            if (aNameLower === queryLower) aRelevance = 3;
+            else if (aNameLower.startsWith(queryLower)) aRelevance = 2;
+            else if (aNameLower.includes(queryLower)) aRelevance = 1;
+            
+            if (bNameLower === queryLower) bRelevance = 3;
+            else if (bNameLower.startsWith(queryLower)) bRelevance = 2;
+            else if (bNameLower.includes(queryLower)) bRelevance = 1;
+            
+            // Sort by relevance first
+            if (aRelevance !== bRelevance) {
+                return bRelevance - aRelevance;
+            }
+            
+            // Then by shortest name
+            if (a.name.length !== b.name.length) {
+                return a.name.length - b.name.length;
+            }
+            
+            // Finally alphabetically
+            return a.name.localeCompare(b.name);
+        }
+        
+        // Alphabetically for my ingredients
         return a.name.localeCompare(b.name);
     });
     
@@ -836,7 +878,7 @@ function createMealItem(item, amount, itemIndex, slot) {
         }
     } else if (item.type === 'ingredient') {
         if (item.id.startsWith('custom-')) {
-            const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
+            const customIngredients = getMyIngredients();
             const customId = item.id.replace('custom-', '');
             const customIngredient = customIngredients.find(ing => ing.id === customId);
             if (customIngredient) {
@@ -985,8 +1027,8 @@ async function calculateDayNutrition(date) {
                 try {
                     let ingredientNutrition;
                     if (itemData.id.startsWith('custom-')) {
-                        // Custom ingredient
-                        const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
+                        // My ingredient
+                        const customIngredients = getMyIngredients();
                         const customId = itemData.id.replace('custom-', '');
                         const customIngredient = customIngredients.find(ing => ing.id === customId);
                         if (customIngredient) {
@@ -1623,7 +1665,7 @@ function buildShoppingListData() {
         
         const ingredients = new Map(); // Map to aggregate ingredients
         const currentWeekMeals = []; // Track meals from current week
-        const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]').map(ing => ({
+        const customIngredients = getMyIngredients().map(ing => ({
             ...ing,
             storeSection: ing.storeSection || '',
             emoji: sanitizeEmoji(ing.emoji)

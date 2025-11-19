@@ -246,11 +246,34 @@ const csvUploadSummary = document.getElementById('csv-upload-summary');
 const csvCloseBtn = uploadCsvModal ? uploadCsvModal.querySelector('.csv-close') : null;
 const cancelCsvUploadBtn = document.getElementById('cancel-csv-upload');
 
-// Load custom ingredients from localStorage
+// Migrate old localStorage key to new key
+function migrateIngredientsStorage() {
+    try {
+        const oldKey = 'meale-custom-ingredients';
+        const newKey = 'meale-my-ingredients';
+        const oldData = localStorage.getItem(oldKey);
+        const newData = localStorage.getItem(newKey);
+        
+        // If new key doesn't exist but old key does, migrate
+        if (!newData && oldData) {
+            console.log('Migrating ingredients from old storage key to new key...');
+            localStorage.setItem(newKey, oldData);
+            localStorage.removeItem(oldKey);
+            console.log('Migration complete');
+        }
+    } catch (error) {
+        console.error('Error migrating ingredients storage:', error);
+    }
+}
+
+// Load my ingredients from localStorage
 function loadCustomIngredients() {
     try {
-        console.log('Loading custom ingredients...');
-        const savedIngredients = localStorage.getItem('meale-custom-ingredients');
+        // Migrate old storage key if needed
+        migrateIngredientsStorage();
+        
+        console.log('Loading my ingredients...');
+        const savedIngredients = localStorage.getItem('meale-my-ingredients');
         if (savedIngredients) {
             customIngredients = JSON.parse(savedIngredients).map(ingredient => {
                 const iconValue = typeof ingredient.icon === 'string' ? ingredient.icon.trim() : '';
@@ -264,26 +287,27 @@ function loadCustomIngredients() {
                     iconLabel: ingredient.iconLabel || iconDef?.label || ''
                 };
             });
-            console.log('Loaded custom ingredients:', customIngredients.length);
+            console.log('Loaded my ingredients:', customIngredients.length);
         } else {
-            console.log('No custom ingredients found');
+            console.log('No my ingredients found');
         }
         renderIngredientsList();
     } catch (error) {
-        console.error('Error loading custom ingredients:', error);
+        console.error('Error loading my ingredients:', error);
     }
 }
 
-// Save custom ingredients to localStorage
+// Save my ingredients to localStorage
 function saveCustomIngredients() {
     try {
-        console.log('Saving custom ingredients...');
-        localStorage.setItem('meale-custom-ingredients', JSON.stringify(customIngredients));
+        console.log('Saving my ingredients...');
+        localStorage.setItem('meale-my-ingredients', JSON.stringify(customIngredients));
         // Make ingredients available globally
         window.customIngredients = customIngredients;
-        console.log('Saved custom ingredients:', customIngredients.length);
+        window.myIngredients = customIngredients; // Also expose as myIngredients for clarity
+        console.log('Saved my ingredients:', customIngredients.length);
     } catch (error) {
-        console.error('Error saving custom ingredients:', error);
+        console.error('Error saving my ingredients:', error);
     }
 }
 
@@ -433,7 +457,7 @@ function renderIngredientsList(filteredIngredients = null) {
         if (ingredients.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="no-items">No custom ingredients found</td>
+                    <td colspan="6" class="no-items">No ingredients found</td>
                 </tr>`;
             return;
         }

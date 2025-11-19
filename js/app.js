@@ -178,9 +178,23 @@ function normalizeSearchTerm(term) {
 }
 
 
-// Custom Ingredients Search Functions
+// My Ingredients Search Functions
 function searchCustomIngredients(query) {
-    const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
+    // Helper function to get my ingredients with migration support
+    function getMyIngredients() {
+        const oldKey = 'meale-custom-ingredients';
+        const newKey = 'meale-my-ingredients';
+        const oldData = localStorage.getItem(oldKey);
+        const newData = localStorage.getItem(newKey);
+        
+        if (!newData && oldData) {
+            localStorage.setItem(newKey, oldData);
+            localStorage.removeItem(oldKey);
+        }
+        
+        return JSON.parse(localStorage.getItem(newKey) || '[]');
+    }
+    const customIngredients = getMyIngredients();
     const queryLower = query.toLowerCase();
     
     return customIngredients.filter(ingredient => {
@@ -1632,21 +1646,53 @@ function openIngredientSearch(ingredientInput) {
     // Enable inline search directly in the text box (no modal)
     const nameInput = ingredientInput.querySelector('.ingredient-name');
     if (nameInput) {
+        // Always make the field editable when clicked/focused
         nameInput.readOnly = false;
         nameInput.placeholder = 'Type to search custom ingredients, USDA database, or Open Food Facts...';
-        nameInput.focus();
         
         // Remove existing event listeners by cloning (clean way to remove all listeners)
         const oldValue = nameInput.value;
+        const oldFdcId = nameInput.dataset.fdcId;
+        const oldStoreSection = nameInput.dataset.storeSection;
+        const oldEmoji = nameInput.dataset.emoji;
         const newNameInput = nameInput.cloneNode(true);
         newNameInput.value = oldValue;
+        if (oldFdcId) newNameInput.dataset.fdcId = oldFdcId;
+        if (oldStoreSection) newNameInput.dataset.storeSection = oldStoreSection;
+        if (oldEmoji) newNameInput.dataset.emoji = oldEmoji;
+        // Ensure tabindex is set for accessibility
+        newNameInput.setAttribute('tabindex', '0');
         nameInput.parentNode.replaceChild(newNameInput, nameInput);
         
         // Add event listeners for inline search
         newNameInput.addEventListener('input', handleInlineSearch);
         newNameInput.addEventListener('blur', handleIngredientBlur);
-        // Re-add click handler so user can edit again after selection
-        newNameInput.addEventListener('click', () => openIngredientSearch(ingredientInput));
+        // Re-add click and focus handlers so user can edit again after selection
+        // Use mousedown instead of click to ensure it fires before blur
+        newNameInput.addEventListener('mousedown', (e) => {
+            if (newNameInput.readOnly) {
+                e.preventDefault();
+                openIngredientSearch(ingredientInput);
+            }
+        });
+        newNameInput.addEventListener('click', (e) => {
+            if (newNameInput.readOnly) {
+                e.preventDefault();
+                openIngredientSearch(ingredientInput);
+            }
+        });
+        newNameInput.addEventListener('focus', () => {
+            if (newNameInput.readOnly) {
+                openIngredientSearch(ingredientInput);
+            }
+        });
+        
+        // Focus the input to start typing (only if not readonly)
+        if (!newNameInput.readOnly) {
+            newNameInput.focus();
+            // Select all text so user can start typing immediately
+            newNameInput.select();
+        }
         
         // Update currentIngredientInput reference to use the new input
         currentIngredientInput = ingredientInput;
@@ -1838,13 +1884,23 @@ function selectIngredient(ingredient) {
         const displayName = emoji ? `${emoji} ${ingredient.name}` : ingredient.name;
         nameInput.value = displayName;
         nameInput.readOnly = true;
-        nameInput.placeholder = 'Search for ingredient';
+        nameInput.placeholder = 'Click to search for ingredient';
+        // Ensure tabindex is set so field is focusable
+        nameInput.setAttribute('tabindex', '0');
         
         // Ensure click and focus handlers are present so user can edit again
         // Remove existing handlers and re-add
         const newNameInput = nameInput.cloneNode(true);
+        // Preserve all data attributes
+        newNameInput.dataset.fdcId = storageId;
+        newNameInput.dataset.storeSection = ingredient.storeSection || '';
+        newNameInput.dataset.emoji = emoji;
+        newNameInput.setAttribute('tabindex', '0');
         nameInput.parentNode.replaceChild(newNameInput, nameInput);
-        newNameInput.addEventListener('click', () => openIngredientSearch(currentIngredientInput));
+        newNameInput.addEventListener('click', (e) => {
+            e.preventDefault();
+            openIngredientSearch(currentIngredientInput);
+        });
         newNameInput.addEventListener('focus', () => openIngredientSearch(currentIngredientInput));
         
         // Store ingredient data - ensure nutrition is properly structured
@@ -1931,6 +1987,90 @@ function selectIngredient(ingredient) {
                 originalNutrition: ingredient.nutrition,
                 storedNutrition: ingredientData.nutrition
             });
+        }
+        
+        // Automatically save API ingredients to "my ingredients" when selected
+        if (ingredient.source === 'usda' || ingredient.source === 'openfoodfacts') {
+            try {
+                // Helper function to get my ingredients with migration support
+                function getMyIngredients() {
+                    const oldKey = 'meale-custom-ingredients';
+                    const newKey = 'meale-my-ingredients';
+                    const oldData = localStorage.getItem(oldKey);
+                    const newData = localStorage.getItem(newKey);
+                    
+                    if (!newData && oldData) {
+                        localStorage.setItem(newKey, oldData);
+                        localStorage.removeItem(oldKey);
+                    }
+                    
+                    return JSON.parse(localStorage.getItem(newKey) || '[]');
+                }
+                
+                const myIngredients = getMyIngredients();
+                const servingSize = ingredient.servingSize || 100;
+                
+                // Check if ingredient already exists (by name, case-insensitive)
+                const existingIndex = myIngredients.findIndex(ing => 
+                    ing.name.toLowerCase() === ingredient.name.toLowerCase()
+                );
+                
+                // Convert nutrition from per-gram to per-serving-size for storage
+                const nutritionPerServing = {
+                    calories: (ingredient.nutrition?.calories || 0) * servingSize,
+                    protein: (ingredient.nutrition?.protein || 0) * servingSize,
+                    carbs: (ingredient.nutrition?.carbs || 0) * servingSize,
+                    fat: (ingredient.nutrition?.fat || 0) * servingSize
+                };
+                
+                const ingredientToSave = {
+                    id: existingIndex >= 0 ? myIngredients[existingIndex].id : Date.now().toString(),
+                    name: ingredient.name,
+                    totalPrice: ingredient.totalPrice || null,
+                    totalWeight: ingredient.totalWeight || null,
+                    servingSize: servingSize,
+                    nutrition: nutritionPerServing,
+                    isCustom: false, // Mark as API-sourced but editable
+                    storeSection: ingredient.storeSection || '',
+                    emoji: ingredient.emoji || '',
+                    icon: ingredient.icon || '',
+                    iconLabel: ingredient.iconLabel || '',
+                    pricePerGram: ingredient.pricePerGram || null,
+                    source: ingredient.source, // Track original source
+                    fdcId: ingredient.fdcId || ingredient.id // Keep original ID for reference
+                };
+                
+                // Calculate price per gram if we have price data
+                if (ingredientToSave.totalPrice && ingredientToSave.totalWeight) {
+                    ingredientToSave.pricePerGram = ingredientToSave.totalPrice / ingredientToSave.totalWeight;
+                } else if (ingredient.pricePerGram) {
+                    ingredientToSave.pricePerGram = ingredient.pricePerGram;
+                }
+                
+                if (existingIndex >= 0) {
+                    // Update existing ingredient
+                    myIngredients[existingIndex] = ingredientToSave;
+                    console.log('Updated existing ingredient in my ingredients:', ingredient.name);
+                } else {
+                    // Add new ingredient
+                    myIngredients.push(ingredientToSave);
+                    console.log('Added API ingredient to my ingredients:', ingredient.name);
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('meale-my-ingredients', JSON.stringify(myIngredients));
+                
+                // Update global reference
+                if (window.customIngredients) {
+                    window.customIngredients = myIngredients;
+                }
+                if (window.myIngredients) {
+                    window.myIngredients = myIngredients;
+                }
+            } catch (error) {
+                console.error('Error saving API ingredient to my ingredients:', error);
+                // Continue even if save fails
+            }
         }
         
         selectedIngredients.set(storageId, ingredientData);
@@ -2480,12 +2620,21 @@ async function displaySearchResults(results) {
                     nameField.dataset.storeSection = ingredient.storeSection || '';
                     nameField.dataset.emoji = emoji;
                     nameField.readOnly = true;
-                    nameField.placeholder = 'Search for ingredient';
+                    nameField.placeholder = 'Click to search for ingredient';
+                    nameField.setAttribute('tabindex', '0');
                     
                     // Ensure click and focus handlers are present so user can edit again
                     const newNameField = nameField.cloneNode(true);
+                    // Preserve all data attributes
+                    newNameField.dataset.fdcId = storageId;
+                    newNameField.dataset.storeSection = ingredient.storeSection || '';
+                    newNameField.dataset.emoji = emoji;
+                    newNameField.setAttribute('tabindex', '0');
                     nameField.parentNode.replaceChild(newNameField, nameField);
-                    newNameField.addEventListener('click', () => openIngredientSearch(currentIngredientInput));
+                    newNameField.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        openIngredientSearch(currentIngredientInput);
+                    });
                     newNameField.addEventListener('focus', () => openIngredientSearch(currentIngredientInput));
                 }
                 
