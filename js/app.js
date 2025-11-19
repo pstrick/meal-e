@@ -226,7 +226,15 @@ function updateTotalNutrition() {
         fat: Math.round(totals.fat * (servingSize / totalWeight))
     };
 
-    // Update display if elements exist
+    // Round total recipe values
+    const totalRecipe = {
+        calories: Math.round(totals.calories),
+        protein: Math.round(totals.protein),
+        carbs: Math.round(totals.carbs),
+        fat: Math.round(totals.fat)
+    };
+
+    // Update display if elements exist (per-serving values - legacy support)
     const totalCalories = document.getElementById('total-calories');
     const totalProtein = document.getElementById('total-protein');
     const totalCarbs = document.getElementById('total-carbs');
@@ -238,6 +246,24 @@ function updateTotalNutrition() {
     if (totalCarbs) totalCarbs.textContent = perServing.carbs;
     if (totalFat) totalFat.textContent = perServing.fat;
     if (recipeServings) recipeServings.textContent = numberOfServings;
+
+    // Update total recipe nutrition display
+    const recipeTotalsSection = document.getElementById('recipe-totals');
+    const recipeTotalCalories = document.getElementById('recipe-total-calories');
+    const recipeTotalProtein = document.getElementById('recipe-total-protein');
+    const recipeTotalCarbs = document.getElementById('recipe-total-carbs');
+    const recipeTotalFat = document.getElementById('recipe-total-fat');
+
+    if (recipeTotalCalories) recipeTotalCalories.textContent = totalRecipe.calories;
+    if (recipeTotalProtein) recipeTotalProtein.textContent = `${totalRecipe.protein}g`;
+    if (recipeTotalCarbs) recipeTotalCarbs.textContent = `${totalRecipe.carbs}g`;
+    if (recipeTotalFat) recipeTotalFat.textContent = `${totalRecipe.fat}g`;
+
+    // Show/hide totals section based on whether there are ingredients
+    if (recipeTotalsSection) {
+        const hasIngredients = ingredientItems.length > 0 && totalWeight > 0;
+        recipeTotalsSection.style.display = hasIngredients ? 'block' : 'none';
+    }
 }
 
 function calculateTotalWeight() {

@@ -24,7 +24,7 @@ export async function searchOpenFoodFacts(query, pageSize = 20) {
             search_terms: query.trim(),
             page_size: Math.min(pageSize, 20), // Open Food Facts limits to 20 per page
             json: '1',
-            fields: 'code,product_name,brands,quantity,nutriments,serving_size,nutrition_grade_fr,image_url,image_small_url'
+            fields: 'code,product_name,product_name_en,product_name_fr,generic_name,brands,quantity,nutriments,serving_size,nutrition_grade_fr,image_url,image_small_url'
         });
 
         const url = `https://world.openfoodfacts.org/cgi/search.pl?${searchParams.toString()}`;
@@ -95,7 +95,8 @@ export function extractOpenFoodFactsNutrition(product) {
     if (!product || !product.nutriments) {
         console.warn('extractOpenFoodFactsNutrition: No product or nutriments found', {
             hasProduct: !!product,
-            hasNutriments: !!(product && product.nutriments)
+            hasNutriments: !!(product && product.nutriments),
+            productKeys: product ? Object.keys(product).slice(0, 10) : []
         });
         return {
             calories: 0,
@@ -107,17 +108,48 @@ export function extractOpenFoodFactsNutrition(product) {
 
     const nutriments = product.nutriments;
     
+    // Log all nutriments keys for debugging
+    const allKeys = Object.keys(nutriments);
+    const nutritionKeys = allKeys.filter(k => 
+        k.includes('energy') || k.includes('protein') || k.includes('carb') || k.includes('fat') ||
+        k.includes('calorie') || k.includes('kcal') || k.includes('kj')
+    );
+    console.log('Open Food Facts nutriments keys (nutrition-related):', nutritionKeys);
+    console.log('Sample nutriments values:', Object.fromEntries(
+        nutritionKeys.slice(0, 8).map(k => [k, nutriments[k]])
+    ));
+    
     // Open Food Facts provides values per 100g
     // Energy can be in different formats: energy-kcal_100g, energy-kcal, energy_100g (in kJ)
     // Try multiple field names to find the data
     let calories = nutriments['energy-kcal_100g'] || 
                    nutriments['energy-kcal'] || 
+                   nutriments['energy-kcal_value'] ||
                    (nutriments['energy-kj_100g'] ? nutriments['energy-kj_100g'] / 4.184 : 0) || // Convert kJ to kcal
-                   (nutriments['energy_100g'] ? nutriments['energy_100g'] / 4.184 : 0) || 0; // Convert kJ to kcal
+                   (nutriments['energy-kj'] ? nutriments['energy-kj'] / 4.184 : 0) ||
+                   (nutriments['energy_100g'] ? nutriments['energy_100g'] / 4.184 : 0) || // Convert kJ to kcal
+                   (nutriments['energy'] ? nutriments['energy'] / 4.184 : 0) || 0; // Convert kJ to kcal
     
-    const protein = nutriments['proteins_100g'] || nutriments['proteins'] || nutriments['protein_100g'] || 0;
-    const carbs = nutriments['carbohydrates_100g'] || nutriments['carbohydrates'] || nutriments['carbohydrate_100g'] || 0;
-    const fat = nutriments['fat_100g'] || nutriments['fat'] || nutriments['total-fat_100g'] || 0;
+    const protein = nutriments['proteins_100g'] || 
+                    nutriments['proteins'] || 
+                    nutriments['protein_100g'] || 
+                    nutriments['protein'] ||
+                    nutriments['proteins_value'] ||
+                    nutriments['protein_value'] || 0;
+    
+    const carbs = nutriments['carbohydrates_100g'] || 
+                  nutriments['carbohydrates'] || 
+                  nutriments['carbohydrate_100g'] || 
+                  nutriments['carbohydrate'] ||
+                  nutriments['carbohydrates_value'] ||
+                  nutriments['carbohydrate_value'] || 0;
+    
+    const fat = nutriments['fat_100g'] || 
+                nutriments['fat'] || 
+                nutriments['total-fat_100g'] || 
+                nutriments['total-fat'] ||
+                nutriments['fat_value'] ||
+                nutriments['total-fat_value'] || 0;
 
     console.log('Extracted Open Food Facts nutrition (per 100g):', { calories, protein, carbs, fat });
 

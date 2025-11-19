@@ -202,7 +202,12 @@ export function formatUSDAFood(food) {
         fdcId: food.fdcId,
         description: food.description,
         hasFoodNutrients: !!food.foodNutrients,
-        foodNutrientsCount: food.foodNutrients ? food.foodNutrients.length : 0
+        foodNutrientsCount: food.foodNutrients ? food.foodNutrients.length : 0,
+        foodNutrientsSample: food.foodNutrients ? food.foodNutrients.slice(0, 3).map(n => ({
+            id: n.nutrientId || n.nutrient?.id,
+            name: n.nutrient?.name,
+            amount: n.amount
+        })) : []
     });
     
     const nutrition = extractUSDANutrition(food);
@@ -281,8 +286,47 @@ export async function searchUSDAIngredients(query, maxResults = 10) {
             return [];
         }
         
-        const formatted = foods.map(formatUSDAFood).filter(food => food !== null);
+        // First, try to format with available data
+        let formatted = foods.map(formatUSDAFood).filter(food => food !== null);
         console.log('Formatted', formatted.length, 'USDA ingredients (filtered out nulls)');
+        
+        // Check if any foods are missing nutrition data and fetch full details
+        const foodsNeedingDetails = formatted.filter(food => 
+            !food.nutrition || 
+            (food.nutrition.calories === 0 && food.nutrition.protein === 0 && food.nutrition.carbs === 0 && food.nutrition.fat === 0)
+        );
+        
+        if (foodsNeedingDetails.length > 0) {
+            console.log('Fetching full details for', foodsNeedingDetails.length, 'USDA foods missing nutrition data');
+            
+            // Fetch full details for foods missing nutrition data
+            const detailedFoods = await Promise.all(
+                foodsNeedingDetails.map(async (food) => {
+                    try {
+                        const fullDetails = await getUSDAFoodDetails(food.fdcId);
+                        if (fullDetails && fullDetails.foodNutrients) {
+                            console.log('Got full details for', food.name, '- has', fullDetails.foodNutrients.length, 'nutrients');
+                            return formatUSDAFood(fullDetails);
+                        }
+                        return food; // Return original if details fetch fails
+                    } catch (error) {
+                        console.error('Error fetching details for', food.fdcId, ':', error);
+                        return food; // Return original on error
+                    }
+                })
+            );
+            
+            // Replace foods with detailed versions
+            formatted = formatted.map(food => {
+                const detailed = detailedFoods.find(d => d && d.fdcId === food.fdcId);
+                return detailed || food;
+            });
+            
+            console.log('After fetching details, nutrition data status:', formatted.map(f => ({
+                name: f.name,
+                hasNutrition: !!(f.nutrition && (f.nutrition.calories > 0 || f.nutrition.protein > 0))
+            })));
+        }
         
         // Cache the results for future use
         await setCachedResults(query, 'usda', formatted, maxResults);

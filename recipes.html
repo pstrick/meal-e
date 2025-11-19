@@ -136,6 +136,28 @@
                     <i class="fas fa-plus"></i> Add Ingredient
                 </button>
                 
+                <div id="recipe-totals" class="recipe-totals-section" style="display: none;">
+                    <h3>Recipe Totals (Entire Recipe)</h3>
+                    <div class="nutrition-totals">
+                        <div class="nutrition-item">
+                            <span class="nutrition-label">Calories</span>
+                            <span class="nutrition-value" id="recipe-total-calories">0</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-label">Protein</span>
+                            <span class="nutrition-value" id="recipe-total-protein">0g</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-label">Carbs</span>
+                            <span class="nutrition-value" id="recipe-total-carbs">0g</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-label">Fat</span>
+                            <span class="nutrition-value" id="recipe-total-fat">0g</span>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="form-group">
                     <label for="recipe-steps">Recipe Instructions</label>
                     <textarea id="recipe-steps" rows="6" placeholder="Enter step-by-step cooking instructions..."></textarea>
