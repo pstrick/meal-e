@@ -1655,9 +1655,15 @@ function selectIngredient(ingredient) {
             });
         }
         
+        // Set default amount to 100g if empty
+        const defaultAmount = parseFloat(amountInput.value) || 100;
+        if (!amountInput.value || amountInput.value === '0') {
+            amountInput.value = '100';
+        }
+        
         const ingredientData = {
             name: ingredient.name,
-            amount: parseFloat(amountInput.value) || 0,
+            amount: defaultAmount,
             nutrition: {
                 calories: nutrition.calories || 0,
                 protein: nutrition.protein || 0,
@@ -1675,12 +1681,30 @@ function selectIngredient(ingredient) {
             name: ingredientData.name,
             source: ingredientData.source,
             nutrition: ingredientData.nutrition,
-            amount: ingredientData.amount
+            amount: ingredientData.amount,
+            originalIngredientNutrition: ingredient.nutrition
         });
+        
+        // Verify nutrition values are valid numbers
+        if (ingredientData.nutrition.calories > 0 || ingredientData.nutrition.protein > 0) {
+            console.log('✅ Nutrition data looks good:', ingredientData.nutrition);
+        } else {
+            console.warn('⚠️ Nutrition data is all zeros!', {
+                ingredientName: ingredient.name,
+                source: ingredient.source,
+                originalNutrition: ingredient.nutrition,
+                storedNutrition: ingredientData.nutrition
+            });
+        }
         
         selectedIngredients.set(storageId, ingredientData);
         
         // Update nutrition display
+        console.log('Calling updateIngredientMacros with:', {
+            ingredientName: ingredientData.name,
+            amount: ingredientData.amount,
+            nutrition: ingredientData.nutrition
+        });
         updateIngredientMacros(currentIngredientInput, ingredientData);
         updateServingSizeDefault();
         
@@ -1990,7 +2014,7 @@ function addIngredientInput() {
     ingredientItem.innerHTML = `
         <div class="ingredient-main">
             <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly>
-            <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="0">
+            <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="100">
             <button type="button" class="remove-ingredient btn btn-ghost btn-icon" aria-label="Remove ingredient">&times;</button>
         </div>
         <div class="ingredient-macros">
@@ -2011,10 +2035,14 @@ function addIngredientInput() {
         const fdcId = nameInput.dataset.fdcId;
         if (fdcId && selectedIngredients.has(fdcId)) {
             const ingredient = selectedIngredients.get(fdcId);
-            ingredient.amount = parseFloat(amountInput.value) || 0;
+            const newAmount = parseFloat(amountInput.value) || 0;
+            ingredient.amount = newAmount;
             selectedIngredients.set(fdcId, ingredient);
+            console.log('Amount changed for', ingredient.name, 'to', newAmount, 'g');
             updateIngredientMacros(ingredientItem, ingredient);
             updateServingSizeDefault();
+        } else {
+            console.warn('Amount changed but ingredient not found in selectedIngredients:', fdcId);
         }
     });
 
@@ -2058,13 +2086,21 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         fat: Math.round(safeNutrition.fat * amount)
     };
     
+    console.log('updateIngredientMacros calculation:', {
+        ingredientName: ingredient.name,
+        amount: amount,
+        nutritionPerGram: safeNutrition,
+        calculatedMacros: macros
+    });
+    
     // Log if macros are zero but we have nutrition data
     if (amount > 0 && macros.calories === 0 && macros.protein === 0 && macros.carbs === 0 && macros.fat === 0) {
-        console.warn('updateIngredientMacros: All macros are zero', {
+        console.warn('⚠️ updateIngredientMacros: All macros are zero', {
             ingredientName: ingredient.name,
             amount: amount,
             nutrition: safeNutrition,
-            source: ingredient.source
+            source: ingredient.source,
+            rawNutrition: nutrition
         });
     }
 
@@ -2073,7 +2109,20 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     const carbsEl = ingredientItem.querySelector('.carbs');
     const fatEl = ingredientItem.querySelector('.fat');
     
-    if (caloriesEl) caloriesEl.textContent = macros.calories;
+    console.log('DOM elements found:', {
+        caloriesEl: !!caloriesEl,
+        proteinEl: !!proteinEl,
+        carbsEl: !!carbsEl,
+        fatEl: !!fatEl,
+        macrosToSet: macros
+    });
+    
+    if (caloriesEl) {
+        caloriesEl.textContent = macros.calories;
+        console.log('Set calories element to:', macros.calories);
+    } else {
+        console.warn('⚠️ Calories element not found in ingredient item!');
+    }
     if (proteinEl) proteinEl.textContent = macros.protein;
     if (carbsEl) carbsEl.textContent = macros.carbs;
     if (fatEl) fatEl.textContent = macros.fat;
