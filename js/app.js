@@ -1947,13 +1947,29 @@ function selectIngredient(ingredient) {
         };
         
         // Log to verify nutrition format
-        console.log('🔍 Storing ingredient nutrition:', {
+        console.group('💾 Storing ingredient in selectedIngredients');
+        console.log('Ingredient details:', {
             name: ingredient.name,
             source: ingredient.source,
-            nutritionValues: safeNutrition,
-            expectedFormat: 'per-gram',
-            check: safeNutrition.calories > 10 ? '⚠️ WARNING: Calories seem high for per-gram (might be per-100g?)' : '✅ Looks like per-gram values'
+            fdcId: ingredient.fdcId,
+            id: ingredient.id
         });
+        console.log('Raw nutrition from ingredient:', nutrition);
+        console.log('Validated nutrition (will be stored):', safeNutrition);
+        console.log('Expected format: per-gram');
+        console.log('Format check:', {
+            calories: safeNutrition.calories,
+            protein: safeNutrition.protein,
+            carbs: safeNutrition.carbs,
+            fat: safeNutrition.fat,
+            warning: safeNutrition.calories > 10 ? '⚠️ WARNING: Calories seem high for per-gram (might be per-100g?)' : 
+                    safeNutrition.protein > 1 ? '⚠️ WARNING: Protein seems high for per-gram (might be per-100g?)' :
+                    safeNutrition.carbs > 1 ? '⚠️ WARNING: Carbs seem high for per-gram (might be per-100g?)' :
+                    safeNutrition.fat > 1 ? '⚠️ WARNING: Fat seems high for per-gram (might be per-100g?)' :
+                    '✅ Looks like per-gram values'
+        });
+        console.log('Default amount:', defaultAmount);
+        console.groupEnd();
         
         const ingredientData = {
             name: ingredient.name,
