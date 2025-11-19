@@ -2682,19 +2682,27 @@ async function displaySearchResults(results) {
                     fat: 0
                 };
                 
-                // Validate nutrition data exists - filter out ingredients with no valid nutrition
-                const hasValidNutrition = nutrition && (
-                    nutrition.calories > 0 || 
-                    nutrition.protein > 0 || 
-                    nutrition.carbs > 0 || 
-                    nutrition.fat > 0
+                // Convert nutrition values to numbers and validate
+                // Note: per-gram values can be very small (e.g., 0.003 cal/g), so we check for any positive value
+                const caloriesNum = Number(nutrition.calories) || 0;
+                const proteinNum = Number(nutrition.protein) || 0;
+                const carbsNum = Number(nutrition.carbs) || 0;
+                const fatNum = Number(nutrition.fat) || 0;
+                
+                // Validate nutrition data exists - check if any value is a positive number
+                const hasValidNutrition = (
+                    (Number.isFinite(caloriesNum) && caloriesNum > 0) || 
+                    (Number.isFinite(proteinNum) && proteinNum > 0) || 
+                    (Number.isFinite(carbsNum) && carbsNum > 0) || 
+                    (Number.isFinite(fatNum) && fatNum > 0)
                 );
                 
                 if (!hasValidNutrition) {
                     console.warn('⚠️ Ingredient has no valid nutrition data - rejecting selection:', {
                         name: ingredient.name,
                         source: ingredient.source,
-                        nutrition: nutrition
+                        rawNutrition: nutrition,
+                        numericValues: { calories: caloriesNum, protein: proteinNum, carbs: carbsNum, fat: fatNum }
                     });
                     showAlert(`Cannot select "${ingredient.name}" - no nutrition data available.`, { type: 'warning' });
                     return; // Don't select ingredients without valid nutrition
