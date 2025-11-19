@@ -1473,7 +1473,7 @@ function editRecipe(id) {
         const displayName = emoji ? `${emoji} ${ing.name}` : ing.name;
         ingredientItem.innerHTML = `
             <div class="ingredient-main">
-                <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${displayName}">
+                <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly tabindex="0" value="${displayName}">
                 <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="${ing.amount}">
                 <button type="button" class="remove-ingredient btn btn-ghost btn-icon" aria-label="Remove ingredient">&times;</button>
             </div>
@@ -2883,7 +2883,7 @@ function duplicateRecipe(id) {
         const displayName = emoji ? `${emoji} ${ing.name}` : ing.name;
         ingredientItem.innerHTML = `
             <div class="ingredient-main">
-                <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly value="${displayName}">
+                <input type="text" class="ingredient-name" placeholder="Search for ingredient" required readonly tabindex="0" value="${displayName}">
                 <input type="number" class="ingredient-amount" placeholder="Grams" min="0" step="0.1" required value="${ing.amount}">
                 <button type="button" class="remove-ingredient btn btn-ghost btn-icon" aria-label="Remove ingredient">&times;</button>
             </div>
