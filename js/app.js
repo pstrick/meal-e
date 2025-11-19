@@ -2172,7 +2172,14 @@ function addIngredientInput() {
 }
 
 function updateIngredientMacros(ingredientItem, ingredient) {
-    const amount = parseFloat(ingredient.amount) || 0;
+    // Read amount directly from input field to ensure it's current
+    const amountInput = ingredientItem.querySelector('.ingredient-amount');
+    const amount = amountInput ? (parseFloat(amountInput.value) || 0) : (parseFloat(ingredient.amount) || 0);
+    
+    // Update ingredient object with current amount
+    if (ingredient) {
+        ingredient.amount = amount;
+    }
     
     // Ensure nutrition object exists and has all required fields
     const nutrition = ingredient.nutrition || {
@@ -2468,10 +2475,13 @@ function duplicateRecipe(id) {
     // Set the form handler
     recipeForm.onsubmit = handleRecipeSubmit;
     
+    // Set up serving size event listener
+    setupServingSizeListener();
+    
     // Open the modal
     recipeModal.classList.add('active');
     
-    // Update nutrition display
+    // Update total nutrition after all ingredients are added
     updateTotalNutrition();
     
     console.log(`Recipe "${originalRecipe.name}" prepared for duplication`);
