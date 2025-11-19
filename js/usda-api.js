@@ -290,7 +290,37 @@ export async function searchUSDAIngredients(query, maxResults = 10) {
         const cachedResults = await getCachedResults(query, 'usda', maxResults);
         if (cachedResults !== null) {
             console.log('Returning cached USDA results:', cachedResults.length, 'items');
-            return cachedResults;
+            // Filter cached results to ensure they have valid nutrition data
+            // (in case cache was created before filtering was added)
+            const filteredCached = cachedResults.filter(food => {
+                if (!food || !food.nutrition) {
+                    return false;
+                }
+                
+                // Convert nutrition values to numbers and validate
+                const caloriesNum = Number(food.nutrition.calories) || 0;
+                const proteinNum = Number(food.nutrition.protein) || 0;
+                const carbsNum = Number(food.nutrition.carbs) || 0;
+                const fatNum = Number(food.nutrition.fat) || 0;
+                
+                const hasValidNutrition = (
+                    (Number.isFinite(caloriesNum) && caloriesNum > 0) || 
+                    (Number.isFinite(proteinNum) && proteinNum > 0) || 
+                    (Number.isFinite(carbsNum) && carbsNum > 0) || 
+                    (Number.isFinite(fatNum) && fatNum > 0)
+                );
+                
+                if (!hasValidNutrition) {
+                    console.log('Filtering out cached USDA food without valid nutrition:', food.name);
+                }
+                return hasValidNutrition;
+            });
+            
+            if (filteredCached.length !== cachedResults.length) {
+                console.log(`Filtered ${cachedResults.length - filteredCached.length} cached USDA foods without valid nutrition`);
+            }
+            
+            return filteredCached;
         }
         
         // Cache miss - make API call
