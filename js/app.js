@@ -892,7 +892,7 @@ function initializeApp() {
                         searchResultsElement.innerHTML = '<div class="no-results">Please enter at least 2 characters to search</div>';
                         return;
                     }
-                    searchResultsElement.innerHTML = '<div class="loading">Searching custom ingredients and USDA database...</div>';
+                    searchResultsElement.innerHTML = '<div class="loading">Searching custom ingredients, USDA database, and Open Food Facts...</div>';
                     try {
                         console.log('=== STARTING SEARCH ===');
                         console.log('Query:', query);
@@ -902,6 +902,7 @@ function initializeApp() {
                         console.log('Results breakdown:', {
                             custom: results.filter(r => r.source === 'custom').length,
                             usda: results.filter(r => r.source === 'usda').length,
+                            openfoodfacts: results.filter(r => r.source === 'openfoodfacts').length,
                             total: results.length
                         });
                         await displaySearchResults(results);
@@ -930,7 +931,7 @@ function initializeApp() {
                 if (searchResultsElement && query.length >= 2) {
                     clearTimeout(modalSearchTimeout);
                     modalSearchTimeout = setTimeout(async () => {
-                        searchResultsElement.innerHTML = '<div class="loading">Searching custom ingredients and USDA database...</div>';
+                        searchResultsElement.innerHTML = '<div class="loading">Searching custom ingredients, USDA database, and Open Food Facts...</div>';
                         try {
                             console.log('=== STARTING TYPED SEARCH ===');
                             console.log('Query:', query);
@@ -940,6 +941,7 @@ function initializeApp() {
                             console.log('Results breakdown:', {
                                 custom: results.filter(r => r.source === 'custom').length,
                                 usda: results.filter(r => r.source === 'usda').length,
+                                openfoodfacts: results.filter(r => r.source === 'openfoodfacts').length,
                                 total: results.length
                             });
                             await displaySearchResults(results);

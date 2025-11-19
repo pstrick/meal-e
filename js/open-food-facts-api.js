@@ -16,12 +16,11 @@ export async function searchOpenFoodFacts(query, pageSize = 20) {
 
     try {
         // Open Food Facts search endpoint
-        // Documentation: https://world.openfoodfacts.org/cgi/search.pl
+        // Documentation: https://world.openfoodfacts.org/data
+        // Search by product name using the search_terms parameter
         const searchParams = new URLSearchParams({
             action: 'process',
-            tagtype_0: 'products',
-            tag_contains_0: 'contains',
-            tag_0: query.trim(),
+            search_terms: query.trim(),
             page_size: Math.min(pageSize, 20), // Open Food Facts limits to 20 per page
             json: '1',
             fields: 'code,product_name,brands,quantity,nutriments,serving_size,nutrition_grade_fr,image_url,image_small_url'
@@ -30,7 +29,12 @@ export async function searchOpenFoodFacts(query, pageSize = 20) {
         const url = `https://world.openfoodfacts.org/cgi/search.pl?${searchParams.toString()}`;
         console.log('Open Food Facts API URL:', url);
         
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'User-Agent': 'Meal-E App - https://github.com/pstrick/meal-e'
+            }
+        });
         console.log('Open Food Facts API response status:', response.status, response.statusText);
         
         if (!response.ok) {
@@ -44,12 +48,22 @@ export async function searchOpenFoodFacts(query, pageSize = 20) {
             count: data.count,
             page: data.page,
             page_size: data.page_size,
-            productsCount: data.products ? data.products.length : 0
+            productsCount: data.products ? data.products.length : 0,
+            hasProducts: !!data.products
         });
         
         const products = data.products || [];
-        console.log('Open Food Facts API returning', products.length, 'products');
-        return products;
+        
+        // Filter out products with no name (invalid products)
+        const validProducts = products.filter(p => p.product_name || p.product_name_en || p.product_name_fr);
+        console.log('Open Food Facts API returning', validProducts.length, 'valid products (filtered from', products.length, 'total)');
+        
+        if (validProducts.length === 0 && products.length > 0) {
+            console.warn('All Open Food Facts products were filtered out (no product names)');
+            console.log('Sample product structure:', products[0]);
+        }
+        
+        return validProducts;
     } catch (error) {
         console.error('Error searching Open Food Facts:', error);
         console.error('Error details:', {
@@ -69,6 +83,10 @@ export async function searchOpenFoodFacts(query, pageSize = 20) {
  */
 export function extractOpenFoodFactsNutrition(product) {
     if (!product || !product.nutriments) {
+        console.warn('extractOpenFoodFactsNutrition: No product or nutriments found', {
+            hasProduct: !!product,
+            hasNutriments: !!(product && product.nutriments)
+        });
         return {
             calories: 0,
             protein: 0,
@@ -80,21 +98,32 @@ export function extractOpenFoodFactsNutrition(product) {
     const nutriments = product.nutriments;
     
     // Open Food Facts provides values per 100g
-    // Energy is in kcal, macronutrients in grams
-    const calories = nutriments['energy-kcal_100g'] || nutriments['energy-kcal'] || 0;
-    const protein = nutriments['proteins_100g'] || nutriments['proteins'] || 0;
-    const carbs = nutriments['carbohydrates_100g'] || nutriments['carbohydrates'] || 0;
-    const fat = nutriments['fat_100g'] || nutriments['fat'] || 0;
+    // Energy can be in different formats: energy-kcal_100g, energy-kcal, energy_100g (in kJ)
+    // Try multiple field names to find the data
+    let calories = nutriments['energy-kcal_100g'] || 
+                   nutriments['energy-kcal'] || 
+                   (nutriments['energy-kj_100g'] ? nutriments['energy-kj_100g'] / 4.184 : 0) || // Convert kJ to kcal
+                   (nutriments['energy_100g'] ? nutriments['energy_100g'] / 4.184 : 0) || 0; // Convert kJ to kcal
+    
+    const protein = nutriments['proteins_100g'] || nutriments['proteins'] || nutriments['protein_100g'] || 0;
+    const carbs = nutriments['carbohydrates_100g'] || nutriments['carbohydrates'] || nutriments['carbohydrate_100g'] || 0;
+    const fat = nutriments['fat_100g'] || nutriments['fat'] || nutriments['total-fat_100g'] || 0;
+
+    console.log('Extracted Open Food Facts nutrition (per 100g):', { calories, protein, carbs, fat });
 
     // Convert to per-gram values (Open Food Facts data is per 100g)
     const servingSize = 100;
     
-    return {
+    const perGramNutrition = {
         calories: calories / servingSize,
         protein: protein / servingSize,
         carbs: carbs / servingSize,
         fat: fat / servingSize
     };
+    
+    console.log('Converted to per-gram nutrition:', perGramNutrition);
+    
+    return perGramNutrition;
 }
 
 /**
@@ -112,12 +141,26 @@ export function formatOpenFoodFactsProduct(product) {
         code: product.code,
         product_name: product.product_name,
         brands: product.brands,
-        hasNutriments: !!product.nutriments
+        hasNutriments: !!product.nutriments,
+        nutrimentsKeys: product.nutriments ? Object.keys(product.nutriments).slice(0, 10) : []
     });
     
     const nutrition = extractOpenFoodFactsNutrition(product);
-    const productName = product.product_name || product.product_name_en || 'Unknown product';
-    const brands = product.brands || 'Unknown brand';
+    
+    // Validate nutrition data
+    if (!nutrition || 
+        (nutrition.calories === 0 && nutrition.protein === 0 && nutrition.carbs === 0 && nutrition.fat === 0)) {
+        console.warn('Open Food Facts product has no nutrition data:', {
+            code: product.code,
+            product_name: product.product_name,
+            hasNutriments: !!product.nutriments,
+            nutrimentsKeys: product.nutriments ? Object.keys(product.nutriments) : []
+        });
+        // Still return the product, but with zero nutrition (better than nothing)
+    }
+    
+    const productName = product.product_name || product.product_name_en || product.product_name_fr || 'Unknown product';
+    const brands = product.brands || product.brand || 'Unknown brand';
     const quantity = product.quantity || '';
     
     // Combine brand and product name
@@ -135,7 +178,12 @@ export function formatOpenFoodFactsProduct(product) {
         fdcId: `off-${product.code}`, // Open Food Facts uses barcode as ID
         name: displayName,
         source: 'openfoodfacts',
-        nutrition: nutrition,
+        nutrition: {
+            calories: nutrition.calories || 0,
+            protein: nutrition.protein || 0,
+            carbs: nutrition.carbs || 0,
+            fat: nutrition.fat || 0
+        },
         servingSize: 100, // Open Food Facts data is per 100g
         brandOwner: brands,
         quantity: quantity,
@@ -146,7 +194,11 @@ export function formatOpenFoodFactsProduct(product) {
         emoji: '' // Open Food Facts doesn't provide emojis
     };
     
-    console.log('Formatted Open Food Facts product:', formatted);
+    console.log('Formatted Open Food Facts product with nutrition:', {
+        name: formatted.name,
+        nutrition: formatted.nutrition,
+        code: formatted.barcode
+    });
     return formatted;
 }
 
