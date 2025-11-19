@@ -2492,8 +2492,25 @@ async function searchAllIngredients(query) {
     
     // Process Open Food Facts results
     if (offResults.status === 'fulfilled' && offResults.value && offResults.value.length > 0) {
-        const scoredOFFResults = offResults.value
-            .map(result => {
+        // First, filter out any results without valid nutrition data
+        const validOFFResults = offResults.value.filter(result => {
+            if (!result || !result.nutrition) {
+                return false;
+            }
+            const hasValidNutrition = 
+                (result.nutrition.calories && result.nutrition.calories > 0) || 
+                (result.nutrition.protein && result.nutrition.protein > 0) || 
+                (result.nutrition.carbs && result.nutrition.carbs > 0) || 
+                (result.nutrition.fat && result.nutrition.fat > 0);
+            
+            if (!hasValidNutrition) {
+                console.log('Filtering out Open Food Facts result without valid nutrition in searchAllIngredients:', result.name);
+            }
+            return hasValidNutrition;
+        });
+        
+        const scoredOFFResults = validOFFResults
+                .map(result => {
                 const name = result.name || '';
                 const brandOwner = result.brandOwner || '';
                 const fullText = `${name} ${brandOwner}`.trim();
@@ -2536,7 +2553,7 @@ async function searchAllIngredients(query) {
                 .map(item => item.result);
             
             results.push(...scoredOFFResults);
-            console.log('Added', scoredOFFResults.length, 'Open Food Facts results');
+            console.log('Added', scoredOFFResults.length, 'Open Food Facts results (filtered from', offResults.value.length, 'total)');
     }
     
     // Sort results: my ingredients first (already added first), then API results by relevance and shortest name
@@ -3230,7 +3247,7 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     // Verify elements exist before updating
     if (caloriesEl) {
         const beforeCalories = caloriesEl.textContent;
-        caloriesEl.textContent = macros.calories;
+    caloriesEl.textContent = macros.calories;
         const afterCalories = caloriesEl.textContent;
         console.log('   Calories:', { before: beforeCalories, setTo: macros.calories, after: afterCalories });
     } else {
@@ -3239,7 +3256,7 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     
     if (proteinEl) {
         const beforeProtein = proteinEl.textContent;
-        proteinEl.textContent = macros.protein;
+    proteinEl.textContent = macros.protein;
         const afterProtein = proteinEl.textContent;
         console.log('   Protein:', { before: beforeProtein, setTo: macros.protein, after: afterProtein });
     } else {
@@ -3248,7 +3265,7 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     
     if (carbsEl) {
         const beforeCarbs = carbsEl.textContent;
-        carbsEl.textContent = macros.carbs;
+    carbsEl.textContent = macros.carbs;
         const afterCarbs = carbsEl.textContent;
         console.log('   Carbs:', { before: beforeCarbs, setTo: macros.carbs, after: afterCarbs });
     } else {
@@ -3257,7 +3274,7 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     
     if (fatEl) {
         const beforeFat = fatEl.textContent;
-        fatEl.textContent = macros.fat;
+    fatEl.textContent = macros.fat;
         const afterFat = fatEl.textContent;
         console.log('   Fat:', { before: beforeFat, setTo: macros.fat, after: afterFat });
     } else {

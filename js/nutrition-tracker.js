@@ -524,26 +524,40 @@ async function searchFoods(query) {
                 .sort((a, b) => b.relevance - a.relevance)[0];
             
             if (bestOFFResult && bestOFFResult.relevance > 0) {
-                // Convert Open Food Facts ingredient to nutrition tracker format
-                // Open Food Facts nutrition is already per-gram (from open-food-facts-api.js), keep it that way
-                results.push({
-                    type: 'ingredient',
-                    data: {
-                        id: bestOFFResult.result.fdcId || bestOFFResult.result.id,
-                        name: bestOFFResult.result.name,
-                        servingSize: bestOFFResult.result.servingSize || 100,
-                        nutrition: {
-                            calories: bestOFFResult.result.nutrition.calories, // per-gram
-                            protein: bestOFFResult.result.nutrition.protein,   // per-gram
-                            carbs: bestOFFResult.result.nutrition.carbs,         // per-gram
-                            fat: bestOFFResult.result.nutrition.fat              // per-gram
-                        },
-                        source: 'openfoodfacts',
-                        brandOwner: bestOFFResult.result.brandOwner || 'Open Food Facts',
-                        pricePerGram: bestOFFResult.result.pricePerGram || null,
-                        pricePer100g: bestOFFResult.result.pricePer100g || null
+                // Double-check that the result has valid nutrition data
+                const result = bestOFFResult.result;
+                if (result && result.nutrition) {
+                    const hasValidNutrition = 
+                        (result.nutrition.calories && result.nutrition.calories > 0) || 
+                        (result.nutrition.protein && result.nutrition.protein > 0) || 
+                        (result.nutrition.carbs && result.nutrition.carbs > 0) || 
+                        (result.nutrition.fat && result.nutrition.fat > 0);
+                    
+                    if (hasValidNutrition) {
+                        // Convert Open Food Facts ingredient to nutrition tracker format
+                        // Open Food Facts nutrition is already per-gram (from open-food-facts-api.js), keep it that way
+                        results.push({
+                            type: 'ingredient',
+                            data: {
+                                id: result.fdcId || result.id,
+                                name: result.name,
+                                servingSize: result.servingSize || 100,
+                                nutrition: {
+                                    calories: result.nutrition.calories, // per-gram
+                                    protein: result.nutrition.protein,   // per-gram
+                                    carbs: result.nutrition.carbs,         // per-gram
+                                    fat: result.nutrition.fat              // per-gram
+                                },
+                                source: 'openfoodfacts',
+                                brandOwner: result.brandOwner || 'Open Food Facts',
+                                pricePerGram: result.pricePerGram || null,
+                                pricePer100g: result.pricePer100g || null
+                            }
+                        });
+                    } else {
+                        console.log('Skipping Open Food Facts result without valid nutrition in nutrition-tracker:', result.name);
                     }
-                });
+                }
             }
         }
     } catch (error) {

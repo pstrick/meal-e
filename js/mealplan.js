@@ -255,13 +255,28 @@ async function searchAllIngredients(query) {
                 .sort((a, b) => b.relevance - a.relevance)[0];
             
             if (bestOFFResult && bestOFFResult.relevance > 0) {
-                results.push({
-                    ...bestOFFResult.result,
-                    category: bestOFFResult.result.category || 'ingredient',
-                    pricePerGram: null,
-                    totalPrice: null,
-                    totalWeight: null
-                });
+                // Double-check that the result has valid nutrition data
+                const result = bestOFFResult.result;
+                if (result && result.nutrition) {
+                    const hasValidNutrition = 
+                        (result.nutrition.calories && result.nutrition.calories > 0) || 
+                        (result.nutrition.protein && result.nutrition.protein > 0) || 
+                        (result.nutrition.carbs && result.nutrition.carbs > 0) || 
+                        (result.nutrition.fat && result.nutrition.fat > 0);
+                    
+                    if (hasValidNutrition) {
+                        results.push({
+                            ...result,
+                            category: result.category || 'ingredient',
+                            pricePerGram: result.pricePerGram || null,
+                            pricePer100g: result.pricePer100g || null,
+                            totalPrice: result.totalPrice || null,
+                            totalWeight: result.totalWeight || null
+                        });
+                    } else {
+                        console.log('Skipping Open Food Facts result without valid nutrition in mealplan:', result.name);
+                    }
+                }
             }
         }
     } catch (error) {
