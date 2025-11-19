@@ -286,21 +286,23 @@ export async function searchUSDAIngredients(query, maxResults = 10) {
             return [];
         }
         
-        // First, try to format with available data
+        // Format foods - skip fetching full details for speed (search results usually have nutrition data)
         let formatted = foods.map(formatUSDAFood).filter(food => food !== null);
         console.log('Formatted', formatted.length, 'USDA ingredients (filtered out nulls)');
         
-        // Check if any foods are missing nutrition data and fetch full details
+        // Only fetch full details for foods completely missing nutrition data (skip if we have partial data)
+        // This is much faster than fetching details for all foods
         const foodsNeedingDetails = formatted.filter(food => 
             !food.nutrition || 
             (food.nutrition.calories === 0 && food.nutrition.protein === 0 && food.nutrition.carbs === 0 && food.nutrition.fat === 0)
         );
         
-        if (foodsNeedingDetails.length > 0) {
+        // Limit to first 2 foods needing details to avoid too many API calls
+        if (foodsNeedingDetails.length > 0 && foodsNeedingDetails.length <= 2) {
             console.log('Fetching full details for', foodsNeedingDetails.length, 'USDA foods missing nutrition data');
             
-            // Fetch full details for foods missing nutrition data
-            const detailedFoods = await Promise.all(
+            // Fetch full details in parallel for speed
+            const detailedFoods = await Promise.allSettled(
                 foodsNeedingDetails.map(async (food) => {
                     try {
                         const fullDetails = await getUSDAFoodDetails(food.fdcId);
@@ -308,24 +310,23 @@ export async function searchUSDAIngredients(query, maxResults = 10) {
                             console.log('Got full details for', food.name, '- has', fullDetails.foodNutrients.length, 'nutrients');
                             return formatUSDAFood(fullDetails);
                         }
-                        return food; // Return original if details fetch fails
+                        return food;
                     } catch (error) {
                         console.error('Error fetching details for', food.fdcId, ':', error);
-                        return food; // Return original on error
+                        return food;
                     }
                 })
             );
             
             // Replace foods with detailed versions
             formatted = formatted.map(food => {
-                const detailed = detailedFoods.find(d => d && d.fdcId === food.fdcId);
-                return detailed || food;
+                const detailedResult = detailedFoods.find(d => 
+                    d.status === 'fulfilled' && d.value && d.value.fdcId === food.fdcId
+                );
+                return (detailedResult && detailedResult.value) || food;
             });
-            
-            console.log('After fetching details, nutrition data status:', formatted.map(f => ({
-                name: f.name,
-                hasNutrition: !!(f.nutrition && (f.nutrition.calories > 0 || f.nutrition.protein > 0))
-            })));
+        } else if (foodsNeedingDetails.length > 2) {
+            console.log('Skipping detail fetch for', foodsNeedingDetails.length, 'foods to improve speed');
         }
         
         // Cache the results for future use
