@@ -1965,15 +1965,18 @@ function selectIngredient(ingredient) {
         // Detect if nutrition is per-100g and convert to per-gram
         // Typical per-gram: calories < 10, protein/carbs/fat < 1
         // Typical per-100g: calories > 50, protein/carbs/fat > 1
-        const looksLikePer100g = nutritionPerGram.calories > 20 || 
-                                 nutritionPerGram.protein > 2 || 
-                                 nutritionPerGram.carbs > 2 || 
-                                 nutritionPerGram.fat > 2;
+        // Use more aggressive detection - if ANY value looks like per-100g, convert all
+        const looksLikePer100g = nutritionPerGram.calories > 10 || 
+                                 nutritionPerGram.protein > 1 || 
+                                 nutritionPerGram.carbs > 1 || 
+                                 nutritionPerGram.fat > 1;
         
         if (looksLikePer100g) {
             console.warn('⚠️ Converting nutrition from per-100g to per-gram during storage:', {
                 before: nutritionPerGram,
-                ingredientName: ingredient.name
+                ingredientName: ingredient.name,
+                source: ingredient.source,
+                reason: 'Values exceed per-gram thresholds (calories > 10 or macros > 1)'
             });
             nutritionPerGram = {
                 calories: nutritionPerGram.calories / 100,
@@ -1982,6 +1985,8 @@ function selectIngredient(ingredient) {
                 fat: nutritionPerGram.fat / 100
             };
             console.log('✅ Converted to per-gram:', nutritionPerGram);
+        } else {
+            console.log('✅ Nutrition values already appear to be per-gram format:', nutritionPerGram);
         }
         
         // Store with high precision (don't round - keep as decimals)
@@ -2694,15 +2699,18 @@ async function displaySearchResults(results) {
                 };
                 
                 // Detect if nutrition is per-100g and convert to per-gram
-                const looksLikePer100g = nutritionPerGram.calories > 20 || 
-                                         nutritionPerGram.protein > 2 || 
-                                         nutritionPerGram.carbs > 2 || 
-                                         nutritionPerGram.fat > 2;
+                // Use more aggressive detection - if ANY value looks like per-100g, convert all
+                const looksLikePer100g = nutritionPerGram.calories > 10 || 
+                                         nutritionPerGram.protein > 1 || 
+                                         nutritionPerGram.carbs > 1 || 
+                                         nutritionPerGram.fat > 1;
                 
                 if (looksLikePer100g) {
                     console.warn('⚠️ Converting nutrition from per-100g to per-gram during storage:', {
                         before: nutritionPerGram,
-                        ingredientName: ingredient.name
+                        ingredientName: ingredient.name,
+                        source: ingredient.source,
+                        reason: 'Values exceed per-gram thresholds (calories > 10 or macros > 1)'
                     });
                     nutritionPerGram = {
                         calories: nutritionPerGram.calories / 100,
@@ -2710,6 +2718,9 @@ async function displaySearchResults(results) {
                         carbs: nutritionPerGram.carbs / 100,
                         fat: nutritionPerGram.fat / 100
                     };
+                    console.log('✅ Converted to per-gram:', nutritionPerGram);
+                } else {
+                    console.log('✅ Nutrition values already appear to be per-gram format:', nutritionPerGram);
                 }
                 
                 // Store static per-gram values (high precision, never change)
