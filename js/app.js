@@ -2147,12 +2147,29 @@ function addRecipe(recipe) {
     saveToLocalStorage();
 }
 
-function deleteRecipe(id) {
-    if (confirm('Are you sure you want to delete this recipe?')) {
-        recipes = recipes.filter(recipe => recipe.id !== id);
-        updateRecipeList();
-        saveToLocalStorage();
+async function deleteRecipe(id) {
+    const recipe = recipes.find(r => r.id === id);
+    const recipeName = recipe?.name ? `"${recipe.name}"` : 'this recipe';
+
+    const confirmed = await showAlert(
+        `Are you sure you want to delete ${recipeName}? This action cannot be undone.`,
+        {
+            title: 'Delete Recipe',
+            type: 'warning',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            confirmButtonClass: 'btn btn-delete app-alert__confirm',
+            cancelButtonClass: 'btn btn-secondary app-alert__cancel'
+        }
+    );
+
+    if (!confirmed) {
+        return;
     }
+
+    recipes = recipes.filter(recipe => recipe.id !== id);
+    updateRecipeList();
+    saveToLocalStorage();
 }
 
 function duplicateRecipe(id) {
