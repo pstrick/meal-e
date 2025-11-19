@@ -472,6 +472,8 @@ async function updateUnifiedList() {
                     emoji: ingredient.emoji || '',
                     storeSection: ingredient.storeSection || '',
                     brandOwner: ingredient.brandOwner || '',
+                    pricePerGram: ingredient.pricePerGram || null,
+                    pricePer100g: ingredient.pricePer100g || null,
                     icon: icon,
                     label: label
                 });
@@ -493,6 +495,19 @@ async function updateUnifiedList() {
         const div = document.createElement('div');
         div.className = 'unified-option';
         const brandInfo = item.brandOwner && item.source === 'usda' ? `<p class="brand-info">${item.brandOwner}</p>` : '';
+        
+        // Format price information for ingredients
+        let priceInfo = '';
+        if (item.type === 'ingredient') {
+            if (item.pricePer100g) {
+                priceInfo = `<p style="color: #666; font-size: 0.9em;">Price: $${item.pricePer100g.toFixed(2)}/100g</p>`;
+            } else if (item.pricePerGram) {
+                priceInfo = `<p style="color: #666; font-size: 0.9em;">Price: $${(item.pricePerGram * 100).toFixed(2)}/100g</p>`;
+            } else {
+                priceInfo = '<p style="color: #999; font-size: 0.9em;">Price: N/A</p>';
+            }
+        }
+        
         div.innerHTML = `
             <div class="item-header">
                 <span class="item-icon">${item.icon}</span>
@@ -502,6 +517,7 @@ async function updateUnifiedList() {
             <p>Category: ${item.category}</p>
             <p>Serving Size: ${item.servingSize || 100}g</p>
             ${brandInfo}
+            ${priceInfo}
             <div class="item-nutrition">
                 <span>Cal: ${Math.round(item.nutrition.calories * (item.servingSize || 100))}</span>
                 <span>P: ${Math.round(item.nutrition.protein * (item.servingSize || 100))}g</span>

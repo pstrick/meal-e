@@ -396,7 +396,9 @@ async function searchFoods(query) {
                         carbs: ingredient.nutrition.carbs / servingSize,
                         fat: ingredient.nutrition.fat / servingSize
                     },
-                    source: 'custom'
+                    source: 'custom',
+                    pricePerGram: ingredient.pricePerGram || null,
+                    pricePer100g: ingredient.pricePer100g || null
                 }
             });
         }
@@ -443,7 +445,9 @@ async function searchFoods(query) {
                             fat: bestUSDAResult.result.nutrition.fat              // per-gram
                         },
                         source: 'usda',
-                        brandOwner: bestUSDAResult.result.brandOwner || 'USDA Database'
+                        brandOwner: bestUSDAResult.result.brandOwner || 'USDA Database',
+                        pricePerGram: bestUSDAResult.result.pricePerGram || null,
+                        pricePer100g: bestUSDAResult.result.pricePer100g || null
                     }
                 });
             }
@@ -494,7 +498,9 @@ async function searchFoods(query) {
                             fat: bestOFFResult.result.nutrition.fat              // per-gram
                         },
                         source: 'openfoodfacts',
-                        brandOwner: bestOFFResult.result.brandOwner || 'Open Food Facts'
+                        brandOwner: bestOFFResult.result.brandOwner || 'Open Food Facts',
+                        pricePerGram: bestOFFResult.result.pricePerGram || null,
+                        pricePer100g: bestOFFResult.result.pricePer100g || null
                     }
                 });
             }
@@ -557,12 +563,25 @@ function displaySearchResults(results) {
             }
         }
         
+        // Format price information for ingredients
+        let priceInfo = '';
+        if (result.type === 'ingredient' && result.data) {
+            if (result.data.pricePer100g) {
+                priceInfo = `<p style="color: #666; font-size: 0.9em;">Price: $${result.data.pricePer100g.toFixed(2)}/100g</p>`;
+            } else if (result.data.pricePerGram) {
+                priceInfo = `<p style="color: #666; font-size: 0.9em;">Price: $${(result.data.pricePerGram * 100).toFixed(2)}/100g</p>`;
+            } else {
+                priceInfo = '<p style="color: #999; font-size: 0.9em;">Price: N/A</p>';
+            }
+        }
+        
         div.innerHTML = `
             <div class="result-header">
                 <span class="result-type ${result.type}">${result.type}</span>
                 <h4>${sourceIcon}${result.data.name}</h4>
             </div>
             <p>${sourceLabel}${result.data.brandOwner ? ` - ${result.data.brandOwner}` : ''}</p>
+            ${priceInfo}
         `;
         
         div.addEventListener('click', () => selectFood(result));

@@ -1465,12 +1465,36 @@ function editRecipe(id) {
         nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
         amountInput.addEventListener('input', () => {
             const fdcId = nameInput.dataset.fdcId;
-            if (fdcId && selectedIngredients.has(fdcId)) {
-                const ingredient = selectedIngredients.get(fdcId);
-                ingredient.amount = parseFloat(amountInput.value) || 0;
-                selectedIngredients.set(fdcId, ingredient);
+            const newAmount = parseFloat(amountInput.value) || 0;
+            
+            // Try to get ingredient from selectedIngredients
+            let ingredient = null;
+            if (fdcId) {
+                // Try direct lookup first
+                if (selectedIngredients.has(fdcId)) {
+                    ingredient = selectedIngredients.get(fdcId);
+                } else {
+                    // Try alternative lookup strategies for different fdcId formats
+                    for (const [key, value] of selectedIngredients.entries()) {
+                        if (key === fdcId || key.endsWith(fdcId) || fdcId.endsWith(key)) {
+                            ingredient = value;
+                            nameInput.dataset.fdcId = key;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (ingredient) {
+                ingredient.amount = newAmount;
+                if (fdcId) {
+                    selectedIngredients.set(fdcId, ingredient);
+                }
                 updateIngredientMacros(ingredientItem, ingredient);
                 updateServingSizeDefault();
+                updateTotalNutrition();
+            } else if (fdcId) {
+                console.warn('Amount changed but ingredient not found in selectedIngredients:', fdcId);
                 updateTotalNutrition();
             }
         });
@@ -1657,9 +1681,21 @@ function showInlineSearchResults(input, results) {
             sourceLabel = 'Open Food Facts';
             sourceIcon = '🏷️';
         }
+        
+        // Format price information
+        let priceInfo = '';
+        if (result.pricePer100g) {
+            priceInfo = `$${result.pricePer100g.toFixed(2)}/100g`;
+        } else if (result.pricePerGram) {
+            priceInfo = `$${(result.pricePerGram * 100).toFixed(2)}/100g`;
+        } else {
+            priceInfo = 'Price: N/A';
+        }
+        
         item.innerHTML = `
             <div style="font-weight: 600;">${sourceIcon} ${result.name}</div>
             <div style="font-size: 0.8em; color: #666;">${result.brandOwner || sourceLabel}</div>
+            <div style="font-size: 0.8em; color: #888;">${priceInfo}</div>
         `;
         
         item.addEventListener('mousedown', (e) => {
@@ -2049,6 +2085,17 @@ async function displaySearchResults(results) {
         
         const [mainName, ...details] = ingredient.name.split(',');
         const emoji = (ingredient.emoji || '').trim();
+        
+        // Format price information
+        let priceInfo = '';
+        if (ingredient.pricePer100g) {
+            priceInfo = `$${ingredient.pricePer100g.toFixed(2)}/100g`;
+        } else if (ingredient.pricePerGram) {
+            priceInfo = `$${(ingredient.pricePerGram * 100).toFixed(2)}/100g`;
+        } else {
+            priceInfo = 'Price: N/A';
+        }
+        
         div.innerHTML = `
             <div class="search-result-header">
                 <span class="source-indicator ${ingredient.source}">
@@ -2056,7 +2103,8 @@ async function displaySearchResults(results) {
                 </span>
                 <h4>${emoji ? `<span class="ingredient-emoji">${emoji}</span> ` : ''}${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
             </div>
-            <p>${ingredient.brandOwner}</p>
+            <p>${ingredient.brandOwner || ''}</p>
+            <p style="color: #666; font-size: 0.9em;">${priceInfo}</p>
         `;
         
         div.addEventListener('click', async () => {
@@ -2173,17 +2221,43 @@ function addIngredientInput() {
     // Update nutrition and serving size when amount changes
     amountInput.addEventListener('input', () => {
         const fdcId = nameInput.dataset.fdcId;
-        if (fdcId && selectedIngredients.has(fdcId)) {
-            const ingredient = selectedIngredients.get(fdcId);
-            const newAmount = parseFloat(amountInput.value) || 0;
+        const newAmount = parseFloat(amountInput.value) || 0;
+        
+        // Try to get ingredient from selectedIngredients
+        let ingredient = null;
+        if (fdcId) {
+            // Try direct lookup first
+            if (selectedIngredients.has(fdcId)) {
+                ingredient = selectedIngredients.get(fdcId);
+            } else {
+                // Try alternative lookup strategies for different fdcId formats
+                // Check if it's a prefixed ID (usda-, off-, custom-)
+                for (const [key, value] of selectedIngredients.entries()) {
+                    if (key === fdcId || key.endsWith(fdcId) || fdcId.endsWith(key)) {
+                        ingredient = value;
+                        // Update the dataset to match the actual key
+                        nameInput.dataset.fdcId = key;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (ingredient) {
             ingredient.amount = newAmount;
-            selectedIngredients.set(fdcId, ingredient);
+            if (fdcId) {
+                selectedIngredients.set(fdcId, ingredient);
+            }
             console.log('Amount changed for', ingredient.name, 'to', newAmount, 'g');
             updateIngredientMacros(ingredientItem, ingredient);
             updateServingSizeDefault();
             updateTotalNutrition();
-        } else {
+        } else if (fdcId) {
+            // If we have an fdcId but no ingredient, try to update anyway
+            // This handles cases where ingredient data might be stored differently
             console.warn('Amount changed but ingredient not found in selectedIngredients:', fdcId);
+            // Still try to update totals in case other ingredients changed
+            updateTotalNutrition();
         }
     });
 
