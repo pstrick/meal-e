@@ -106,21 +106,37 @@ function releaseThemePreload() {
 
 // Modal Management
 function openModal() {
-    const recipeModal = document.getElementById('recipe-modal');
-    if (!recipeModal) {
-        console.log('Recipe modal not found');
-        return;
+    try {
+        const recipeModal = document.getElementById('recipe-modal');
+        if (!recipeModal) {
+            console.log('Recipe modal not found');
+            return;
+        }
+        recipeModal.classList.add('active');
+        // Add first ingredient input if none exists
+        const ingredientsList = document.getElementById('ingredients-list');
+        if (ingredientsList && ingredientsList.children.length === 0) {
+            try {
+                addIngredientInput();
+            } catch (error) {
+                console.error('Error adding ingredient input:', error);
+            }
+        }
+        // Set up serving size event listener
+        try {
+            setupServingSizeListener();
+        } catch (error) {
+            console.error('Error setting up serving size listener:', error);
+        }
+        // Initialize nutrition display
+        try {
+            updateTotalNutrition();
+        } catch (error) {
+            console.error('Error updating total nutrition:', error);
+        }
+    } catch (error) {
+        console.error('Error opening modal:', error);
     }
-    recipeModal.classList.add('active');
-    // Add first ingredient input if none exists
-    const ingredientsList = document.getElementById('ingredients-list');
-    if (ingredientsList && ingredientsList.children.length === 0) {
-        addIngredientInput();
-    }
-    // Set up serving size event listener
-    setupServingSizeListener();
-    // Initialize nutrition display
-    updateTotalNutrition();
 }
 
 function closeModalHandler() {
@@ -879,22 +895,41 @@ function initializeApp() {
 
         // Initialize recipe list if we're on the recipes page
         if (elements.recipeList && document.getElementById('category-filter')) {
-            updateRecipeList();
+            try {
+                updateRecipeList();
+            } catch (error) {
+                console.error('Error updating recipe list:', error);
+            }
         }
 
         // Initialize meal planner if available
         if (typeof initializeMealPlanner === 'function') {
-            initializeMealPlanner();
+            try {
+                initializeMealPlanner();
+            } catch (error) {
+                console.error('Error initializing meal planner:', error);
+            }
         }
 
         // Initialize recipe form if available
         if (elements.recipeForm) {
-            elements.recipeForm.addEventListener('submit', handleRecipeSubmit);
+            try {
+                elements.recipeForm.addEventListener('submit', handleRecipeSubmit);
+            } catch (error) {
+                console.error('Error setting up recipe form:', error);
+            }
         }
 
         // Initialize add meal button if available
         if (elements.addRecipeBtn) {
-            elements.addRecipeBtn.addEventListener('click', openModal);
+            try {
+                elements.addRecipeBtn.addEventListener('click', openModal);
+                console.log('Add recipe button initialized');
+            } catch (error) {
+                console.error('Error setting up add recipe button:', error);
+            }
+        } else {
+            console.log('Add recipe button not found');
         }
 
         // Initialize modal close buttons if available
@@ -2018,7 +2053,7 @@ async function searchAllIngredients(query) {
     }
     
     // Sort results: custom ingredients first, then by relevance (exact match > starts with > contains), then alphabetically
-    const queryLower = query.toLowerCase().trim();
+    // queryLower is already declared at the top of the function
     results.sort((a, b) => {
         // Custom ingredients first
         if (a.source === 'custom' && b.source !== 'custom') return -1;
