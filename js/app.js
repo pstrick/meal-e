@@ -2288,8 +2288,10 @@ function addIngredientInput() {
     
     // Update nutrition and serving size when amount changes
     amountInput.addEventListener('input', () => {
+        console.log('🔔 Amount input event fired!', { value: amountInput.value });
         const fdcId = nameInput.dataset.fdcId;
         const newAmount = parseFloat(amountInput.value) || 0;
+        console.log('🔔 Processing amount change:', { fdcId, newAmount });
         
         // Try to get ingredient from selectedIngredients
         let ingredient = null;
