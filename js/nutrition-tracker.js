@@ -357,10 +357,33 @@ async function searchFoods(query) {
     const results = [];
     
     // Search custom ingredients first (faster, local)
+    // Prioritize exact matches and starts-with matches
+    const queryLower = query.toLowerCase().trim();
     const ingredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
     console.log('Searching custom ingredients:', ingredients.length, 'found');
-    ingredients.forEach(ingredient => {
-        if (ingredient.name.toLowerCase().includes(query)) {
+    
+    // Sort custom ingredients by relevance: exact match > starts with > contains
+    const customMatches = ingredients
+        .filter(ingredient => {
+            const nameLower = ingredient.name.toLowerCase();
+            return nameLower.includes(queryLower);
+        })
+        .map(ingredient => {
+            const nameLower = ingredient.name.toLowerCase();
+            let relevance = 0;
+            if (nameLower === queryLower) {
+                relevance = 3; // Exact match
+            } else if (nameLower.startsWith(queryLower)) {
+                relevance = 2; // Starts with
+            } else {
+                relevance = 1; // Contains
+            }
+            return { ingredient, relevance };
+        })
+        .sort((a, b) => b.relevance - a.relevance)
+        .map(item => item.ingredient);
+    
+    customMatches.forEach(ingredient => {
             // Convert nutrition to per-gram format for consistency
             const servingSize = ingredient.servingSize || 100;
             results.push({
@@ -380,56 +403,102 @@ async function searchFoods(query) {
     });
     
     // Search USDA API (async, network call) - for generic foods
+    // Only get the most relevant result
     try {
-        const usdaResults = await searchUSDAIngredients(query, 10);
-        usdaResults.forEach(ingredient => {
-            // Convert USDA ingredient to nutrition tracker format
-            // USDA nutrition is already per-gram (from usda-api.js), keep it that way
-            results.push({
-                type: 'ingredient',
-                data: {
-                    id: ingredient.fdcId,
-                    name: ingredient.name,
-                    servingSize: ingredient.servingSize || 100,
-                    nutrition: {
-                        calories: ingredient.nutrition.calories, // per-gram
-                        protein: ingredient.nutrition.protein,   // per-gram
-                        carbs: ingredient.nutrition.carbs,         // per-gram
-                        fat: ingredient.nutrition.fat              // per-gram
-                    },
-                    source: 'usda',
-                    brandOwner: ingredient.brandOwner || 'USDA Database'
-                }
-            });
-        });
+        const usdaResults = await searchUSDAIngredients(query, 20); // Get more to find best match
+        if (usdaResults && usdaResults.length > 0) {
+            // Find the most relevant USDA result
+            const bestUSDAResult = usdaResults
+                .map(result => {
+                    const nameLower = (result.name || '').toLowerCase();
+                    let relevance = 0;
+                    if (nameLower === queryLower) {
+                        relevance = 3; // Exact match
+                    } else if (nameLower.startsWith(queryLower)) {
+                        relevance = 2; // Starts with
+                    } else if (nameLower.includes(queryLower)) {
+                        relevance = 1; // Contains
+                    }
+                    // Boost relevance if it has nutrition data
+                    if (result.nutrition && (result.nutrition.calories > 0 || result.nutrition.protein > 0)) {
+                        relevance += 0.5;
+                    }
+                    return { result, relevance };
+                })
+                .sort((a, b) => b.relevance - a.relevance)[0];
+            
+            if (bestUSDAResult && bestUSDAResult.relevance > 0) {
+                // Convert USDA ingredient to nutrition tracker format
+                // USDA nutrition is already per-gram (from usda-api.js), keep it that way
+                results.push({
+                    type: 'ingredient',
+                    data: {
+                        id: bestUSDAResult.result.fdcId,
+                        name: bestUSDAResult.result.name,
+                        servingSize: bestUSDAResult.result.servingSize || 100,
+                        nutrition: {
+                            calories: bestUSDAResult.result.nutrition.calories, // per-gram
+                            protein: bestUSDAResult.result.nutrition.protein,   // per-gram
+                            carbs: bestUSDAResult.result.nutrition.carbs,         // per-gram
+                            fat: bestUSDAResult.result.nutrition.fat              // per-gram
+                        },
+                        source: 'usda',
+                        brandOwner: bestUSDAResult.result.brandOwner || 'USDA Database'
+                    }
+                });
+            }
+        }
     } catch (error) {
         console.error('Error searching USDA API:', error);
         // Continue with other sources if USDA fails
     }
     
     // Search Open Food Facts API (async, network call) - for branded products
+    // Only get the most relevant result
     try {
-        const offResults = await searchOpenFoodFactsIngredients(query, 10);
-        offResults.forEach(ingredient => {
-            // Convert Open Food Facts ingredient to nutrition tracker format
-            // Open Food Facts nutrition is already per-gram (from open-food-facts-api.js), keep it that way
-            results.push({
-                type: 'ingredient',
-                data: {
-                    id: ingredient.fdcId || ingredient.id,
-                    name: ingredient.name,
-                    servingSize: ingredient.servingSize || 100,
-                    nutrition: {
-                        calories: ingredient.nutrition.calories, // per-gram
-                        protein: ingredient.nutrition.protein,   // per-gram
-                        carbs: ingredient.nutrition.carbs,         // per-gram
-                        fat: ingredient.nutrition.fat              // per-gram
-                    },
-                    source: 'openfoodfacts',
-                    brandOwner: ingredient.brandOwner || 'Open Food Facts'
-                }
-            });
-        });
+        const offResults = await searchOpenFoodFactsIngredients(query, 20); // Get more to find best match
+        if (offResults && offResults.length > 0) {
+            // Find the most relevant Open Food Facts result
+            const bestOFFResult = offResults
+                .map(result => {
+                    const nameLower = (result.name || '').toLowerCase();
+                    let relevance = 0;
+                    if (nameLower === queryLower) {
+                        relevance = 3; // Exact match
+                    } else if (nameLower.startsWith(queryLower)) {
+                        relevance = 2; // Starts with
+                    } else if (nameLower.includes(queryLower)) {
+                        relevance = 1; // Contains
+                    }
+                    // Boost relevance if it has nutrition data
+                    if (result.nutrition && (result.nutrition.calories > 0 || result.nutrition.protein > 0)) {
+                        relevance += 0.5;
+                    }
+                    return { result, relevance };
+                })
+                .sort((a, b) => b.relevance - a.relevance)[0];
+            
+            if (bestOFFResult && bestOFFResult.relevance > 0) {
+                // Convert Open Food Facts ingredient to nutrition tracker format
+                // Open Food Facts nutrition is already per-gram (from open-food-facts-api.js), keep it that way
+                results.push({
+                    type: 'ingredient',
+                    data: {
+                        id: bestOFFResult.result.fdcId || bestOFFResult.result.id,
+                        name: bestOFFResult.result.name,
+                        servingSize: bestOFFResult.result.servingSize || 100,
+                        nutrition: {
+                            calories: bestOFFResult.result.nutrition.calories, // per-gram
+                            protein: bestOFFResult.result.nutrition.protein,   // per-gram
+                            carbs: bestOFFResult.result.nutrition.carbs,         // per-gram
+                            fat: bestOFFResult.result.nutrition.fat              // per-gram
+                        },
+                        source: 'openfoodfacts',
+                        brandOwner: bestOFFResult.result.brandOwner || 'Open Food Facts'
+                    }
+                });
+            }
+        }
     } catch (error) {
         console.error('Error searching Open Food Facts API:', error);
         // Continue with other sources if Open Food Facts fails

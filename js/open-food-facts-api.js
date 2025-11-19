@@ -54,12 +54,21 @@ export async function searchOpenFoodFacts(query, pageSize = 20) {
         
         const products = data.products || [];
         
-        // Filter out products with no name (invalid products)
-        const validProducts = products.filter(p => p.product_name || p.product_name_en || p.product_name_fr);
+        // Filter out products with no valid name (invalid products)
+        // A valid name is not just numbers, not empty, and exists in at least one language field
+        const validProducts = products.filter(p => {
+            const name = p.product_name || p.product_name_en || p.product_name_fr || 
+                        p.generic_name || p.generic_name_en || p.abbreviated_product_name || '';
+            // Reject if name is empty, just numbers, or just the barcode
+            if (!name || name.trim() === '') return false;
+            if (/^\d+$/.test(name.trim())) return false;
+            if (name.trim() === p.code) return false; // Name is just the barcode
+            return true;
+        });
         console.log('Open Food Facts API returning', validProducts.length, 'valid products (filtered from', products.length, 'total)');
         
         if (validProducts.length === 0 && products.length > 0) {
-            console.warn('All Open Food Facts products were filtered out (no product names)');
+            console.warn('All Open Food Facts products were filtered out (no valid product names)');
             console.log('Sample product structure:', products[0]);
         }
         
@@ -159,14 +168,49 @@ export function formatOpenFoodFactsProduct(product) {
         // Still return the product, but with zero nutrition (better than nothing)
     }
     
-    const productName = product.product_name || product.product_name_en || product.product_name_fr || 'Unknown product';
-    const brands = product.brands || product.brand || 'Unknown brand';
+    // Extract product name - try multiple fields and filter out numeric-only names
+    let productName = product.product_name || 
+                      product.product_name_en || 
+                      product.product_name_fr || 
+                      product.product_name_de ||
+                      product.product_name_es ||
+                      product.generic_name ||
+                      product.generic_name_en ||
+                      '';
+    
+    // Filter out names that are just numbers or barcodes
+    if (productName && /^\d+$/.test(productName.trim())) {
+        console.warn('Product name is numeric only, trying alternatives:', productName);
+        productName = product.generic_name || 
+                      product.generic_name_en ||
+                      product.abbreviated_product_name ||
+                      '';
+    }
+    
+    // If still no valid name, try to construct from brand and quantity
+    if (!productName || productName.trim() === '' || /^\d+$/.test(productName.trim())) {
+        const brands = product.brands || product.brand || '';
+        const quantity = product.quantity || '';
+        if (brands && brands !== 'Unknown brand') {
+            productName = brands;
+            if (quantity) {
+                productName += ` ${quantity}`;
+            }
+        } else if (quantity) {
+            productName = quantity;
+        } else {
+            productName = 'Unknown product';
+        }
+    }
+    
+    const brands = product.brands || product.brand || '';
     const quantity = product.quantity || '';
     
-    // Combine brand and product name
-    const displayName = brands && brands !== 'Unknown brand' 
-        ? `${productName} (${brands})` 
-        : productName;
+    // Combine brand and product name, but avoid duplication
+    let displayName = productName;
+    if (brands && brands !== 'Unknown brand' && brands.trim() !== '' && !productName.toLowerCase().includes(brands.toLowerCase())) {
+        displayName = `${productName} (${brands})`;
+    }
     
     if (!product.code) {
         console.warn('Open Food Facts product missing code:', product);

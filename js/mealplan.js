@@ -87,6 +87,8 @@ async function searchAllIngredients(query) {
     const results = [];
     
     // Search custom ingredients first (faster, local)
+    // Prioritize exact matches and starts-with matches
+    const queryLower = query.toLowerCase().trim();
     const customIngredients = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]').map(ingredient => ({
         ...ingredient,
         storeSection: ingredient.storeSection || '',
@@ -95,9 +97,27 @@ async function searchAllIngredients(query) {
         totalPrice: typeof ingredient.totalPrice === 'number' ? ingredient.totalPrice : null,
         totalWeight: typeof ingredient.totalWeight === 'number' ? ingredient.totalWeight : null
     }));
-    const customMatches = customIngredients.filter(ingredient => 
-        ingredient.name.toLowerCase().includes(query.toLowerCase())
-    );
+    
+    // Sort custom ingredients by relevance: exact match > starts with > contains
+    const customMatches = customIngredients
+        .filter(ingredient => {
+            const nameLower = ingredient.name.toLowerCase();
+            return nameLower.includes(queryLower);
+        })
+        .map(ingredient => {
+            const nameLower = ingredient.name.toLowerCase();
+            let relevance = 0;
+            if (nameLower === queryLower) {
+                relevance = 3; // Exact match
+            } else if (nameLower.startsWith(queryLower)) {
+                relevance = 2; // Starts with
+            } else {
+                relevance = 1; // Contains
+            }
+            return { ingredient, relevance };
+        })
+        .sort((a, b) => b.relevance - a.relevance)
+        .map(item => item.ingredient);
     
     // Add custom ingredients to results
     customMatches.forEach(ingredient => {
@@ -126,36 +146,80 @@ async function searchAllIngredients(query) {
     });
     
     // Search USDA API (async, network call) - for generic foods
+    // Only get the most relevant result
     try {
-        const usdaResults = await searchUSDAIngredients(query, 10);
-        // Add USDA results with meal plan specific fields
-        usdaResults.forEach(ingredient => {
-            results.push({
-                ...ingredient,
-                category: ingredient.category || 'ingredient',
-                pricePerGram: null,
-                totalPrice: null,
-                totalWeight: null
-            });
-        });
+        const usdaResults = await searchUSDAIngredients(query, 20); // Get more to find best match
+        if (usdaResults && usdaResults.length > 0) {
+            // Find the most relevant USDA result
+            const bestUSDAResult = usdaResults
+                .map(result => {
+                    const nameLower = (result.name || '').toLowerCase();
+                    let relevance = 0;
+                    if (nameLower === queryLower) {
+                        relevance = 3; // Exact match
+                    } else if (nameLower.startsWith(queryLower)) {
+                        relevance = 2; // Starts with
+                    } else if (nameLower.includes(queryLower)) {
+                        relevance = 1; // Contains
+                    }
+                    // Boost relevance if it has nutrition data
+                    if (result.nutrition && (result.nutrition.calories > 0 || result.nutrition.protein > 0)) {
+                        relevance += 0.5;
+                    }
+                    return { result, relevance };
+                })
+                .sort((a, b) => b.relevance - a.relevance)[0];
+            
+            if (bestUSDAResult && bestUSDAResult.relevance > 0) {
+                results.push({
+                    ...bestUSDAResult.result,
+                    category: bestUSDAResult.result.category || 'ingredient',
+                    pricePerGram: null,
+                    totalPrice: null,
+                    totalWeight: null
+                });
+            }
+        }
     } catch (error) {
         console.error('Error searching USDA API:', error);
         // Continue with other sources if USDA fails
     }
     
     // Search Open Food Facts API (async, network call) - for branded products
+    // Only get the most relevant result
     try {
-        const offResults = await searchOpenFoodFactsIngredients(query, 10);
-        // Add Open Food Facts results with meal plan specific fields
-        offResults.forEach(ingredient => {
-            results.push({
-                ...ingredient,
-                category: ingredient.category || 'ingredient',
-                pricePerGram: null,
-                totalPrice: null,
-                totalWeight: null
-            });
-        });
+        const offResults = await searchOpenFoodFactsIngredients(query, 20); // Get more to find best match
+        if (offResults && offResults.length > 0) {
+            // Find the most relevant Open Food Facts result
+            const bestOFFResult = offResults
+                .map(result => {
+                    const nameLower = (result.name || '').toLowerCase();
+                    let relevance = 0;
+                    if (nameLower === queryLower) {
+                        relevance = 3; // Exact match
+                    } else if (nameLower.startsWith(queryLower)) {
+                        relevance = 2; // Starts with
+                    } else if (nameLower.includes(queryLower)) {
+                        relevance = 1; // Contains
+                    }
+                    // Boost relevance if it has nutrition data
+                    if (result.nutrition && (result.nutrition.calories > 0 || result.nutrition.protein > 0)) {
+                        relevance += 0.5;
+                    }
+                    return { result, relevance };
+                })
+                .sort((a, b) => b.relevance - a.relevance)[0];
+            
+            if (bestOFFResult && bestOFFResult.relevance > 0) {
+                results.push({
+                    ...bestOFFResult.result,
+                    category: bestOFFResult.result.category || 'ingredient',
+                    pricePerGram: null,
+                    totalPrice: null,
+                    totalWeight: null
+                });
+            }
+        }
     } catch (error) {
         console.error('Error searching Open Food Facts API:', error);
         // Continue with other sources if Open Food Facts fails
