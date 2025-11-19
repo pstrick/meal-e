@@ -113,7 +113,8 @@ function openModal() {
     }
     recipeModal.classList.add('active');
     // Add first ingredient input if none exists
-    if (ingredientsList.children.length === 0) {
+    const ingredientsList = document.getElementById('ingredients-list');
+    if (ingredientsList && ingredientsList.children.length === 0) {
         addIngredientInput();
     }
     // Set up serving size event listener
@@ -129,8 +130,14 @@ function closeModalHandler() {
         return;
     }
     recipeModal.classList.remove('active');
-    recipeForm.reset();
-    ingredientsList.innerHTML = '';
+    const recipeForm = document.getElementById('recipe-form');
+    if (recipeForm) {
+        recipeForm.reset();
+    }
+    const ingredientsList = document.getElementById('ingredients-list');
+    if (ingredientsList) {
+        ingredientsList.innerHTML = '';
+    }
     selectedIngredients.clear();
     currentEditRecipeId = null;
     // Reset serving size listener flag for next time
@@ -2548,12 +2555,36 @@ function duplicateRecipe(id) {
         nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
         amountInput.addEventListener('input', () => {
             const fdcId = nameInput.dataset.fdcId;
-            if (fdcId && selectedIngredients.has(fdcId)) {
-                const ingredient = selectedIngredients.get(fdcId);
-                ingredient.amount = parseFloat(amountInput.value) || 0;
-                selectedIngredients.set(fdcId, ingredient);
+            const newAmount = parseFloat(amountInput.value) || 0;
+            
+            // Try to get ingredient from selectedIngredients
+            let ingredient = null;
+            if (fdcId) {
+                // Try direct lookup first
+                if (selectedIngredients.has(fdcId)) {
+                    ingredient = selectedIngredients.get(fdcId);
+                } else {
+                    // Try alternative lookup strategies for different fdcId formats
+                    for (const [key, value] of selectedIngredients.entries()) {
+                        if (key === fdcId || key.endsWith(fdcId) || fdcId.endsWith(key)) {
+                            ingredient = value;
+                            nameInput.dataset.fdcId = key;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (ingredient) {
+                ingredient.amount = newAmount;
+                if (fdcId) {
+                    selectedIngredients.set(fdcId, ingredient);
+                }
                 updateIngredientMacros(ingredientItem, ingredient);
                 updateServingSizeDefault();
+                updateTotalNutrition();
+            } else if (fdcId) {
+                console.warn('Amount changed but ingredient not found in selectedIngredients:', fdcId);
                 updateTotalNutrition();
             }
         });
