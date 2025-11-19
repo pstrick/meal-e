@@ -1592,7 +1592,13 @@ function editRecipe(id) {
                 updateServingSizeDefault();
                 updateTotalNutrition();
             }
-        });
+        };
+        
+        // Remove any existing listener first to prevent duplicates
+        amountInput.removeEventListener('input', handleAmountInput);
+        // Add the listener
+        amountInput.addEventListener('input', handleAmountInput);
+        
         ingredientItem.querySelector('.remove-ingredient').addEventListener('click', () => {
             if (ingredientsList.children.length > 1) {
                 const fdcId = nameInput.dataset.fdcId;
@@ -2880,10 +2886,11 @@ function addIngredientInput() {
     nameInput.addEventListener('focus', () => openIngredientSearch(ingredientItem));
     
     // Update nutrition and serving size when amount changes
-    amountInput.addEventListener('input', () => {
+    // Use a named function and ensure it's only added once
+    const handleAmountInput = function() {
         console.log('🔔 Amount input event fired!', { value: amountInput.value });
         const fdcId = nameInput.dataset.fdcId;
-            const newAmount = parseFloat(amountInput.value) || 0;
+        const newAmount = parseFloat(amountInput.value) || 0;
         console.log('🔔 Processing amount change:', { fdcId, newAmount });
         
         // Try to get ingredient from selectedIngredients
@@ -3447,7 +3454,9 @@ function duplicateRecipe(id) {
         // Add event listeners
         nameInput.addEventListener('click', () => openIngredientSearch(ingredientItem));
         nameInput.addEventListener('focus', () => openIngredientSearch(ingredientItem));
-        amountInput.addEventListener('input', () => {
+        
+        // Use a named function to prevent duplicate listeners
+        const handleAmountInput = function() {
             const fdcId = nameInput.dataset.fdcId;
             const newAmount = parseFloat(amountInput.value) || 0;
             
