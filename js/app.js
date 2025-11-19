@@ -3115,14 +3115,15 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     console.log('These values were calculated ONCE when ingredient was selected and stored statically');
     
     // Verify the values look correct for per-gram format
+    // If they look like per-100g, convert them on-the-fly as a safety measure
     const looksLikePer100g = safeNutrition.calories > 10 || 
                              safeNutrition.protein > 1 || 
                              safeNutrition.carbs > 1 || 
                              safeNutrition.fat > 1;
     
     if (looksLikePer100g) {
-        console.error('❌ ERROR: Nutrition values look like per-100g instead of per-gram!', {
-            nutritionPerGram: safeNutrition,
+        console.error('❌ ERROR: Nutrition values look like per-100g instead of per-gram! Converting now...', {
+            before: safeNutrition,
             expectedRange: {
                 calories: '0-10 cal/g (typical: 0.5-4)',
                 protein: '0-1 g/g (typical: 0.01-0.5)',
@@ -3131,6 +3132,28 @@ function updateIngredientMacros(ingredientItem, ingredient) {
             },
             issue: 'These values should have been converted to per-gram when ingredient was selected'
         });
+        
+        // Convert on-the-fly as a safety measure
+        safeNutrition = {
+            calories: safeNutrition.calories / 100,
+            protein: safeNutrition.protein / 100,
+            carbs: safeNutrition.carbs / 100,
+            fat: safeNutrition.fat / 100
+        };
+        
+        console.warn('✅ Converted to per-gram on-the-fly:', safeNutrition);
+        
+        // Update the stored value in selectedIngredients if possible
+        const nameInput = ingredientItem.querySelector('.ingredient-name');
+        if (nameInput) {
+            const fdcId = nameInput.dataset.fdcId;
+            if (fdcId && selectedIngredients.has(fdcId)) {
+                const storedIngredient = selectedIngredients.get(fdcId);
+                storedIngredient.nutrition = safeNutrition;
+                selectedIngredients.set(fdcId, storedIngredient);
+                console.log('✅ Updated stored nutrition in selectedIngredients');
+            }
+        }
     }
     
     // Show what the calculation will be
