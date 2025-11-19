@@ -127,7 +127,7 @@ function openModal() {
     setupServingSizeListener();
         } catch (error) {
             console.error('Error setting up serving size listener:', error);
-        }
+    }
     // Initialize nutrition display
         try {
     updateTotalNutrition();
@@ -1766,7 +1766,7 @@ function handleIngredientBlur(event) {
         const activeElement = document.activeElement;
         const dropdown = document.querySelector('.ingredient-search-dropdown');
         if (!dropdown || !dropdown.contains(activeElement)) {
-            removeSearchDropdown();
+        removeSearchDropdown();
         }
     }, 300);
 }
@@ -2782,7 +2782,7 @@ function addIngredientInput() {
     amountInput.addEventListener('input', () => {
         console.log('🔔 Amount input event fired!', { value: amountInput.value });
         const fdcId = nameInput.dataset.fdcId;
-        const newAmount = parseFloat(amountInput.value) || 0;
+            const newAmount = parseFloat(amountInput.value) || 0;
         console.log('🔔 Processing amount change:', { fdcId, newAmount });
         
         // Try to get ingredient from selectedIngredients
@@ -2881,9 +2881,22 @@ function addIngredientInput() {
 }
 
 function updateIngredientMacros(ingredientItem, ingredient) {
+    console.group('🔬 updateIngredientMacros - DEBUG START');
+    console.log('Input ingredient:', {
+        name: ingredient?.name,
+        amount: ingredient?.amount,
+        nutrition: ingredient?.nutrition,
+        source: ingredient?.source
+    });
+    
     // Read amount directly from input field to ensure it's current
     const amountInput = ingredientItem.querySelector('.ingredient-amount');
     const amount = amountInput ? (parseFloat(amountInput.value) || 0) : (parseFloat(ingredient.amount) || 0);
+    console.log('📏 Amount from input:', {
+        inputValue: amountInput?.value,
+        parsedAmount: amount,
+        ingredientAmount: ingredient?.amount
+    });
     
     // Update ingredient object with current amount
     if (ingredient) {
@@ -2897,6 +2910,7 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         carbs: 0,
         fat: 0
     };
+    console.log('📊 Raw nutrition object:', nutrition);
     
     // Validate nutrition values are numbers
     let safeNutrition = {
@@ -2905,16 +2919,27 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         carbs: Number.isFinite(nutrition.carbs) ? nutrition.carbs : 0,
         fat: Number.isFinite(nutrition.fat) ? nutrition.fat : 0
     };
+    console.log('✅ Validated nutrition:', safeNutrition);
     
     // CRITICAL: Detect and normalize nutrition format
     // Nutrition should be per-gram, but might be stored as per-100g in some cases
     // We'll test by calculating what the result would be and checking if it's reasonable
     
+    console.log('🧪 Testing nutrition format...');
     if (amount > 0) {
         // Test calculation: if nutrition is per-gram, multiplying by amount should give reasonable values
         // If nutrition is per-100g, multiplying by amount would give 100x the correct value
         const testCalories = safeNutrition.calories * amount;
         const testProtein = safeNutrition.protein * amount;
+        const testCarbs = safeNutrition.carbs * amount;
+        const testFat = safeNutrition.fat * amount;
+        
+        console.log('🧮 Test calculations (assuming current format is correct):', {
+            calories: `${safeNutrition.calories} × ${amount} = ${testCalories} cal`,
+            protein: `${safeNutrition.protein} × ${amount} = ${testProtein}g`,
+            carbs: `${safeNutrition.carbs} × ${amount} = ${testCarbs}g`,
+            fat: `${safeNutrition.fat} × ${amount} = ${testFat}g`
+        });
         
         // Reasonable ranges for most foods per 100g:
         // Calories: 0-900 (most foods are 0-600, but some like oils can be 900)
@@ -2923,44 +2948,117 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         
         const maxReasonableCalories = Math.max(amount * 9, 1000); // 9 cal/g is very high (pure fat)
         const maxReasonableProtein = Math.max(amount * 1, 100); // 1g protein per gram is very high
+        const maxReasonableCarbs = Math.max(amount * 1, 100);
+        const maxReasonableFat = Math.max(amount * 1, 100);
+        
+        console.log('📐 Reasonable maximums for this amount:', {
+            calories: maxReasonableCalories,
+            protein: maxReasonableProtein,
+            carbs: maxReasonableCarbs,
+            fat: maxReasonableFat
+        });
         
         const looksLikePer100g = (safeNutrition.calories > 1 && testCalories > maxReasonableCalories) ||
                                  (safeNutrition.protein > 0.1 && testProtein > maxReasonableProtein) ||
+                                 (safeNutrition.carbs > 0.1 && testCarbs > maxReasonableCarbs) ||
+                                 (safeNutrition.fat > 0.1 && testFat > maxReasonableFat) ||
                                  (safeNutrition.calories > 50) || // Very high per-gram calories unlikely
                                  (safeNutrition.protein > 5) ||   // Very high per-gram protein unlikely
                                  (safeNutrition.carbs > 5) ||     // Very high per-gram carbs unlikely
                                  (safeNutrition.fat > 5);         // Very high per-gram fat unlikely
         
+        console.log('🔍 Format detection:', {
+            looksLikePer100g: looksLikePer100g,
+            checks: {
+                caloriesTooHigh: safeNutrition.calories > 1 && testCalories > maxReasonableCalories,
+                proteinTooHigh: safeNutrition.protein > 0.1 && testProtein > maxReasonableProtein,
+                carbsTooHigh: safeNutrition.carbs > 0.1 && testCarbs > maxReasonableCarbs,
+                fatTooHigh: safeNutrition.fat > 0.1 && testFat > maxReasonableFat,
+                rawCaloriesHigh: safeNutrition.calories > 50,
+                rawProteinHigh: safeNutrition.protein > 5,
+                rawCarbsHigh: safeNutrition.carbs > 5,
+                rawFatHigh: safeNutrition.fat > 5
+            }
+        });
+        
         if (looksLikePer100g) {
-            console.warn('⚠️ Detected per-100g format, converting to per-gram:', {
+            console.warn('⚠️ DETECTED: Nutrition appears to be per-100g format!', {
                 ingredientName: ingredient.name,
-                original: safeNutrition,
-                testCalculation: { calories: testCalories, protein: testProtein },
+                originalValues: safeNutrition,
+                testCalculations: { 
+                    calories: testCalories, 
+                    protein: testProtein,
+                    carbs: testCarbs,
+                    fat: testFat
+                },
                 amount: amount,
-                maxReasonable: { calories: maxReasonableCalories, protein: maxReasonableProtein }
+                maxReasonable: { 
+                    calories: maxReasonableCalories, 
+                    protein: maxReasonableProtein,
+                    carbs: maxReasonableCarbs,
+                    fat: maxReasonableFat
+                }
             });
             // Convert from per-100g to per-gram
+            const beforeConversion = { ...safeNutrition };
             safeNutrition = {
                 calories: safeNutrition.calories / 100,
                 protein: safeNutrition.protein / 100,
                 carbs: safeNutrition.carbs / 100,
                 fat: safeNutrition.fat / 100
             };
-            console.log('✅ Converted to per-gram:', safeNutrition);
+            console.log('✅ CONVERTED from per-100g to per-gram:', {
+                before: beforeConversion,
+                after: safeNutrition
+            });
+        } else {
+            console.log('✅ Nutrition format appears correct (per-gram)');
         }
+    } else {
+        console.warn('⚠️ Amount is 0 or invalid, skipping format detection');
     }
     
     // Calculate total macros: nutrition per gram × amount in grams
+    console.log('🧮 Final calculation step:');
+    const caloriesCalc = safeNutrition.calories * amount;
+    const proteinCalc = safeNutrition.protein * amount;
+    const carbsCalc = safeNutrition.carbs * amount;
+    const fatCalc = safeNutrition.fat * amount;
+    
+    console.log('   Raw calculations:', {
+        calories: `${safeNutrition.calories} × ${amount} = ${caloriesCalc}`,
+        protein: `${safeNutrition.protein} × ${amount} = ${proteinCalc}`,
+        carbs: `${safeNutrition.carbs} × ${amount} = ${carbsCalc}`,
+        fat: `${safeNutrition.fat} × ${amount} = ${fatCalc}`
+    });
+    
     // Round to nearest whole number for calories, keep 1 decimal for macros
     const macros = {
-        calories: Math.round(safeNutrition.calories * amount),
-        protein: Math.round((safeNutrition.protein * amount) * 10) / 10, // Round to 1 decimal
-        carbs: Math.round((safeNutrition.carbs * amount) * 10) / 10,     // Round to 1 decimal
-        fat: Math.round((safeNutrition.fat * amount) * 10) / 10          // Round to 1 decimal
+        calories: Math.round(caloriesCalc),
+        protein: Math.round(proteinCalc * 10) / 10, // Round to 1 decimal
+        carbs: Math.round(carbsCalc * 10) / 10,     // Round to 1 decimal
+        fat: Math.round(fatCalc * 10) / 10          // Round to 1 decimal
     };
     
+    console.log('   Rounded results:', macros);
+    
+    // Validate results are reasonable
+    const isReasonable = macros.calories <= 10000 && 
+                        macros.protein <= 1000 && 
+                        macros.carbs <= 1000 && 
+                        macros.fat <= 1000;
+    
+    if (!isReasonable) {
+        console.error('❌ ERROR: Calculated macros seem unreasonable!', {
+            macros: macros,
+            nutritionPerGram: safeNutrition,
+        amount: amount,
+            suggestion: 'Nutrition might be in wrong format or calculation is incorrect'
+        });
+    }
+    
     // Log detailed calculation info
-    console.log('📊 updateIngredientMacros calculation:', {
+    console.log('📊 FINAL RESULT:', {
         ingredientName: ingredient.name,
         amountInGrams: amount,
         nutritionPerGram: safeNutrition,
@@ -2972,8 +3070,7 @@ function updateIngredientMacros(ingredientItem, ingredient) {
             fat: `${safeNutrition.fat}g/g × ${amount}g = ${macros.fat}g`
         },
         calculatedMacros: macros,
-        // Check if values look like per-100g instead of per-gram
-        warning: safeNutrition.calories > 10 ? '⚠️ Calories per gram seems high - might be per-100g?' : null
+        isReasonable: isReasonable
     });
     
     // Log if macros are zero but we have nutrition data
@@ -3033,7 +3130,7 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     }
     
     // Update all macro values
-    caloriesEl.textContent = macros.calories;
+        caloriesEl.textContent = macros.calories;
     proteinEl.textContent = macros.protein;
     carbsEl.textContent = macros.carbs;
     fatEl.textContent = macros.fat;
@@ -3042,7 +3139,7 @@ function updateIngredientMacros(ingredientItem, ingredient) {
     if (costEl) {
         if (cost > 0) {
             costEl.textContent = `$${cost.toFixed(2)}`;
-        } else {
+    } else {
             costEl.textContent = 'N/A';
         }
     }
@@ -3053,6 +3150,7 @@ function updateIngredientMacros(ingredientItem, ingredient) {
         carbs: macros.carbs,
         fat: macros.fat
     });
+    console.groupEnd('🔬 updateIngredientMacros - DEBUG END');
 }
 
 // Initialize modal close handlers when DOM is ready
