@@ -189,16 +189,17 @@ export function formatOpenFoodFactsProduct(product) {
     
     const nutrition = extractOpenFoodFactsNutrition(product);
     
-    // Validate nutrition data
+    // Validate nutrition data - filter out products with no nutrition information
     if (!nutrition || 
         (nutrition.calories === 0 && nutrition.protein === 0 && nutrition.carbs === 0 && nutrition.fat === 0)) {
-        console.warn('Open Food Facts product has no nutrition data:', {
+        console.warn('Open Food Facts product has no nutrition data - filtering out:', {
             code: product.code,
             product_name: product.product_name,
             hasNutriments: !!product.nutriments,
             nutrimentsKeys: product.nutriments ? Object.keys(product.nutriments) : []
         });
-        // Still return the product, but with zero nutrition (better than nothing)
+        // Return null to filter out products with no nutrition data
+        return null;
     }
     
     // Extract product name - try multiple fields and filter out numeric-only names
