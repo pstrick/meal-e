@@ -1,5 +1,6 @@
 import { showAlert } from './alert.js';
 import { searchUSDAIngredients } from './usda-api.js';
+import { searchOpenFoodFactsIngredients } from './open-food-facts-api.js';
 
 // Meal Planning functionality
 let currentWeekOffset = 0;  // Track week offset instead of modifying date directly
@@ -124,7 +125,7 @@ async function searchAllIngredients(query) {
         });
     });
     
-    // Search USDA API (async, network call)
+    // Search USDA API (async, network call) - for generic foods
     try {
         const usdaResults = await searchUSDAIngredients(query, 10);
         // Add USDA results with meal plan specific fields
@@ -139,14 +140,38 @@ async function searchAllIngredients(query) {
         });
     } catch (error) {
         console.error('Error searching USDA API:', error);
-        // Continue with custom ingredients only if USDA fails
+        // Continue with other sources if USDA fails
     }
     
-    // Sort results: custom ingredients first, then USDA, then alphabetically
+    // Search Open Food Facts API (async, network call) - for branded products
+    try {
+        const offResults = await searchOpenFoodFactsIngredients(query, 10);
+        // Add Open Food Facts results with meal plan specific fields
+        offResults.forEach(ingredient => {
+            results.push({
+                ...ingredient,
+                category: ingredient.category || 'ingredient',
+                pricePerGram: null,
+                totalPrice: null,
+                totalWeight: null
+            });
+        });
+    } catch (error) {
+        console.error('Error searching Open Food Facts API:', error);
+        // Continue with other sources if Open Food Facts fails
+    }
+    
+    // Sort results: custom ingredients first, then Open Food Facts (branded), then USDA (generic), then alphabetically
     results.sort((a, b) => {
         // Custom ingredients first
         if (a.source === 'custom' && b.source !== 'custom') return -1;
         if (a.source !== 'custom' && b.source === 'custom') return 1;
+        // Then Open Food Facts (branded products)
+        if (a.source === 'openfoodfacts' && b.source !== 'openfoodfacts') return -1;
+        if (a.source !== 'openfoodfacts' && b.source === 'openfoodfacts') return 1;
+        // Then USDA (generic foods)
+        if (a.source === 'usda' && b.source !== 'usda') return -1;
+        if (a.source !== 'usda' && b.source === 'usda') return 1;
         // Then alphabetically
         return a.name.localeCompare(b.name);
     });
@@ -356,10 +381,20 @@ async function updateUnifiedList() {
             // Only add if category matches or is 'all'
             if (category === 'all' || ingredientCategory === category) {
                 // Determine icon and label based on source
-                const isUSDA = ingredient.source === 'usda';
-                const icon = isUSDA ? '🌾' : '🥩';
-                const label = isUSDA ? 'USDA Database' : 'Custom Ingredient';
-                const id = isUSDA ? `usda-${ingredient.fdcId}` : `custom-${ingredient.id}`;
+                let icon = '🥩';
+                let label = 'Custom Ingredient';
+                let id;
+                if (ingredient.source === 'usda') {
+                    icon = '🌾';
+                    label = 'USDA Database';
+                    id = `usda-${ingredient.fdcId}`;
+                } else if (ingredient.source === 'openfoodfacts') {
+                    icon = '🏷️';
+                    label = 'Open Food Facts';
+                    id = `off-${ingredient.fdcId || ingredient.id}`;
+                } else {
+                    id = `custom-${ingredient.id}`;
+                }
                 
                 results.push({
                     type: 'ingredient',

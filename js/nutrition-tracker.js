@@ -2,6 +2,7 @@
 import { settings } from './settings.js';
 import { showAlert } from './alert.js';
 import { searchUSDAIngredients } from './usda-api.js';
+import { searchOpenFoodFactsIngredients } from './open-food-facts-api.js';
 
 // Global variables
 let currentDate = new Date();
@@ -378,7 +379,7 @@ async function searchFoods(query) {
         }
     });
     
-    // Search USDA API (async, network call)
+    // Search USDA API (async, network call) - for generic foods
     try {
         const usdaResults = await searchUSDAIngredients(query, 10);
         usdaResults.forEach(ingredient => {
@@ -403,7 +404,35 @@ async function searchFoods(query) {
         });
     } catch (error) {
         console.error('Error searching USDA API:', error);
-        // Continue with custom ingredients only if USDA fails
+        // Continue with other sources if USDA fails
+    }
+    
+    // Search Open Food Facts API (async, network call) - for branded products
+    try {
+        const offResults = await searchOpenFoodFactsIngredients(query, 10);
+        offResults.forEach(ingredient => {
+            // Convert Open Food Facts ingredient to nutrition tracker format
+            // Open Food Facts nutrition is already per-gram (from open-food-facts-api.js), keep it that way
+            results.push({
+                type: 'ingredient',
+                data: {
+                    id: ingredient.fdcId || ingredient.id,
+                    name: ingredient.name,
+                    servingSize: ingredient.servingSize || 100,
+                    nutrition: {
+                        calories: ingredient.nutrition.calories, // per-gram
+                        protein: ingredient.nutrition.protein,   // per-gram
+                        carbs: ingredient.nutrition.carbs,         // per-gram
+                        fat: ingredient.nutrition.fat              // per-gram
+                    },
+                    source: 'openfoodfacts',
+                    brandOwner: ingredient.brandOwner || 'Open Food Facts'
+                }
+            });
+        });
+    } catch (error) {
+        console.error('Error searching Open Food Facts API:', error);
+        // Continue with other sources if Open Food Facts fails
     }
     
     // Search custom recipes
@@ -450,6 +479,9 @@ function displaySearchResults(results) {
             if (result.data.source === 'usda') {
                 sourceLabel = 'USDA Database';
                 sourceIcon = '🌾 ';
+            } else if (result.data.source === 'openfoodfacts') {
+                sourceLabel = 'Open Food Facts';
+                sourceIcon = '🏷️ ';
             } else {
                 sourceLabel = 'Custom Ingredient';
                 sourceIcon = '🏠 ';
@@ -488,7 +520,12 @@ function selectFood(foodResult) {
         const protein = (nutrition.protein || 0) * 100;
         const carbs = (nutrition.carbs || 0) * 100;
         const fat = (nutrition.fat || 0) * 100;
-        const sourceLabel = food.source === 'usda' ? ' (USDA Database)' : ' (Custom)';
+        let sourceLabel = ' (Custom)';
+        if (food.source === 'usda') {
+            sourceLabel = ' (USDA Database)';
+        } else if (food.source === 'openfoodfacts') {
+            sourceLabel = ' (Open Food Facts)';
+        }
         nutritionInfo = `<p class="nutrition-info">Per 100g: ${Math.round(calories)} cal, ${Math.round(protein)}g protein, ${Math.round(carbs)}g carbs, ${Math.round(fat)}g fat${sourceLabel}</p>`;
     } else if (type === 'recipe') {
         nutritionInfo = `<p class="serving-size">Serving size: ${food.servingSize || '1 serving'}g</p>`;

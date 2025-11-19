@@ -42,6 +42,17 @@ To deploy your own version:
 
 This is a learning project focused on fundamental web development concepts. The application is built using basic web technologies to maintain simplicity and focus on core functionality.
 
+## USDA API Setup
+
+To enable ingredient search from the USDA FoodData Central database:
+
+1. Get a free API key at: https://fdc.nal.usda.gov/api-key-signup.html
+2. Open `js/config.js`
+3. Replace `apiKey: null,` with `apiKey: 'YOUR_API_KEY_HERE',`
+4. Save the file
+
+The USDA API provides access to thousands of ingredients with detailed nutrition information.
+
 ## Ingredient Import Tool
 
 - Open `ingredients.html` and choose **Import From URL** to launch the scraper.

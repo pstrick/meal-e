@@ -9,6 +9,7 @@ import config from './config.js';
  */
 export async function searchUSDAFoods(query, pageSize = 20) {
     if (!query || query.trim().length < 2) {
+        console.log('USDA search skipped: query too short');
         return [];
     }
 
@@ -24,20 +25,68 @@ export async function searchUSDAFoods(query, pageSize = 20) {
         // Add API key if provided (optional for basic use)
         if (config.usda.apiKey) {
             searchParams.append('api_key', config.usda.apiKey);
+            console.log('Using USDA API key');
+        } else {
+            console.log('No USDA API key provided (using public access)');
         }
 
         const url = `${config.usda.baseUrl}${config.usda.searchEndpoint}?${searchParams.toString()}`;
+        console.log('USDA API URL:', url);
         
-        const response = await fetch(url);
+        // Make fetch request with error handling for CORS and network issues
+        let response;
+        try {
+            response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                // Note: CORS is handled by the server, we can't control it from here
+            });
+            console.log('USDA API response status:', response.status, response.statusText);
+        } catch (fetchError) {
+            // This catches network errors, CORS errors, etc.
+            console.error('Fetch error (could be CORS or network):', fetchError);
+            throw new Error(`Network error: ${fetchError.message}. This might be a CORS issue.`);
+        }
         
         if (!response.ok) {
-            throw new Error(`USDA API error: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            console.error('USDA API error response:', errorText);
+            
+            // Handle specific error cases
+            if (response.status === 403) {
+                try {
+                    const errorData = JSON.parse(errorText);
+                    if (errorData.error && errorData.error.code === 'API_KEY_MISSING') {
+                        throw new Error('USDA API key is required. Please get a free API key at https://fdc.nal.usda.gov/api-key-signup.html and add it to js/config.js');
+                    }
+                } catch (parseError) {
+                    // If we can't parse the error, use the original error
+                }
+            }
+            
+            throw new Error(`USDA API error: ${response.status} ${response.statusText} - ${errorText}`);
         }
 
         const data = await response.json();
-        return data.foods || [];
+        console.log('USDA API response data:', {
+            totalHits: data.totalHits,
+            currentPage: data.currentPage,
+            totalPages: data.totalPages,
+            foodsCount: data.foods ? data.foods.length : 0
+        });
+        
+        const foods = data.foods || [];
+        console.log('USDA API returning', foods.length, 'foods');
+        return foods;
     } catch (error) {
         console.error('Error searching USDA foods:', error);
+        console.error('Error details:', {
+            message: error.message,
+            name: error.name,
+            stack: error.stack
+        });
         // Return empty array on error so app continues to work
         return [];
     }
@@ -81,6 +130,11 @@ export async function getUSDAFoodDetails(fdcId) {
  */
 export function extractUSDANutrition(food) {
     if (!food || !food.foodNutrients) {
+        console.warn('extractUSDANutrition: No food or foodNutrients found', { 
+            hasFood: !!food, 
+            hasFoodNutrients: !!(food && food.foodNutrients),
+            foodNutrientsCount: food?.foodNutrients?.length || 0
+        });
         return {
             calories: 0,
             protein: 0,
@@ -91,8 +145,17 @@ export function extractUSDANutrition(food) {
 
     // Helper to find nutrient by nutrient ID
     const findNutrient = (nutrientId) => {
-        const nutrient = food.foodNutrients.find(n => n.nutrientId === nutrientId || n.nutrient?.id === nutrientId);
-        return nutrient?.amount || 0;
+        const nutrient = food.foodNutrients.find(n => 
+            n.nutrientId === nutrientId || 
+            n.nutrient?.id === nutrientId ||
+            n.nutrientId === nutrientId.toString() ||
+            n.nutrient?.id === nutrientId.toString()
+        );
+        const amount = nutrient?.amount || 0;
+        if (amount > 0) {
+            console.log(`Found nutrient ${nutrientId}:`, amount);
+        }
+        return amount;
     };
 
     // USDA Nutrient IDs:
@@ -106,15 +169,21 @@ export function extractUSDANutrition(food) {
     const carbs = findNutrient(1005);
     const fat = findNutrient(1004);
 
+    console.log('Extracted USDA nutrition (per 100g):', { calories, protein, carbs, fat });
+
     // Convert to per-gram values (USDA data is typically per 100g)
     const servingSize = 100; // USDA data is per 100g
     
-    return {
+    const perGramNutrition = {
         calories: calories / servingSize,
         protein: protein / servingSize,
         carbs: carbs / servingSize,
         fat: fat / servingSize
     };
+    
+    console.log('Converted to per-gram nutrition:', perGramNutrition);
+    
+    return perGramNutrition;
 }
 
 /**
@@ -123,23 +192,65 @@ export function extractUSDANutrition(food) {
  * @returns {Object} Formatted ingredient object
  */
 export function formatUSDAFood(food) {
+    if (!food) {
+        console.warn('formatUSDAFood received null/undefined food');
+        return null;
+    }
+    
+    console.log('Formatting USDA food:', {
+        fdcId: food.fdcId,
+        description: food.description,
+        hasFoodNutrients: !!food.foodNutrients,
+        foodNutrientsCount: food.foodNutrients ? food.foodNutrients.length : 0
+    });
+    
     const nutrition = extractUSDANutrition(food);
-    const description = food.description || food.lowercaseDescription || 'Unknown food';
-    const brandOwner = food.brandOwner || food.brandName || 'USDA';
+    
+    // Validate nutrition data
+    if (!nutrition || 
+        (nutrition.calories === 0 && nutrition.protein === 0 && nutrition.carbs === 0 && nutrition.fat === 0)) {
+        console.warn('USDA food has no nutrition data:', {
+            fdcId: food.fdcId,
+            description: food.description,
+            hasFoodNutrients: !!food.foodNutrients,
+            foodNutrientsCount: food.foodNutrients?.length || 0
+        });
+        // Still return the food, but with zero nutrition (better than nothing)
+    }
+    
+    const description = food.description || food.lowercaseDescription || food.brandedFoodCategory || 'Unknown food';
+    const brandOwner = food.brandOwner || food.brandName || food.brandedFoodCategory || 'USDA';
     const dataType = food.dataType || 'Unknown';
     
-    return {
+    if (!food.fdcId) {
+        console.warn('USDA food missing fdcId:', food);
+        return null;
+    }
+    
+    const formatted = {
         id: food.fdcId,
         fdcId: food.fdcId,
         name: description,
         source: 'usda',
-        nutrition: nutrition,
+        nutrition: {
+            calories: nutrition.calories || 0,
+            protein: nutrition.protein || 0,
+            carbs: nutrition.carbs || 0,
+            fat: nutrition.fat || 0
+        },
         servingSize: 100, // USDA data is per 100g
         brandOwner: brandOwner,
         dataType: dataType,
         storeSection: '', // USDA doesn't provide store sections
         emoji: '' // USDA doesn't provide emojis
     };
+    
+    console.log('Formatted USDA food with nutrition:', {
+        name: formatted.name,
+        nutrition: formatted.nutrition,
+        fdcId: formatted.fdcId
+    });
+    return formatted;
 }
 
 /**
@@ -150,10 +261,25 @@ export function formatUSDAFood(food) {
  */
 export async function searchUSDAIngredients(query, maxResults = 10) {
     try {
+        console.log('searchUSDAIngredients called with query:', query, 'maxResults:', maxResults);
         const foods = await searchUSDAFoods(query, maxResults);
-        return foods.map(formatUSDAFood);
+        console.log('searchUSDAFoods returned', foods.length, 'foods');
+        
+        if (foods.length === 0) {
+            console.warn('No foods returned from USDA API for query:', query);
+            return [];
+        }
+        
+        const formatted = foods.map(formatUSDAFood).filter(food => food !== null);
+        console.log('Formatted', formatted.length, 'USDA ingredients (filtered out nulls)');
+        return formatted;
     } catch (error) {
         console.error('Error searching USDA ingredients:', error);
+        console.error('Error details:', {
+            message: error.message,
+            name: error.name,
+            stack: error.stack
+        });
         return [];
     }
 }

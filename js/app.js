@@ -5,6 +5,7 @@ import { initializeMealPlanner } from './mealplan.js';
 import { settings, normalizeThemeSettings } from './settings.js';
 import { showAlert } from './alert.js';
 import { searchUSDAIngredients } from './usda-api.js';
+import { searchOpenFoodFactsIngredients } from './open-food-facts-api.js';
 
 // DOM Elements
 const navLinks = document.querySelectorAll('nav a');
@@ -891,9 +892,18 @@ function initializeApp() {
                         searchResultsElement.innerHTML = '<div class="no-results">Please enter at least 2 characters to search</div>';
                         return;
                     }
-                    searchResultsElement.innerHTML = '<div class="loading">Searching...</div>';
+                    searchResultsElement.innerHTML = '<div class="loading">Searching custom ingredients and USDA database...</div>';
                     try {
+                        console.log('=== STARTING SEARCH ===');
+                        console.log('Query:', query);
                         const results = await searchAllIngredients(query);
+                        console.log('=== SEARCH COMPLETE ===');
+                        console.log('Total results:', results.length);
+                        console.log('Results breakdown:', {
+                            custom: results.filter(r => r.source === 'custom').length,
+                            usda: results.filter(r => r.source === 'usda').length,
+                            total: results.length
+                        });
                         await displaySearchResults(results);
                     } catch (error) {
                         console.error('Error searching ingredients:', error);
@@ -920,9 +930,18 @@ function initializeApp() {
                 if (searchResultsElement && query.length >= 2) {
                     clearTimeout(modalSearchTimeout);
                     modalSearchTimeout = setTimeout(async () => {
-                        searchResultsElement.innerHTML = '<div class="loading">Searching...</div>';
+                        searchResultsElement.innerHTML = '<div class="loading">Searching custom ingredients and USDA database...</div>';
                         try {
+                            console.log('=== STARTING TYPED SEARCH ===');
+                            console.log('Query:', query);
                             const results = await searchAllIngredients(query);
+                            console.log('=== TYPED SEARCH COMPLETE ===');
+                            console.log('Total results:', results.length);
+                            console.log('Results breakdown:', {
+                                custom: results.filter(r => r.source === 'custom').length,
+                                usda: results.filter(r => r.source === 'usda').length,
+                                total: results.length
+                            });
                             await displaySearchResults(results);
                         } catch (error) {
                             console.error('Error searching ingredients:', error);
@@ -1525,8 +1544,15 @@ function showInlineSearchResults(input, results) {
             cursor: pointer;
             border-bottom: 1px solid #eee;
         `;
-        const sourceLabel = result.source === 'usda' ? 'USDA Database' : 'Custom Ingredient';
-        const sourceIcon = result.source === 'usda' ? '🌾' : '🏠';
+        let sourceLabel = 'Custom Ingredient';
+        let sourceIcon = '🏠';
+        if (result.source === 'usda') {
+            sourceLabel = 'USDA Database';
+            sourceIcon = '🌾';
+        } else if (result.source === 'openfoodfacts') {
+            sourceLabel = 'Open Food Facts';
+            sourceIcon = '🏷️';
+        }
         item.innerHTML = `
             <div style="font-weight: 600;">${sourceIcon} ${result.name}</div>
             <div style="font-size: 0.8em; color: #666;">${result.brandOwner || sourceLabel}</div>
@@ -1573,9 +1599,14 @@ function selectIngredient(ingredient) {
     if (nameInput && amountInput) {
         // Generate unique ID based on source
         const emoji = (ingredient.emoji || '').trim();
-        const storageId = ingredient.source === 'usda' 
-            ? `usda-${ingredient.fdcId}` 
-            : `custom-${ingredient.id || Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        let storageId;
+        if (ingredient.source === 'usda') {
+            storageId = `usda-${ingredient.fdcId}`;
+        } else if (ingredient.source === 'openfoodfacts') {
+            storageId = `off-${ingredient.fdcId || ingredient.id}`;
+        } else {
+            storageId = `custom-${ingredient.id || Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
         
         nameInput.dataset.fdcId = storageId;
         nameInput.dataset.storeSection = ingredient.storeSection || '';
@@ -1585,17 +1616,46 @@ function selectIngredient(ingredient) {
         nameInput.readOnly = true;
         nameInput.placeholder = 'Search for ingredient';
         
-        // Store ingredient data
+        // Store ingredient data - ensure nutrition is properly structured
+        const nutrition = ingredient.nutrition || {
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0
+        };
+        
+        // Validate nutrition data exists
+        if (!nutrition || (nutrition.calories === 0 && nutrition.protein === 0 && nutrition.carbs === 0 && nutrition.fat === 0)) {
+            console.warn('Ingredient has no nutrition data:', {
+                name: ingredient.name,
+                source: ingredient.source,
+                nutrition: nutrition
+            });
+        }
+        
         const ingredientData = {
             name: ingredient.name,
             amount: parseFloat(amountInput.value) || 0,
-            nutrition: ingredient.nutrition,
+            nutrition: {
+                calories: nutrition.calories || 0,
+                protein: nutrition.protein || 0,
+                carbs: nutrition.carbs || 0,
+                fat: nutrition.fat || 0
+            },
             source: ingredient.source || 'custom',
             id: ingredient.id || ingredient.fdcId,
             fdcId: ingredient.fdcId || storageId,
             storeSection: ingredient.storeSection || '',
             emoji: emoji
         };
+        
+        console.log('Storing ingredient data:', {
+            name: ingredientData.name,
+            source: ingredientData.source,
+            nutrition: ingredientData.nutrition,
+            amount: ingredientData.amount
+        });
+        
         selectedIngredients.set(storageId, ingredientData);
         
         // Update nutrition display
@@ -1641,21 +1701,67 @@ async function searchAllIngredients(query) {
         });
     });
     
-    // Search USDA API (async, network call)
+    // Search USDA API (async, network call) - for generic foods
     try {
+        console.log('Searching USDA API for:', query);
         const usdaResults = await searchUSDAIngredients(query, 10);
+        console.log('USDA API returned', usdaResults.length, 'results');
         // Add USDA results to the array
-        results.push(...usdaResults);
+        if (usdaResults && usdaResults.length > 0) {
+            results.push(...usdaResults);
+            console.log('Added USDA results. Total results now:', results.length);
+        } else {
+            console.warn('USDA API returned empty results for query:', query);
+        }
     } catch (error) {
         console.error('Error searching USDA API:', error);
-        // Continue with custom ingredients only if USDA fails
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            query: query
+        });
+        
+        // Show user-friendly error if API key is missing
+        if (error.message && error.message.includes('API key is required')) {
+            console.warn('⚠️ USDA API key missing. Get a free key at: https://fdc.nal.usda.gov/api-key-signup.html');
+        }
+        
+        // Continue with other sources if USDA fails
     }
     
-    // Sort results: custom ingredients first, then USDA, then alphabetically
+    // Search Open Food Facts API (async, network call) - for branded products
+    try {
+        console.log('Searching Open Food Facts API for:', query);
+        const offResults = await searchOpenFoodFactsIngredients(query, 10);
+        console.log('Open Food Facts API returned', offResults.length, 'results');
+        // Add Open Food Facts results to the array
+        if (offResults && offResults.length > 0) {
+            results.push(...offResults);
+            console.log('Added Open Food Facts results. Total results now:', results.length);
+        } else {
+            console.warn('Open Food Facts API returned empty results for query:', query);
+        }
+    } catch (error) {
+        console.error('Error searching Open Food Facts API:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            query: query
+        });
+        // Continue with other sources if Open Food Facts fails
+    }
+    
+    // Sort results: custom ingredients first, then Open Food Facts (branded), then USDA (generic), then alphabetically
     results.sort((a, b) => {
         // Custom ingredients first
         if (a.source === 'custom' && b.source !== 'custom') return -1;
         if (a.source !== 'custom' && b.source === 'custom') return 1;
+        // Then Open Food Facts (branded products)
+        if (a.source === 'openfoodfacts' && b.source !== 'openfoodfacts') return -1;
+        if (a.source !== 'openfoodfacts' && b.source === 'openfoodfacts') return 1;
+        // Then USDA (generic foods)
+        if (a.source === 'usda' && b.source !== 'usda') return -1;
+        if (a.source !== 'usda' && b.source === 'usda') return 1;
         // Then alphabetically
         return a.name.localeCompare(b.name);
     });
@@ -1683,9 +1789,12 @@ async function displaySearchResults(results) {
         div.className = 'search-result-item';
         
         // Create visual indicator for ingredient source
-        const sourceConfig = ingredient.source === 'usda' 
-            ? { icon: '🌾', label: 'USDA Database' }
-            : { icon: '🏠', label: 'Custom Ingredient' };
+        let sourceConfig = { icon: '🏠', label: 'Custom Ingredient' };
+        if (ingredient.source === 'usda') {
+            sourceConfig = { icon: '🌾', label: 'USDA Database' };
+        } else if (ingredient.source === 'openfoodfacts') {
+            sourceConfig = { icon: '🏷️', label: 'Open Food Facts' };
+        }
         
         const [mainName, ...details] = ingredient.name.split(',');
         const emoji = (ingredient.emoji || '').trim();
@@ -1706,11 +1815,33 @@ async function displaySearchResults(results) {
                     return;
                 }
                 
-                // Handle ingredient (custom or USDA)
+                // Handle ingredient (custom, USDA, or Open Food Facts)
+                // Ensure nutrition is properly structured
+                const nutrition = ingredient.nutrition || {
+                    calories: 0,
+                    protein: 0,
+                    carbs: 0,
+                    fat: 0
+                };
+                
+                // Validate nutrition data exists
+                if (!nutrition || (nutrition.calories === 0 && nutrition.protein === 0 && nutrition.carbs === 0 && nutrition.fat === 0)) {
+                    console.warn('Ingredient has no nutrition data:', {
+                        name: ingredient.name,
+                        source: ingredient.source,
+                        nutrition: nutrition
+                    });
+                }
+                
                 const ingredientData = {
                     name: ingredient.name,
                     amount: parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0,
-                    nutrition: ingredient.nutrition,
+                    nutrition: {
+                        calories: nutrition.calories || 0,
+                        protein: nutrition.protein || 0,
+                        carbs: nutrition.carbs || 0,
+                        fat: nutrition.fat || 0
+                    },
                     source: ingredient.source || 'custom',
                     id: ingredient.id || ingredient.fdcId,
                     fdcId: ingredient.fdcId || `custom-${ingredient.id}`,
@@ -1718,10 +1849,22 @@ async function displaySearchResults(results) {
                     emoji: emoji
                 };
                 
+                console.log('Storing ingredient from modal:', {
+                    name: ingredientData.name,
+                    source: ingredientData.source,
+                    nutrition: ingredientData.nutrition,
+                    amount: ingredientData.amount
+                });
+                
                 // Store in selectedIngredients with appropriate ID
-                const storageId = ingredient.source === 'usda' 
-                    ? `usda-${ingredient.fdcId}` 
-                    : `custom-${ingredient.id}`;
+                let storageId;
+                if (ingredient.source === 'usda') {
+                    storageId = `usda-${ingredient.fdcId}`;
+                } else if (ingredient.source === 'openfoodfacts') {
+                    storageId = `off-${ingredient.fdcId || ingredient.id}`;
+                } else {
+                    storageId = `custom-${ingredient.id}`;
+                }
                 selectedIngredients.set(storageId, ingredientData);
                 
                 // Update the input field
@@ -1801,17 +1944,49 @@ function addIngredientInput() {
 
 function updateIngredientMacros(ingredientItem, ingredient) {
     const amount = parseFloat(ingredient.amount) || 0;
-    const macros = {
-        calories: Math.round(ingredient.nutrition.calories * amount),
-        protein: Math.round(ingredient.nutrition.protein * amount),
-        carbs: Math.round(ingredient.nutrition.carbs * amount),
-        fat: Math.round(ingredient.nutrition.fat * amount)
+    
+    // Ensure nutrition object exists and has all required fields
+    const nutrition = ingredient.nutrition || {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0
     };
+    
+    // Validate nutrition values are numbers
+    const safeNutrition = {
+        calories: Number.isFinite(nutrition.calories) ? nutrition.calories : 0,
+        protein: Number.isFinite(nutrition.protein) ? nutrition.protein : 0,
+        carbs: Number.isFinite(nutrition.carbs) ? nutrition.carbs : 0,
+        fat: Number.isFinite(nutrition.fat) ? nutrition.fat : 0
+    };
+    
+    const macros = {
+        calories: Math.round(safeNutrition.calories * amount),
+        protein: Math.round(safeNutrition.protein * amount),
+        carbs: Math.round(safeNutrition.carbs * amount),
+        fat: Math.round(safeNutrition.fat * amount)
+    };
+    
+    // Log if macros are zero but we have nutrition data
+    if (amount > 0 && macros.calories === 0 && macros.protein === 0 && macros.carbs === 0 && macros.fat === 0) {
+        console.warn('updateIngredientMacros: All macros are zero', {
+            ingredientName: ingredient.name,
+            amount: amount,
+            nutrition: safeNutrition,
+            source: ingredient.source
+        });
+    }
 
-    ingredientItem.querySelector('.calories').textContent = macros.calories;
-    ingredientItem.querySelector('.protein').textContent = macros.protein;
-    ingredientItem.querySelector('.carbs').textContent = macros.carbs;
-    ingredientItem.querySelector('.fat').textContent = macros.fat;
+    const caloriesEl = ingredientItem.querySelector('.calories');
+    const proteinEl = ingredientItem.querySelector('.protein');
+    const carbsEl = ingredientItem.querySelector('.carbs');
+    const fatEl = ingredientItem.querySelector('.fat');
+    
+    if (caloriesEl) caloriesEl.textContent = macros.calories;
+    if (proteinEl) proteinEl.textContent = macros.protein;
+    if (carbsEl) carbsEl.textContent = macros.carbs;
+    if (fatEl) fatEl.textContent = macros.fat;
 }
 
 // Initialize modal close handlers when DOM is ready
