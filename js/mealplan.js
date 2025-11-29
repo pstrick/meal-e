@@ -1328,7 +1328,8 @@ async function calculateDayNutrition(date) {
         calories: 0,
         protein: 0,
         carbs: 0,
-        fat: 0
+        fat: 0,
+        cost: 0
     };
 
     const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
@@ -1347,6 +1348,10 @@ async function calculateDayNutrition(date) {
                 nutrition.protein += mealNutrition.protein * servings;
                 nutrition.carbs += mealNutrition.carbs * servings;
                 nutrition.fat += mealNutrition.fat * servings;
+                // Add cost for custom meals
+                if (itemData.cost) {
+                    nutrition.cost += itemData.cost * servings;
+                }
             } else if (itemData.type === 'meal') {
                 const recipe = window.recipes.find(r => r.id === itemData.id);
                 if (recipe && recipe.nutrition) {
@@ -1363,11 +1368,39 @@ async function calculateDayNutrition(date) {
                     nutrition.protein += nutritionPerGram.protein * itemData.amount;
                     nutrition.carbs += nutritionPerGram.carbs * itemData.amount;
                     nutrition.fat += nutritionPerGram.fat * itemData.amount;
+                    
+                    // Calculate cost for recipe
+                    if (recipe.ingredients && recipe.ingredients.length > 0) {
+                        // Calculate total recipe cost
+                        let totalRecipeCost = 0;
+                        let totalRecipeWeight = 0;
+                        recipe.ingredients.forEach(ing => {
+                            if (ing.totalPrice) {
+                                totalRecipeCost += ing.totalPrice;
+                            } else if (ing.pricePerGram && ing.amount) {
+                                totalRecipeCost += ing.pricePerGram * ing.amount;
+                            }
+                            if (ing.amount) {
+                                totalRecipeWeight += ing.amount;
+                            }
+                        });
+                        
+                        // Calculate cost per gram and apply to amount used
+                        if (totalRecipeWeight > 0 && totalRecipeCost > 0) {
+                            const costPerGram = totalRecipeCost / totalRecipeWeight;
+                            nutrition.cost += costPerGram * itemData.amount;
+                        }
+                    } else if (itemData.cost) {
+                        // Fallback to stored cost if available
+                        nutrition.cost += itemData.cost;
+                    }
                 }
             } else if (itemData.type === 'ingredient') {
                 // For ingredients, we need to get nutrition data
                 try {
                     let ingredientNutrition;
+                    let ingredientCost = 0;
+                    
                     if (itemData.id.startsWith('custom-')) {
                         // My ingredient
                         const customIngredients = getMyIngredients();
@@ -1381,10 +1414,20 @@ async function calculateDayNutrition(date) {
                                 carbs: customIngredient.nutrition.carbs / servingSize,
                                 fat: customIngredient.nutrition.fat / servingSize
                             };
+                            // Calculate cost for custom ingredient
+                            if (customIngredient.pricePerGram) {
+                                ingredientCost = customIngredient.pricePerGram * itemData.amount;
+                            }
                         }
                     } else {
                         // USDA ingredient - use stored nutrition if available
                         ingredientNutrition = itemData.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+                        // Calculate cost for ingredient
+                        if (itemData.pricePerGram) {
+                            ingredientCost = itemData.pricePerGram * itemData.amount;
+                        } else if (itemData.cost) {
+                            ingredientCost = itemData.cost;
+                        }
                     }
                     
                     if (ingredientNutrition) {
@@ -1393,6 +1436,7 @@ async function calculateDayNutrition(date) {
                         nutrition.carbs += ingredientNutrition.carbs * itemData.amount;
                         nutrition.fat += ingredientNutrition.fat * itemData.amount;
                     }
+                    nutrition.cost += ingredientCost;
                 } catch (error) {
                     console.error('Error calculating ingredient nutrition:', error);
                 }
@@ -1834,17 +1878,19 @@ async function updateMealPlanDisplay() {
         const calorieProgressPercentage = Math.min(100, (caloriesConsumed / dailyGoals.calories) * 100);
         const isCalorieOverGoal = caloriesConsumed > dailyGoals.calories;
         
-        const proteinConsumed = Math.round(nutrition.protein);
+        const proteinConsumed = Math.round(nutrition.protein * 10) / 10;
         const proteinProgressPercentage = Math.min(100, (proteinConsumed / dailyGoals.protein) * 100);
         const isProteinOverGoal = proteinConsumed > dailyGoals.protein;
         
-        const carbsConsumed = Math.round(nutrition.carbs);
+        const carbsConsumed = Math.round(nutrition.carbs * 10) / 10;
         const carbsProgressPercentage = Math.min(100, (carbsConsumed / dailyGoals.carbs) * 100);
         const isCarbsOverGoal = carbsConsumed > dailyGoals.carbs;
         
-        const fatConsumed = Math.round(nutrition.fat);
+        const fatConsumed = Math.round(nutrition.fat * 10) / 10;
         const fatProgressPercentage = Math.min(100, (fatConsumed / dailyGoals.fat) * 100);
         const isFatOverGoal = fatConsumed > dailyGoals.fat;
+        
+        const dayCost = Math.round(nutrition.cost * 100) / 100;
         
         // Format numbers with commas
         const formatNumber = (num) => num.toLocaleString();
@@ -1864,45 +1910,37 @@ async function updateMealPlanDisplay() {
                     <div class="calorie-remaining">${formatNumber(caloriesRemaining)} remaining</div>
                 </div>
                 <div class="macro-progress-container">
-                    <div class="macro-progress-item">
-                        <div class="circular-progress" data-progress="${proteinProgressPercentage}" data-over-goal="${isProteinOverGoal}">
-                            <svg class="circular-progress-svg" viewBox="0 0 36 36">
-                                <path class="circular-progress-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                                <path class="circular-progress-fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                            </svg>
-                            <div class="circular-progress-text">
-                                <span class="macro-value">${formatNumber(proteinConsumed)}</span>
-                                <span class="macro-unit">g</span>
-                            </div>
+                    <div class="macro-progress-item-small">
+                        <div class="macro-progress-header">
+                            <span class="macro-label-small">Protein</span>
+                            <span class="macro-value-small">${proteinConsumed.toFixed(1)} / ${dailyGoals.protein}g</span>
                         </div>
-                        <div class="macro-label">Protein</div>
-                    </div>
-                    <div class="macro-progress-item">
-                        <div class="circular-progress" data-progress="${carbsProgressPercentage}" data-over-goal="${isCarbsOverGoal}">
-                            <svg class="circular-progress-svg" viewBox="0 0 36 36">
-                                <path class="circular-progress-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                                <path class="circular-progress-fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                            </svg>
-                            <div class="circular-progress-text">
-                                <span class="macro-value">${formatNumber(carbsConsumed)}</span>
-                                <span class="macro-unit">g</span>
-                            </div>
+                        <div class="macro-progress-bar-small">
+                            <div class="macro-progress-fill-small ${isProteinOverGoal ? 'over-goal' : ''}" style="width: ${proteinProgressPercentage}%"></div>
                         </div>
-                        <div class="macro-label">Carbs</div>
                     </div>
-                    <div class="macro-progress-item">
-                        <div class="circular-progress" data-progress="${fatProgressPercentage}" data-over-goal="${isFatOverGoal}">
-                            <svg class="circular-progress-svg" viewBox="0 0 36 36">
-                                <path class="circular-progress-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                                <path class="circular-progress-fill" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                            </svg>
-                            <div class="circular-progress-text">
-                                <span class="macro-value">${formatNumber(fatConsumed)}</span>
-                                <span class="macro-unit">g</span>
-                            </div>
+                    <div class="macro-progress-item-small">
+                        <div class="macro-progress-header">
+                            <span class="macro-label-small">Carbs</span>
+                            <span class="macro-value-small">${carbsConsumed.toFixed(1)} / ${dailyGoals.carbs}g</span>
                         </div>
-                        <div class="macro-label">Fat</div>
+                        <div class="macro-progress-bar-small">
+                            <div class="macro-progress-fill-small ${isCarbsOverGoal ? 'over-goal' : ''}" style="width: ${carbsProgressPercentage}%"></div>
+                        </div>
                     </div>
+                    <div class="macro-progress-item-small">
+                        <div class="macro-progress-header">
+                            <span class="macro-label-small">Fat</span>
+                            <span class="macro-value-small">${fatConsumed.toFixed(1)} / ${dailyGoals.fat}g</span>
+                        </div>
+                        <div class="macro-progress-bar-small">
+                            <div class="macro-progress-fill-small ${isFatOverGoal ? 'over-goal' : ''}" style="width: ${fatProgressPercentage}%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="daily-cost">
+                    <span class="cost-label">Total Cost:</span>
+                    <span class="cost-value">$${dayCost.toFixed(2)}</span>
                 </div>
             </div>
         `;
@@ -1910,24 +1948,6 @@ async function updateMealPlanDisplay() {
     });
     
     mealPlanGrid.appendChild(dailyNutritionRow);
-    
-    // Animate circular progress bars
-    setTimeout(() => {
-        document.querySelectorAll('.circular-progress').forEach(progress => {
-            const progressPercentage = parseFloat(progress.dataset.progress);
-            const isOverGoal = progress.dataset.overGoal === 'true';
-            const fillPath = progress.querySelector('.circular-progress-fill');
-            
-            // Calculate stroke-dasharray for the progress
-            const circumference = 2 * Math.PI * 15.9155; // radius = 15.9155
-            const strokeDasharray = circumference;
-            const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
-            
-            fillPath.style.strokeDasharray = strokeDasharray;
-            fillPath.style.strokeDashoffset = strokeDashoffset;
-            fillPath.classList.toggle('over-goal', isOverGoal);
-        });
-    }, 100);
     
     } catch (error) {
         console.error('Error updating meal plan display:', error);
@@ -3106,39 +3126,69 @@ function printMealPlan(selectedRecipeIds = []) {
                     margin-top: 4px;
                 }
                 
-                .macro-progress-item {
+                .macro-progress-item-small {
                     display: flex;
-                    flex-direction: row;
-                    align-items: center;
-                    justify-content: space-between;
-                    min-width: 0;
+                    flex-direction: column;
+                    gap: 2px;
                     font-size: 7.4pt;
-                    color: #4b5563;
+                }
+                
+                .macro-progress-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
                     gap: 6px;
                 }
                 
-                .circular-progress {
-                    display: inline-flex;
-                    align-items: baseline;
-                    justify-content: center;
-                    gap: 0.12rem;
-                    font-size: 0.78rem;
-                    font-weight: 700;
-                    color: #111827;
-                }
-                
-                .circular-progress-svg {
-                    display: none;
-                }
-                
-                .macro-label {
+                .macro-label-small {
                     font-size: 0.62rem;
                     color: #0b3d25;
                     font-weight: 600;
                     letter-spacing: 0.03em;
-                    margin-top: 0;
                     text-transform: uppercase;
                     white-space: nowrap;
+                }
+                
+                .macro-value-small {
+                    font-size: 0.62rem;
+                    font-weight: 600;
+                    color: #111827;
+                    white-space: nowrap;
+                }
+                
+                .macro-progress-bar-small {
+                    height: 4px;
+                    border-radius: 2px;
+                    background: #e5e7eb;
+                }
+                
+                .macro-progress-fill-small {
+                    height: 100%;
+                    border-radius: 2px;
+                }
+                
+                .daily-cost {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding-top: 4px;
+                    margin-top: 4px;
+                    border-top: 1px solid #e5e7eb;
+                    font-size: 7.4pt;
+                }
+                
+                .cost-label {
+                    font-size: 0.62rem;
+                    color: #4b5563;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.03em;
+                }
+                
+                .cost-value {
+                    font-size: 0.78rem;
+                    font-weight: 700;
+                    color: #111827;
                 }
                 
                 .print-recipes {
