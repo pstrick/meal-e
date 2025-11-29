@@ -391,9 +391,11 @@ function applyIconSelection(selectedItem) {
     if (!emojiInput) return;
     const normalizedEmoji = normalizeIconValue(selectedItem?.emoji);
     selectedIconValue = selectedItem?.value || '';
+    // Store the icon value in the input's dataset so it persists even if user types
     emojiInput.value = normalizedEmoji;
     emojiInput.dataset.iconifyValue = selectedIconValue;
     emojiInput.dataset.iconifyLabel = selectedItem?.label || '';
+    console.log('Icon selected:', { icon: selectedIconValue, emoji: normalizedEmoji, label: selectedItem?.label });
     closeEmojiPicker();
     emojiInput.focus();
 }
@@ -580,7 +582,19 @@ function saveCustomIngredient(event) {
         
         const storeSectionInput = document.getElementById('store-section');
         const normalizedEmoji = emojiInput ? normalizeIconValue(emojiInput.value) : '';
+        // Prioritize icon from dataset (persists even if user types), then selectedIconValue
+        // The icon value should have the 'iconify:' prefix if it's an icon
+        const iconValue = emojiInput?.dataset.iconifyValue || selectedIconValue || '';
         const iconLabel = emojiInput?.dataset.iconifyLabel || '';
+        
+        console.log('Saving ingredient with icon:', { 
+            iconValue, 
+            iconLabel, 
+            emoji: normalizedEmoji,
+            hasIconifyValue: !!emojiInput?.dataset.iconifyValue,
+            selectedIconValue 
+        });
+        
         const ingredient = {
             id: editingIngredientId || Date.now().toString(),
             name: document.getElementById('ingredient-name').value,
@@ -595,8 +609,8 @@ function saveCustomIngredient(event) {
             },
             isCustom: true,
             storeSection: storeSectionInput ? storeSectionInput.value.trim() : '',
-            emoji: normalizedEmoji,
-            icon: selectedIconValue,
+            emoji: normalizedEmoji, // Fallback emoji
+            icon: iconValue, // Primary: icon value with iconify: prefix (e.g., "iconify:mdi:food-apple")
             iconLabel: iconLabel
         };
         
