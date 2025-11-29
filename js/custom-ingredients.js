@@ -1142,7 +1142,7 @@ async function handleAPISearch() {
     
     if (!apiSearchResults) return;
     
-    apiSearchResults.innerHTML = '<div style="text-align: center; padding: 10px;"><i class="fas fa-spinner fa-spin"></i> Searching APIs...</div>';
+    apiSearchResults.innerHTML = '<div class="loading-message"><i class="fas fa-spinner fa-spin"></i> Searching APIs...</div>';
     
     try {
         // Search both APIs in parallel
@@ -1166,7 +1166,7 @@ async function handleAPISearch() {
         displayAPISearchResults(results);
     } catch (error) {
         console.error('Error searching APIs:', error);
-        apiSearchResults.innerHTML = '<p style="color: #e74c3c;">Error searching APIs. Please try again.</p>';
+        apiSearchResults.innerHTML = '<p style="color: var(--color-danger);">Error searching APIs. Please try again.</p>';
     }
 }
 
@@ -1174,7 +1174,7 @@ function displayAPISearchResults(results) {
     if (!apiSearchResults) return;
     
     if (results.length === 0) {
-        apiSearchResults.innerHTML = '<p style="color: #999; font-size: 0.9em;">No results found. Try a different search term.</p>';
+        apiSearchResults.innerHTML = '<p>No results found. Try a different search term.</p>';
         return;
     }
     
@@ -1183,7 +1183,6 @@ function displayAPISearchResults(results) {
     results.forEach(result => {
         const div = document.createElement('div');
         div.className = 'api-search-result-item';
-        div.style.cssText = 'padding: 10px; margin: 5px 0; background: white; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; transition: background 0.2s;';
         
         const sourceIcon = result.source === 'usda' ? '🌾' : '🏷️';
         const sourceLabel = result.source === 'usda' ? 'USDA' : 'Open Food Facts';
@@ -1200,8 +1199,8 @@ function displayAPISearchResults(results) {
             <div style="display: flex; justify-content: space-between; align-items: start;">
                 <div style="flex: 1;">
                     <strong>${result.name}</strong>
-                    <p style="color: #666; font-size: 0.9em; margin: 5px 0;">${sourceIcon} ${sourceLabel}</p>
-                    <p style="color: #666; font-size: 0.85em; margin: 5px 0;">
+                    <p>${sourceIcon} ${sourceLabel}</p>
+                    <p>
                         Per ${servingSize}g: ${Math.round(caloriesPerServing)} cal, 
                         ${Math.round(proteinPerServing)}g protein, 
                         ${Math.round(carbsPerServing)}g carbs, 
@@ -1210,13 +1209,6 @@ function displayAPISearchResults(results) {
                 </div>
             </div>
         `;
-        
-        div.addEventListener('mouseenter', () => {
-            div.style.background = '#f0f0f0';
-        });
-        div.addEventListener('mouseleave', () => {
-            div.style.background = 'white';
-        });
         
         div.addEventListener('click', () => {
             populateFormFromAPIResult(result);

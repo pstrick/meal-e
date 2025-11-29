@@ -920,6 +920,21 @@ tbody tr:hover {
     font-weight: 700;
 }
 
+/* Ingredient Modal - Fit within viewport */
+#ingredient-modal .modal-content {
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+#ingredient-modal .modal-content form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-height: 0;
+}
+
 /* Recipe Modal - Fit within viewport */
 #recipe-modal .modal-content {
     max-height: calc(100vh - 4rem);
@@ -2038,6 +2053,98 @@ tbody tr:hover {
     background: var(--color-surface-alt);
     color: var(--color-text-muted);
     border: 1px solid var(--color-border);
+}
+
+/* API Search Section ------------------------------------------------------ */
+
+.api-search-section {
+    margin-bottom: var(--space-5);
+    padding: var(--space-4);
+    background: var(--color-surface-alt);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    transition: background-color var(--transition-base), border-color var(--transition-base);
+}
+
+.api-search-section h3 {
+    margin-top: 0;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.api-search-section .search-container {
+    display: flex;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.api-search-section .search-container input {
+    flex: 1;
+    padding: var(--space-2);
+}
+
+.api-search-section .search-container .btn {
+    padding: var(--space-2) var(--space-5);
+}
+
+.api-search-results {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+html.dark-mode .api-search-results {
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.api-search-results p {
+    color: var(--color-text-muted);
+    font-size: 0.9em;
+    padding: var(--space-3);
+    margin: 0;
+    text-align: center;
+}
+
+.api-search-results .loading-message {
+    text-align: center;
+    padding: var(--space-3);
+    color: var(--color-text-muted);
+}
+
+.api-search-result-item {
+    padding: var(--space-3);
+    margin: var(--space-1) 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background-color var(--transition-base), border-color var(--transition-base);
+}
+
+.api-search-result-item:hover {
+    background: var(--color-surface-alt);
+    border-color: var(--color-border-strong);
+}
+
+.api-search-result-item strong {
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.api-search-result-item p {
+    color: var(--color-text-muted);
+    font-size: 0.9em;
+    margin: var(--space-1) 0;
+    text-align: left;
+}
+
+.api-search-result-item p:last-child {
+    font-size: 0.85em;
 }
 
 /* Shopping Lists --------------------------------------------------------- */
