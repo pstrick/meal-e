@@ -5,7 +5,6 @@ import {
     scanIconifyElements,
     normalizeIconValue,
     renderIcon,
-    renderIconAsImage,
     iconifyToDataUrl,
     isDataUrl
 } from './icon-utils.js';
@@ -392,7 +391,6 @@ function toggleEmojiPicker(anchor = emojiPickerToggle || emojiInput) {
 
 async function applyIconSelection(selectedItem) {
     if (!emojiInput) return;
-    const normalizedEmoji = normalizeIconValue(selectedItem?.emoji);
     const iconifyValue = selectedItem?.value || '';
     
     // Convert Iconify icon to image data URL
@@ -414,13 +412,13 @@ async function applyIconSelection(selectedItem) {
     // Store the icon value (prefer data URL, fallback to iconify reference)
     selectedIconValue = iconDataUrl || iconifyValue || '';
     
-    // Store the icon value in the input's dataset so it persists even if user types
-    emojiInput.value = normalizedEmoji;
+    // Store the icon value in the input's dataset so it persists even if user types.
+    // Do not display emoji text in the field – we rely solely on the icon value.
+    emojiInput.value = '';
     emojiInput.dataset.iconifyValue = selectedIconValue;
     emojiInput.dataset.iconifyLabel = selectedItem?.label || '';
     console.log('Icon selected:', { 
         icon: selectedIconValue, 
-        emoji: normalizedEmoji, 
         label: selectedItem?.label,
         isDataUrl: isDataUrl(selectedIconValue)
     });
@@ -488,14 +486,13 @@ function loadCustomIngredients() {
         if (savedIngredients) {
             customIngredients = JSON.parse(savedIngredients).map(ingredient => {
                 const iconValue = typeof ingredient.icon === 'string' ? ingredient.icon.trim() : '';
-                const iconDef = findIconDefinition(iconValue);
-                const fallbackEmoji = iconDef?.emoji || ingredient.emoji;
                 return {
                 ...ingredient,
                 storeSection: ingredient.storeSection || '',
-                    emoji: normalizeIconValue(fallbackEmoji),
+                    // Stop using emoji for custom ingredients; rely entirely on icon
+                    emoji: '',
                     icon: iconValue,
-                    iconLabel: ingredient.iconLabel || iconDef?.label || ''
+                    iconLabel: ingredient.iconLabel || ''
                 };
             });
             console.log('Loaded my ingredients:', customIngredients.length);
@@ -550,14 +547,13 @@ function openIngredientModal(ingredient = null) {
             storeSectionInput.value = ingredient.storeSection || '';
         }
         if (emojiInput) {
-            const normalized = normalizeIconValue(ingredient.emoji);
             const iconValue = typeof ingredient.icon === 'string' ? ingredient.icon.trim() : '';
-            const iconDef = findIconDefinition(iconValue);
             selectedIconValue = iconValue;
-            emojiInput.value = normalized;
+            // Do not display emoji text; just keep icon metadata for the picker
+            emojiInput.value = '';
             if (iconValue) {
                 emojiInput.dataset.iconifyValue = iconValue;
-                emojiInput.dataset.iconifyLabel = iconDef?.label || ingredient.iconLabel || '';
+                emojiInput.dataset.iconifyLabel = ingredient.iconLabel || '';
             } else {
                 delete emojiInput.dataset.iconifyValue;
                 delete emojiInput.dataset.iconifyLabel;
@@ -609,7 +605,6 @@ async function saveCustomIngredient(event) {
         console.log('Saving custom ingredient...');
         
         const storeSectionInput = document.getElementById('store-section');
-        const normalizedEmoji = emojiInput ? normalizeIconValue(emojiInput.value) : '';
         // Prioritize icon from dataset (persists even if user types), then selectedIconValue
         let iconValue = emojiInput?.dataset.iconifyValue || selectedIconValue || '';
         const iconLabel = emojiInput?.dataset.iconifyLabel || '';
@@ -630,7 +625,6 @@ async function saveCustomIngredient(event) {
         console.log('Saving ingredient with icon:', { 
             iconValue: iconValue ? (isDataUrl(iconValue) ? 'data URL (length: ' + iconValue.length + ')' : iconValue) : 'none',
             iconLabel, 
-            emoji: normalizedEmoji,
             isDataUrl: isDataUrl(iconValue)
         });
         
@@ -648,7 +642,8 @@ async function saveCustomIngredient(event) {
             },
             isCustom: true,
             storeSection: storeSectionInput ? storeSectionInput.value.trim() : '',
-            emoji: normalizedEmoji, // Fallback emoji
+            // Do not store emoji anymore; rely entirely on icon
+            emoji: '',
             icon: iconValue, // Primary: icon as data URL (e.g., "data:image/svg+xml;base64,...")
             iconLabel: iconLabel
         };
@@ -751,8 +746,8 @@ function renderIngredientsList(filteredIngredients = null) {
         
         ingredients.forEach(ingredient => {
             const row = document.createElement('tr');
-            const iconSource = ingredient.icon || ingredient.emoji;
-            // renderIcon now handles data URLs, iconify references, and emojis
+            const iconSource = ingredient.icon;
+            // renderIcon now handles data URLs and iconify references
             const iconMarkup = iconSource ? renderIcon(iconSource, { className: 'ingredient-icon', size: '24px' }) : '';
             const nameHTML = iconMarkup
                 ? `${iconMarkup}<span class="ingredient-name-text">${ingredient.name}</span>`

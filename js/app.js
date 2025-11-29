@@ -4,6 +4,7 @@ import './mealplan.js';
 import { initializeMealPlanner } from './mealplan.js';
 import { settings, normalizeThemeSettings } from './settings.js';
 import { showAlert } from './alert.js';
+import { renderIcon } from './icon-utils.js';
 
 // DOM Elements
 const navLinks = document.querySelectorAll('nav a');
@@ -1888,7 +1889,6 @@ function selectIngredient(ingredient) {
     
     if (nameInput && amountInput) {
         // Generate unique ID based on source
-        const emoji = (ingredient.emoji || '').trim();
         let storageId;
         if (ingredient.source === 'usda') {
             storageId = `usda-${ingredient.fdcId}`;
@@ -1900,9 +1900,9 @@ function selectIngredient(ingredient) {
         
         nameInput.dataset.fdcId = storageId;
         nameInput.dataset.storeSection = ingredient.storeSection || '';
-        nameInput.dataset.emoji = emoji;
-        const displayName = emoji ? `${emoji} ${ingredient.name}` : ingredient.name;
-        nameInput.value = displayName;
+        // Stop storing emoji on the input; just use the ingredient name
+        nameInput.dataset.emoji = '';
+        nameInput.value = ingredient.name;
         nameInput.readOnly = true;
         nameInput.placeholder = 'Click to search for ingredient';
         // Ensure tabindex is set so field is focusable
@@ -2111,7 +2111,8 @@ function selectIngredient(ingredient) {
                     nutrition: nutritionPerServing,
                     isCustom: false, // Mark as API-sourced but editable
                     storeSection: ingredient.storeSection || '',
-                    emoji: ingredient.emoji || '',
+                    // Do not persist emoji; prefer icon/image
+                    emoji: '',
                     icon: ingredient.icon || '',
                     iconLabel: ingredient.iconLabel || '',
                     pricePerGram: ingredient.pricePerGram || null,
@@ -2355,7 +2356,7 @@ async function searchAllIngredients(query) {
     customMatches.forEach(ingredient => {
         // Convert nutrition from total serving size to per-gram values
         const servingSize = ingredient.servingSize || 100; // Default to 100g if not specified
-        const emoji = (ingredient.emoji || '').trim();
+        const iconHtml = ingredient.icon ? renderIcon(ingredient.icon, { className: 'ingredient-icon', size: '20px' }) : '';
         
         // Calculate pricePer100g from pricePerGram if available
         let pricePer100g = null;
@@ -2418,7 +2419,7 @@ async function displaySearchResults(results) {
         }
         
         const [mainName, ...details] = ingredient.name.split(',');
-        const emoji = (ingredient.emoji || '').trim();
+        const iconHtml = ingredient.icon ? renderIcon(ingredient.icon, { className: 'ingredient-icon', size: '20px' }) : '';
         
         // Format price information
         let priceInfo = '';
@@ -2435,7 +2436,7 @@ async function displaySearchResults(results) {
                 <span class="source-indicator ${ingredient.source}">
                     ${sourceConfig.icon} ${sourceConfig.label}
                 </span>
-                <h4>${emoji ? `<span class="ingredient-emoji">${emoji}</span> ` : ''}${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
+                <h4>${iconHtml ? `${iconHtml} ` : ''}${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
             </div>
             <p>${ingredient.brandOwner || ''}</p>
             <p style="color: var(--color-text-muted); font-size: 0.9em;">${priceInfo}</p>
@@ -2588,7 +2589,8 @@ async function displaySearchResults(results) {
                             nutrition: nutritionPerServing,
                             isCustom: false, // Mark as API-sourced but editable
                             storeSection: ingredient.storeSection || '',
-                            emoji: ingredient.emoji || '',
+                            // Do not persist emoji; prefer icon/image
+                            emoji: '',
                             icon: ingredient.icon || '',
                             iconLabel: ingredient.iconLabel || '',
                             pricePerGram: ingredient.pricePerGram || null,

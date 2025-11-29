@@ -222,14 +222,15 @@
                 </div>
                 
                 <div class="form-group emoji-form-group">
-                    <label for="ingredient-emoji">Emoji (Optional)</label>
+                    <label for="ingredient-emoji">Icon</label>
                     <div class="emoji-input-wrapper">
-                        <input type="text" id="ingredient-emoji" placeholder="e.g., 🥦" maxlength="4" autocomplete="off">
-                        <button type="button" class="btn btn-ghost emoji-picker-toggle" id="emoji-picker-toggle" aria-label="Open emoji picker">
-                            <span class="emoji-toggle-icon">😊</span>
+                        <!-- Backing field for icon picker; not user-editable -->
+                        <input type="text" id="ingredient-emoji" placeholder="Choose an icon" maxlength="0" autocomplete="off" readonly>
+                        <button type="button" class="btn btn-ghost emoji-picker-toggle" id="emoji-picker-toggle" aria-label="Open icon picker">
+                            <span class="emoji-toggle-icon">🎨</span>
                         </button>
                         <div id="emoji-picker-panel" class="emoji-picker-panel" hidden>
-                            <!-- Emoji picker content is generated dynamically -->
+                            <!-- Icon picker content is generated dynamically -->
                         </div>
                     </div>
                 </div>
