@@ -4,7 +4,10 @@ import {
     ensureIconify,
     scanIconifyElements,
     normalizeIconValue,
-    renderIcon
+    renderIcon,
+    renderIconAsImage,
+    iconifyToDataUrl,
+    isDataUrl
 } from './icon-utils.js';
 import { searchUSDAIngredients } from './usda-api.js';
 import { searchOpenFoodFactsIngredients } from './open-food-facts-api.js';
@@ -350,8 +353,8 @@ function renderEmojiResults(term) {
         button.innerHTML = `<span class="iconify" data-icon="${item.icon}" aria-hidden="true"></span>`;
         button.title = item.label;
         button.dataset.iconify = item.value;
-        button.addEventListener('click', () => {
-            applyIconSelection(item);
+        button.addEventListener('click', async () => {
+            await applyIconSelection(item);
         });
         grid.appendChild(button);
     });
@@ -387,15 +390,40 @@ function toggleEmojiPicker(anchor = emojiPickerToggle || emojiInput) {
     }
 }
 
-function applyIconSelection(selectedItem) {
+async function applyIconSelection(selectedItem) {
     if (!emojiInput) return;
     const normalizedEmoji = normalizeIconValue(selectedItem?.emoji);
-    selectedIconValue = selectedItem?.value || '';
+    const iconifyValue = selectedItem?.value || '';
+    
+    // Convert Iconify icon to image data URL
+    let iconDataUrl = null;
+    if (iconifyValue && iconifyValue.startsWith('iconify:')) {
+        const iconName = iconifyValue.slice('iconify:'.length);
+        try {
+            iconDataUrl = await iconifyToDataUrl(iconName);
+            if (iconDataUrl) {
+                console.log('Icon converted to data URL:', iconName);
+            } else {
+                console.warn('Failed to convert icon to data URL, keeping iconify reference');
+            }
+        } catch (error) {
+            console.error('Error converting icon to data URL:', error);
+        }
+    }
+    
+    // Store the icon value (prefer data URL, fallback to iconify reference)
+    selectedIconValue = iconDataUrl || iconifyValue || '';
+    
     // Store the icon value in the input's dataset so it persists even if user types
     emojiInput.value = normalizedEmoji;
     emojiInput.dataset.iconifyValue = selectedIconValue;
     emojiInput.dataset.iconifyLabel = selectedItem?.label || '';
-    console.log('Icon selected:', { icon: selectedIconValue, emoji: normalizedEmoji, label: selectedItem?.label });
+    console.log('Icon selected:', { 
+        icon: selectedIconValue, 
+        emoji: normalizedEmoji, 
+        label: selectedItem?.label,
+        isDataUrl: isDataUrl(selectedIconValue)
+    });
     closeEmojiPicker();
     emojiInput.focus();
 }
@@ -575,7 +603,7 @@ function closeIngredientModal() {
 }
 
 // Add or update custom ingredient
-function saveCustomIngredient(event) {
+async function saveCustomIngredient(event) {
     try {
         event.preventDefault();
         console.log('Saving custom ingredient...');
@@ -583,16 +611,27 @@ function saveCustomIngredient(event) {
         const storeSectionInput = document.getElementById('store-section');
         const normalizedEmoji = emojiInput ? normalizeIconValue(emojiInput.value) : '';
         // Prioritize icon from dataset (persists even if user types), then selectedIconValue
-        // The icon value should have the 'iconify:' prefix if it's an icon
-        const iconValue = emojiInput?.dataset.iconifyValue || selectedIconValue || '';
+        let iconValue = emojiInput?.dataset.iconifyValue || selectedIconValue || '';
         const iconLabel = emojiInput?.dataset.iconifyLabel || '';
         
+        // If icon is an iconify reference (not already a data URL), convert it to data URL
+        if (iconValue && iconValue.startsWith('iconify:') && !isDataUrl(iconValue)) {
+            const iconName = iconValue.slice('iconify:'.length);
+            console.log('Converting iconify reference to data URL:', iconName);
+            const dataUrl = await iconifyToDataUrl(iconName);
+            if (dataUrl) {
+                iconValue = dataUrl;
+                console.log('Icon converted to data URL');
+            } else {
+                console.warn('Failed to convert icon to data URL, keeping iconify reference');
+            }
+        }
+        
         console.log('Saving ingredient with icon:', { 
-            iconValue, 
+            iconValue: iconValue ? (isDataUrl(iconValue) ? 'data URL (length: ' + iconValue.length + ')' : iconValue) : 'none',
             iconLabel, 
             emoji: normalizedEmoji,
-            hasIconifyValue: !!emojiInput?.dataset.iconifyValue,
-            selectedIconValue 
+            isDataUrl: isDataUrl(iconValue)
         });
         
         const ingredient = {
@@ -610,7 +649,7 @@ function saveCustomIngredient(event) {
             isCustom: true,
             storeSection: storeSectionInput ? storeSectionInput.value.trim() : '',
             emoji: normalizedEmoji, // Fallback emoji
-            icon: iconValue, // Primary: icon value with iconify: prefix (e.g., "iconify:mdi:food-apple")
+            icon: iconValue, // Primary: icon as data URL (e.g., "data:image/svg+xml;base64,...")
             iconLabel: iconLabel
         };
         
@@ -670,7 +709,8 @@ function renderIngredientsList(filteredIngredients = null) {
         ingredients.forEach(ingredient => {
             const row = document.createElement('tr');
             const iconSource = ingredient.icon || ingredient.emoji;
-            const iconMarkup = iconSource ? renderIcon(iconSource, { className: 'ingredient-icon' }) : '';
+            // renderIcon now handles data URLs, iconify references, and emojis
+            const iconMarkup = iconSource ? renderIcon(iconSource, { className: 'ingredient-icon', size: '24px' }) : '';
             const nameHTML = iconMarkup
                 ? `${iconMarkup}<span class="ingredient-name-text">${ingredient.name}</span>`
                 : `<span class="ingredient-name-text">${ingredient.name}</span>`;

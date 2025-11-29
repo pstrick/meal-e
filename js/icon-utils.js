@@ -99,14 +99,20 @@ export function normalizeIconValue(value) {
 }
 
 export function renderIcon(value, options = {}) {
-    const { className = 'ingredient-icon', fallback = '' } = options;
+    const { className = 'ingredient-icon', fallback = '', size = '24px' } = options;
     if (!value) {
         return fallback;
     }
+    // If it's a data URL, render as image
+    if (isDataUrl(value)) {
+        return `<img src="${value}" class="${className}" style="width: ${size}; height: ${size}; object-fit: contain;" alt="" aria-hidden="true">`;
+    }
+    // If it's an Iconify icon, render with Iconify
     if (isIconifyIcon(value)) {
         const iconName = toIconifyName(value);
         return `<span class="${className} iconify" data-icon="${iconName}" aria-hidden="true"></span>`;
     }
+    // Otherwise, treat as emoji/text
     return `<span class="${className}" aria-hidden="true">${value}</span>`;
 }
 
@@ -137,6 +143,89 @@ export function mergeIconLists(...lists) {
         });
     });
     return result;
+}
+
+/**
+ * Convert an Iconify icon to an SVG data URL
+ * @param {string} iconName - Icon name (e.g., "mdi:food-apple")
+ * @returns {Promise<string|null>} Data URL of the SVG icon
+ */
+export async function iconifyToDataUrl(iconName) {
+    if (!iconName || typeof iconName !== 'string') {
+        return null;
+    }
+
+    // Remove iconify: prefix if present
+    const cleanIconName = iconName.startsWith(ICONIFY_PREFIX) 
+        ? iconName.slice(ICONIFY_PREFIX.length) 
+        : iconName;
+
+    try {
+        // Fetch SVG directly from Iconify API
+        const [collection, icon] = cleanIconName.split(':');
+        if (!collection || !icon) {
+            throw new Error(`Invalid icon name format: ${cleanIconName}`);
+        }
+        
+        const apiUrl = `https://api.iconify.design/${collection}/${icon}.svg`;
+        console.log('Fetching icon from:', apiUrl);
+        
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch icon: ${response.status} ${response.statusText}`);
+        }
+        
+        const svgText = await response.text();
+        if (!svgText || !svgText.trim()) {
+            throw new Error('Empty SVG response');
+        }
+        
+        // Convert SVG to data URL
+        const svgBlob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const dataUrl = reader.result;
+                console.log('Icon converted to data URL, length:', dataUrl.length);
+                resolve(dataUrl);
+            };
+            reader.onerror = () => reject(new Error('Failed to read SVG blob'));
+            reader.readAsDataURL(svgBlob);
+        });
+    } catch (error) {
+        console.error('Error converting icon to data URL:', error);
+        return null;
+    }
+}
+
+/**
+ * Check if a value is a data URL (image)
+ * @param {string} value - Value to check
+ * @returns {boolean}
+ */
+export function isDataUrl(value) {
+    return typeof value === 'string' && value.startsWith('data:image/');
+}
+
+/**
+ * Render icon as image if it's a data URL, otherwise use Iconify
+ * @param {string} value - Icon value (data URL, iconify: reference, or emoji)
+ * @param {Object} options - Rendering options
+ * @returns {string} HTML string
+ */
+export function renderIconAsImage(value, options = {}) {
+    const { className = 'ingredient-icon', fallback = '', size = '24px' } = options;
+    if (!value) {
+        return fallback;
+    }
+    
+    // If it's a data URL, render as <img>
+    if (isDataUrl(value)) {
+        return `<img src="${value}" class="${className}" style="width: ${size}; height: ${size}; object-fit: contain;" alt="" aria-hidden="true">`;
+    }
+    
+    // Otherwise use the existing renderIcon function
+    return renderIcon(value, options);
 }
 
 
