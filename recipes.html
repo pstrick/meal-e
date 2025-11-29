@@ -181,6 +181,7 @@
 
     <!-- Scripts -->
     <script src="js/app.js" type="module"></script>
+    <script src="js/custom-ingredients.js" type="module"></script>
     <script src="js/footer.js" type="module"></script>
 
     <!-- Ingredient Search Modal -->
@@ -195,6 +196,95 @@
             <div id="search-results" class="search-results">
                 <!-- Search results will be added here -->
             </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Ingredient Modal (for adding new ingredients) -->
+    <div id="ingredient-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add New Ingredient</h2>
+            
+            <!-- API Search Section -->
+            <div id="api-search-section" class="api-search-section" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                <h3 style="margin-top: 0; font-size: 1.1em;">Search APIs for Ingredient Data</h3>
+                <div class="search-container" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="api-search-input" placeholder="Search USDA or Open Food Facts..." style="flex: 1; padding: 8px;">
+                    <button type="button" id="api-search-btn" class="btn btn-primary" style="padding: 8px 20px;">Search</button>
+                </div>
+                <div id="api-search-results" class="api-search-results" style="max-height: 200px; overflow-y: auto; margin-top: 10px;"></div>
+            </div>
+            
+            <form id="custom-ingredient-form">
+                <div class="form-group">
+                    <label for="ingredient-name">Ingredient Name</label>
+                    <input type="text" id="ingredient-name" required>
+                </div>
+                
+                <div class="form-group emoji-form-group">
+                    <label for="ingredient-emoji">Emoji (Optional)</label>
+                    <div class="emoji-input-wrapper">
+                        <input type="text" id="ingredient-emoji" placeholder="e.g., 🥦" maxlength="4" autocomplete="off">
+                        <button type="button" class="btn btn-ghost emoji-picker-toggle" id="emoji-picker-toggle" aria-label="Open emoji picker">
+                            <span class="emoji-toggle-icon">😊</span>
+                        </button>
+                        <div id="emoji-picker-panel" class="emoji-picker-panel" hidden>
+                            <!-- Emoji picker content is generated dynamically -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="store-section">Store Section</label>
+                    <input type="text" id="store-section" placeholder="e.g., Produce, Dairy">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="total-price">Total Price ($)</label>
+                        <input type="number" id="total-price" step="0.01" min="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="total-weight">Total Weight (g)</label>
+                        <input type="number" id="total-weight" step="1" min="0" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="serving-size">Serving Size (g)</label>
+                    <input type="number" id="serving-size" step="1" min="0" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="calories">Calories per Serving</label>
+                        <input type="number" id="calories" step="1" min="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fat">Fat per Serving (g)</label>
+                        <input type="number" id="fat" step="0.1" min="0" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="carbs">Carbs per Serving (g)</label>
+                        <input type="number" id="carbs" step="0.1" min="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="protein">Protein per Serving (g)</label>
+                        <input type="number" id="protein" step="0.1" min="0" required>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-ingredient">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Ingredient</button>
+                </div>
+            </form>
         </div>
     </div>
 </body>

@@ -2699,8 +2699,14 @@ async function displaySearchResults(results) {
         // Close the search modal/dropdown
         removeSearchDropdown();
         
-        // Redirect to ingredients page to add new ingredient
-        window.location.href = 'ingredients.html';
+        // Open the custom ingredient modal
+        if (window.openIngredientModal) {
+            window.openIngredientModal();
+        } else {
+            // Fallback: redirect if modal function not available
+            console.warn('openIngredientModal not available, redirecting to ingredients page');
+            window.location.href = 'ingredients.html';
+        }
     });
     
     searchResultsElement.appendChild(addNewDiv);

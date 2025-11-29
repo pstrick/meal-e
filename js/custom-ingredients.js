@@ -668,11 +668,25 @@ async function saveCustomIngredient(event) {
         }
         
         saveCustomIngredients();
-        renderIngredientsList();
+        
+        // Only render ingredients list if we're on the ingredients page
+        const ingredientsList = document.getElementById('custom-ingredients-list');
+        if (ingredientsList) {
+            renderIngredientsList();
+        }
+        
         closeIngredientModal();
         selectedIconValue = '';
         
         console.log('Saved ingredient:', ingredient);
+        
+        // Show success message and dispatch event for other pages to listen
+        if (typeof showAlert !== 'undefined') {
+            showAlert('Ingredient saved successfully! You can now search for it.', { type: 'success' });
+        }
+        
+        // Dispatch custom event that recipes page can listen to
+        window.dispatchEvent(new CustomEvent('ingredientSaved', { detail: { ingredient } }));
     } catch (error) {
         console.error('Error saving custom ingredient:', error);
     }
