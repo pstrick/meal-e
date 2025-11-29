@@ -1755,9 +1755,8 @@ function handleInlineSearch(event) {
     searchTimeout = setTimeout(async () => {
         try {
             const results = await searchAllIngredients(query);
-            if (results.length > 0) {
+            // Always show dropdown if there are results OR to show "Add New" option
                 showInlineSearchResults(event.target, results);
-            }
         } catch (error) {
             console.error('Error searching ingredients:', error);
         }
@@ -1797,6 +1796,19 @@ function showInlineSearchResults(input, results) {
         overflow-y: auto;
         z-index: 1000;
     `;
+    
+    // Show "no results" message if there are no results (but still show "Add New" option)
+    if (results.length === 0) {
+        const noResultsItem = document.createElement('div');
+        noResultsItem.style.cssText = `
+            padding: 10px 12px;
+            color: #666;
+            font-size: 0.9em;
+            border-bottom: 1px solid #eee;
+        `;
+        noResultsItem.textContent = 'No matching ingredients found';
+        dropdown.appendChild(noResultsItem);
+    }
     
     // Add results (already limited to 10 in searchAllIngredients)
     results.forEach(result => {
@@ -1849,6 +1861,53 @@ function showInlineSearchResults(input, results) {
         
         dropdown.appendChild(item);
     });
+    
+    // Always add "New Custom Ingredient" option at the bottom
+    const addNewItem = document.createElement('div');
+    addNewItem.className = 'search-result-item add-new-ingredient';
+    addNewItem.style.cssText = `
+        padding: 10px 12px;
+        cursor: pointer;
+        border-top: 2px solid #ddd;
+        margin-top: 5px;
+        background-color: #f9f9f9;
+    `;
+    
+    addNewItem.innerHTML = `
+        <div style="font-weight: 600; color: #27ae60;">➕ New Custom Ingredient</div>
+        <div style="font-size: 0.8em; color: #666;">Create a new ingredient or search APIs</div>
+    `;
+    
+    addNewItem.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        removeSearchDropdown();
+        
+        // Store the current recipe modal state and ingredient input so we can return to it
+        const recipeModal = document.getElementById('recipe-modal');
+        if (recipeModal && recipeModal.classList.contains('active')) {
+            // Store that we're in recipe editing mode
+            window.returnToRecipeAfterIngredient = true;
+            // Store the current ingredient input being edited
+            window.lastEditedIngredientInput = currentIngredientInput;
+        }
+        
+        // Open the ingredient modal
+        if (window.openIngredientModal) {
+            window.openIngredientModal();
+        } else {
+            console.warn('openIngredientModal not available');
+        }
+    });
+    
+    addNewItem.addEventListener('mouseenter', () => {
+        addNewItem.style.backgroundColor = '#f0f0f0';
+    });
+    
+    addNewItem.addEventListener('mouseleave', () => {
+        addNewItem.style.backgroundColor = '#f9f9f9';
+    });
+    
+    dropdown.appendChild(addNewItem);
     
     // Position dropdown relative to input
     const inputRect = input.getBoundingClientRect();
@@ -2391,43 +2450,43 @@ async function displaySearchResults(results) {
     if (results.length === 0) {
         searchResultsElement.innerHTML = '<div class="no-results">No matching ingredients found</div>';
     } else {
-        for (const ingredient of results) {
-            const div = document.createElement('div');
-            div.className = 'search-result-item';
-            
-            // Create visual indicator for ingredient source
-            let sourceConfig = { icon: '🏠', label: 'Custom Ingredient' };
-            if (ingredient.source === 'usda') {
-                sourceConfig = { icon: '🌾', label: 'USDA Database' };
-            } else if (ingredient.source === 'openfoodfacts') {
-                sourceConfig = { icon: '🏷️', label: 'Open Food Facts' };
-            }
-            
-            const [mainName, ...details] = ingredient.name.split(',');
-            const emoji = (ingredient.emoji || '').trim();
-            
-            // Format price information
-            let priceInfo = '';
-            if (ingredient.pricePer100g) {
-                priceInfo = `$${ingredient.pricePer100g.toFixed(2)}/100g`;
-            } else if (ingredient.pricePerGram) {
-                priceInfo = `$${(ingredient.pricePerGram * 100).toFixed(2)}/100g`;
-            } else {
-                priceInfo = 'Price: N/A';
-            }
-            
-            div.innerHTML = `
-                <div class="search-result-header">
-                    <span class="source-indicator ${ingredient.source}">
-                        ${sourceConfig.icon} ${sourceConfig.label}
-                    </span>
-                    <h4>${emoji ? `<span class="ingredient-emoji">${emoji}</span> ` : ''}${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
-                </div>
-                <p>${ingredient.brandOwner || ''}</p>
-                <p style="color: #666; font-size: 0.9em;">${priceInfo}</p>
-            `;
-            
-            div.addEventListener('click', async () => {
+    for (const ingredient of results) {
+        const div = document.createElement('div');
+        div.className = 'search-result-item';
+        
+        // Create visual indicator for ingredient source
+        let sourceConfig = { icon: '🏠', label: 'Custom Ingredient' };
+        if (ingredient.source === 'usda') {
+            sourceConfig = { icon: '🌾', label: 'USDA Database' };
+        } else if (ingredient.source === 'openfoodfacts') {
+            sourceConfig = { icon: '🏷️', label: 'Open Food Facts' };
+        }
+        
+        const [mainName, ...details] = ingredient.name.split(',');
+        const emoji = (ingredient.emoji || '').trim();
+        
+        // Format price information
+        let priceInfo = '';
+        if (ingredient.pricePer100g) {
+            priceInfo = `$${ingredient.pricePer100g.toFixed(2)}/100g`;
+        } else if (ingredient.pricePerGram) {
+            priceInfo = `$${(ingredient.pricePerGram * 100).toFixed(2)}/100g`;
+        } else {
+            priceInfo = 'Price: N/A';
+        }
+        
+        div.innerHTML = `
+            <div class="search-result-header">
+                <span class="source-indicator ${ingredient.source}">
+                    ${sourceConfig.icon} ${sourceConfig.label}
+                </span>
+                <h4>${emoji ? `<span class="ingredient-emoji">${emoji}</span> ` : ''}${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
+            </div>
+            <p>${ingredient.brandOwner || ''}</p>
+            <p style="color: #666; font-size: 0.9em;">${priceInfo}</p>
+        `;
+        
+        div.addEventListener('click', async () => {
             try {
                 if (!currentIngredientInput) {
                     showAlert('No ingredient input is currently selected. Please click an ingredient input field first.', { type: 'warning' });
@@ -2677,7 +2736,7 @@ async function displaySearchResults(results) {
         });
         
         searchResultsElement.appendChild(div);
-        }
+    }
     }
     
     // Always show "Add New Ingredient" option at the end

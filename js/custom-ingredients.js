@@ -672,7 +672,7 @@ async function saveCustomIngredient(event) {
         // Only render ingredients list if we're on the ingredients page
         const ingredientsList = document.getElementById('custom-ingredients-list');
         if (ingredientsList) {
-            renderIngredientsList();
+        renderIngredientsList();
         }
         
         closeIngredientModal();
@@ -687,6 +687,35 @@ async function saveCustomIngredient(event) {
         
         // Dispatch custom event that recipes page can listen to
         window.dispatchEvent(new CustomEvent('ingredientSaved', { detail: { ingredient } }));
+        
+        // If we were editing a recipe, return to it
+        if (window.returnToRecipeAfterIngredient) {
+            window.returnToRecipeAfterIngredient = false;
+            const recipeModal = document.getElementById('recipe-modal');
+            if (recipeModal) {
+                // Small delay to ensure modal closes first
+                setTimeout(() => {
+                    // Re-open the recipe modal
+                    recipeModal.classList.add('active');
+                    
+                    // Focus back on the ingredient input that was being edited
+                    if (window.lastEditedIngredientInput) {
+                        const nameInput = window.lastEditedIngredientInput.querySelector('.ingredient-name');
+                        if (nameInput) {
+                            nameInput.focus();
+                            // Trigger search again to show the new ingredient
+                            const query = nameInput.value.trim();
+                            if (query.length >= 2) {
+                                setTimeout(() => {
+                                    nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                }, 200);
+                            }
+                        }
+                        window.lastEditedIngredientInput = null;
+                    }
+                }, 100);
+            }
+        }
     } catch (error) {
         console.error('Error saving custom ingredient:', error);
     }
