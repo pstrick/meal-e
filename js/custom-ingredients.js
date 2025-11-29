@@ -1346,4 +1346,15 @@ window.openIngredientModal = openIngredientModal;
 // Initialize
 loadCustomIngredients();
 // Apply dark mode on page load
-applyDarkMode(); 
+applyDarkMode();
+
+// If we were sent here from another page with a request to open the ingredient modal,
+// honor that by opening the existing modal on this page.
+try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('openIngredientModal') === '1') {
+        openIngredientModal();
+    }
+} catch (error) {
+    console.error('Error checking URL parameters for openIngredientModal:', error);
+}

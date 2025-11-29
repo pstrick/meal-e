@@ -1846,21 +1846,8 @@ function showInlineSearchResults(input, results) {
         e.preventDefault();
         removeSearchDropdown();
         
-        // Store the current recipe modal state and ingredient input so we can return to it
-        const recipeModal = document.getElementById('recipe-modal');
-        if (recipeModal && recipeModal.classList.contains('active')) {
-            // Store that we're in recipe editing mode
-            window.returnToRecipeAfterIngredient = true;
-            // Store the current ingredient input being edited
-            window.lastEditedIngredientInput = currentIngredientInput;
-        }
-        
-        // Open the ingredient modal
-        if (window.openIngredientModal) {
-            window.openIngredientModal();
-        } else {
-            console.warn('openIngredientModal not available');
-        }
+        // Redirect to ingredients page and use existing modal there
+        window.location.href = 'ingredients.html?openIngredientModal=1';
     });
     
     dropdown.appendChild(addNewItem);
@@ -2714,15 +2701,8 @@ async function displaySearchResults(results) {
     addNewDiv.addEventListener('click', () => {
         // Close the search modal/dropdown
         removeSearchDropdown();
-        
-        // Open the custom ingredient modal
-        if (window.openIngredientModal) {
-            window.openIngredientModal();
-        } else {
-            // Fallback: redirect if modal function not available
-            console.warn('openIngredientModal not available, redirecting to ingredients page');
-            window.location.href = 'ingredients.html';
-        }
+        // Redirect to ingredients page and use existing modal there
+        window.location.href = 'ingredients.html?openIngredientModal=1';
     });
     
     searchResultsElement.appendChild(addNewDiv);
