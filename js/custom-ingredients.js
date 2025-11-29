@@ -10,6 +10,7 @@ import {
 } from './icon-utils.js';
 import { searchUSDAIngredients } from './usda-api.js';
 import { searchOpenFoodFactsIngredients } from './open-food-facts-api.js';
+import { scrapeProduct } from './product-scraper.js';
 
 // Update version in footer
 const versionEl = document.getElementById('version');
@@ -572,12 +573,25 @@ function openIngredientModal(ingredient = null) {
     }
     closeEmojiPicker();
     
+    // Clear URL scraping section
+    if (urlScrapeInput) urlScrapeInput.value = '';
+    if (urlScrapeProgress) urlScrapeProgress.hidden = true;
+    if (urlScrapeError) {
+        urlScrapeError.hidden = true;
+        urlScrapeError.textContent = '';
+    }
+    // Remove any success messages from URL scraping
+    if (urlScrapeSection) {
+        const messages = urlScrapeSection.querySelectorAll('p[style*="color"]');
+        messages.forEach(msg => msg.remove());
+    }
+    
     // Clear API search
     if (apiSearchInput) apiSearchInput.value = '';
     if (apiSearchResults) apiSearchResults.innerHTML = '';
     // Remove any success messages
     if (apiSearchSection) {
-        const messages = apiSearchSection.querySelectorAll('p[style*="color: #27ae60"]');
+        const messages = apiSearchSection.querySelectorAll('p[style*="color"]');
         messages.forEach(msg => msg.remove());
     }
     
@@ -1120,6 +1134,13 @@ if (uploadCsvBtn && uploadCsvModal && uploadCsvForm) {
     });
 }
 
+// URL Scraping Functionality
+const urlScrapeInput = document.getElementById('url-scrape-input');
+const urlScrapeBtn = document.getElementById('url-scrape-btn');
+const urlScrapeProgress = document.getElementById('url-scrape-progress');
+const urlScrapeError = document.getElementById('url-scrape-error');
+const urlScrapeSection = document.getElementById('url-scrape-section');
+
 // API Search Functionality
 const apiSearchInput = document.getElementById('api-search-input');
 const apiSearchBtn = document.getElementById('api-search-btn');
@@ -1250,6 +1271,141 @@ function populateFormFromAPIResult(result) {
         apiSearchSection.appendChild(successMsg);
         setTimeout(() => successMsg.remove(), 5000);
     }
+}
+
+// URL Scraping Functionality
+async function handleURLScrape() {
+    const url = urlScrapeInput?.value.trim();
+    if (!url) {
+        if (urlScrapeError) {
+            urlScrapeError.textContent = 'Please enter a product URL';
+            urlScrapeError.hidden = false;
+        }
+        return;
+    }
+    
+    // Validate URL format
+    try {
+        new URL(url);
+    } catch (e) {
+        if (urlScrapeError) {
+            urlScrapeError.textContent = 'Invalid URL format. Please enter a valid URL.';
+            urlScrapeError.hidden = false;
+        }
+        return;
+    }
+    
+    // Show progress, hide error
+    if (urlScrapeProgress) {
+        urlScrapeProgress.hidden = false;
+    }
+    if (urlScrapeError) {
+        urlScrapeError.hidden = true;
+        urlScrapeError.textContent = '';
+    }
+    
+    try {
+        console.log('Scraping URL:', url);
+        const scrapedData = await scrapeProduct(url);
+        console.log('Scraped data:', scrapedData);
+        
+        // Populate form with scraped data
+        populateFormFromScrapedData(scrapedData);
+        
+        // Hide progress
+        if (urlScrapeProgress) {
+            urlScrapeProgress.hidden = true;
+        }
+        
+        // Show success message
+        if (urlScrapeSection) {
+            const successMsg = document.createElement('p');
+            successMsg.style.cssText = 'color: var(--color-success); font-size: 0.9em; margin-top: var(--space-3);';
+            successMsg.textContent = '✓ Product information scraped successfully! Review and complete any missing fields, then save.';
+            urlScrapeSection.appendChild(successMsg);
+            setTimeout(() => successMsg.remove(), 5000);
+        }
+        
+        // Clear URL input
+        if (urlScrapeInput) {
+            urlScrapeInput.value = '';
+        }
+    } catch (error) {
+        console.error('Error scraping URL:', error);
+        if (urlScrapeProgress) {
+            urlScrapeProgress.hidden = true;
+        }
+        if (urlScrapeError) {
+            urlScrapeError.textContent = `Failed to scrape product: ${error.message}`;
+            urlScrapeError.hidden = false;
+        }
+    }
+}
+
+function populateFormFromScrapedData(scrapedData) {
+    // Populate name
+    const nameInput = document.getElementById('ingredient-name');
+    if (nameInput && scrapedData.name) {
+        nameInput.value = scrapedData.name;
+    }
+    
+    // Populate price
+    const priceInput = document.getElementById('total-price');
+    if (priceInput && scrapedData.price) {
+        priceInput.value = scrapedData.price.toFixed(2);
+    }
+    
+    // Populate total weight
+    const weightInput = document.getElementById('total-weight');
+    if (weightInput && scrapedData.totalWeight) {
+        weightInput.value = Math.round(scrapedData.totalWeight);
+    }
+    
+    // Populate serving size
+    const servingSizeInput = document.getElementById('serving-size');
+    if (servingSizeInput) {
+        servingSizeInput.value = scrapedData.servingSize || 100;
+    }
+    
+    // Populate nutrition data
+    const nutrition = scrapedData.nutrition || {};
+    
+    const caloriesInput = document.getElementById('calories');
+    if (caloriesInput) {
+        // Nutrition data from scraping is typically per serving size already
+        caloriesInput.value = Math.round(nutrition.calories || 0);
+    }
+    
+    const fatInput = document.getElementById('fat');
+    if (fatInput) {
+        fatInput.value = (nutrition.fat || 0).toFixed(1);
+    }
+    
+    const carbsInput = document.getElementById('carbs');
+    if (carbsInput) {
+        carbsInput.value = (nutrition.carbs || 0).toFixed(1);
+    }
+    
+    const proteinInput = document.getElementById('protein');
+    if (proteinInput) {
+        proteinInput.value = (nutrition.protein || 0).toFixed(1);
+    }
+    
+    console.log('Form populated with scraped data');
+}
+
+// Event Listeners for URL Scraping
+if (urlScrapeBtn) {
+    urlScrapeBtn.addEventListener('click', handleURLScrape);
+}
+
+if (urlScrapeInput) {
+    urlScrapeInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleURLScrape();
+        }
+    });
 }
 
 // Event Listeners

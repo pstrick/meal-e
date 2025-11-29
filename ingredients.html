@@ -123,6 +123,22 @@
             <span class="close">&times;</span>
             <h2>Add New Ingredient</h2>
             
+            <!-- URL Scraping Section -->
+            <div id="url-scrape-section" class="url-scrape-section">
+                <h3>Scrape Product Page</h3>
+                <div class="search-container">
+                    <input type="url" id="url-scrape-input" placeholder="Paste product URL (e.g., wegmans.com/product/...)">
+                    <button type="button" id="url-scrape-btn" class="btn btn-primary">
+                        <i class="fas fa-download"></i> Scrape
+                    </button>
+                </div>
+                <div id="url-scrape-progress" class="scrape-progress" role="status" aria-live="polite" hidden>
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Scraping product information…</span>
+                </div>
+                <div id="url-scrape-error" class="scrape-error" role="alert" aria-live="assertive" hidden></div>
+            </div>
+            
             <!-- API Search Section -->
             <div id="api-search-section" class="api-search-section">
                 <h3>Search APIs for Ingredient Data</h3>

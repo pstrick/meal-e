@@ -2057,6 +2057,7 @@ tbody tr:hover {
 
 /* API Search Section ------------------------------------------------------ */
 
+.url-scrape-section,
 .api-search-section {
     margin-bottom: var(--space-5);
     padding: var(--space-4);
@@ -2066,6 +2067,7 @@ tbody tr:hover {
     transition: background-color var(--transition-base), border-color var(--transition-base);
 }
 
+.url-scrape-section h3,
 .api-search-section h3 {
     margin-top: 0;
     font-size: 1.1em;
@@ -2073,17 +2075,20 @@ tbody tr:hover {
     color: var(--color-text);
 }
 
+.url-scrape-section .search-container,
 .api-search-section .search-container {
     display: flex;
     gap: var(--space-3);
     margin-bottom: var(--space-3);
 }
 
+.url-scrape-section .search-container input,
 .api-search-section .search-container input {
     flex: 1;
     padding: var(--space-2);
 }
 
+.url-scrape-section .search-container .btn,
 .api-search-section .search-container .btn {
     padding: var(--space-2) var(--space-5);
 }
