@@ -447,7 +447,7 @@ function openMealPlanModal(slot) {
     const amountInput = mealPlanForm.querySelector('#item-amount');
     const selectedItemDiv = mealPlanForm.querySelector('.selected-item');
     const submitButton = mealPlanForm.querySelector('button[type="submit"]');
-    const freeTextInput = selectedItemDiv?.querySelector('#free-text-input');
+    const customMealContainer = selectedItemDiv?.querySelector('.custom-meal-container');
     
     if (unifiedSearch) unifiedSearch.value = '';
     if (categoryFilter) categoryFilter.value = 'all';
@@ -460,9 +460,20 @@ function openMealPlanModal(slot) {
         if (itemDetails) itemDetails.style.display = 'block';
         if (amountInputGroup) amountInputGroup.style.display = 'block';
     }
-    if (freeTextInput) {
-        freeTextInput.style.display = 'none';
-        freeTextInput.value = '';
+    if (customMealContainer) {
+        customMealContainer.style.display = 'none';
+        const nameInput = customMealContainer.querySelector('#custom-meal-name');
+        const caloriesInput = customMealContainer.querySelector('#custom-meal-calories');
+        const proteinInput = customMealContainer.querySelector('#custom-meal-protein');
+        const carbsInput = customMealContainer.querySelector('#custom-meal-carbs');
+        const fatInput = customMealContainer.querySelector('#custom-meal-fat');
+        const costInput = customMealContainer.querySelector('#custom-meal-cost');
+        if (nameInput) nameInput.value = '';
+        if (caloriesInput) caloriesInput.value = '0';
+        if (proteinInput) proteinInput.value = '0';
+        if (carbsInput) carbsInput.value = '0';
+        if (fatInput) fatInput.value = '0';
+        if (costInput) costInput.value = '0';
     }
     if (submitButton) submitButton.disabled = true;
     
@@ -505,28 +516,28 @@ async function updateUnifiedList() {
     // Clear the current list
     unifiedList.innerHTML = '';
     
-    // Add Free Text option at the top (always visible, not filtered)
-    const freeTextOption = document.createElement('div');
-    freeTextOption.className = 'unified-option free-text-option';
-    freeTextOption.innerHTML = `
+    // Add Custom Meal option at the top (always visible, not filtered)
+    const customMealOption = document.createElement('div');
+    customMealOption.className = 'unified-option custom-meal-option';
+    customMealOption.innerHTML = `
         <div class="item-header">
             <span class="item-icon">✏️</span>
-            <span class="item-type">Free Text</span>
-            <h4>Type custom text (e.g., "Eat out", "Leftovers")</h4>
+            <span class="item-type">Custom Meal</span>
+            <h4>Create a custom meal with macros and cost</h4>
         </div>
-        <p style="color: #666; font-size: 0.9em;">Add a custom note or label to this meal</p>
+        <p style="color: #666; font-size: 0.9em;">Add a custom meal with nutrition info and cost</p>
     `;
-    freeTextOption.addEventListener('click', () => {
+    customMealOption.addEventListener('click', () => {
         // Remove selection from other options
         unifiedList.querySelectorAll('.unified-option').forEach(option => {
             option.classList.remove('selected');
         });
         
         // Select this option
-        freeTextOption.classList.add('selected');
-        selectFreeTextItem();
+        customMealOption.classList.add('selected');
+        selectCustomMealItem();
     });
-    unifiedList.appendChild(freeTextOption);
+    unifiedList.appendChild(customMealOption);
     
     const results = [];
     
@@ -666,8 +677,8 @@ async function updateUnifiedList() {
     }
 }
 
-function selectFreeTextItem() {
-    console.log('Selecting free text item');
+function selectCustomMealItem() {
+    console.log('Selecting custom meal item');
     
     // Get elements from the form
     const selectedItemDiv = mealPlanForm.querySelector('.selected-item');
@@ -678,59 +689,171 @@ function selectFreeTextItem() {
         return;
     }
     
-    // Check if free text input already exists, if not create it
-    let freeTextInput = selectedItemDiv.querySelector('#free-text-input');
-    if (!freeTextInput) {
-        // Create free text input container
-        const freeTextContainer = document.createElement('div');
-        freeTextContainer.className = 'free-text-container';
-        freeTextContainer.style.marginTop = '15px';
+    // Check if custom meal inputs already exist, if not create them
+    let customMealContainer = selectedItemDiv.querySelector('.custom-meal-container');
+    if (!customMealContainer) {
+        // Create custom meal input container
+        customMealContainer = document.createElement('div');
+        customMealContainer.className = 'custom-meal-container';
+        customMealContainer.style.marginTop = '15px';
         
-        freeTextInput = document.createElement('input');
-        freeTextInput.type = 'text';
-        freeTextInput.id = 'free-text-input';
-        freeTextInput.placeholder = 'Enter custom text (e.g., "Eat out", "Leftovers")';
-        freeTextInput.className = 'form-control';
-        freeTextInput.style.width = '100%';
-        freeTextInput.style.padding = '8px';
-        freeTextInput.style.marginTop = '10px';
+        // Meal name input
+        const nameGroup = document.createElement('div');
+        nameGroup.className = 'form-group';
+        const nameLabel = document.createElement('label');
+        nameLabel.setAttribute('for', 'custom-meal-name');
+        nameLabel.textContent = 'Meal Name:';
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.id = 'custom-meal-name';
+        nameInput.placeholder = 'e.g., "Eat out", "Leftovers"';
+        nameInput.className = 'form-control';
+        nameInput.required = true;
+        nameGroup.appendChild(nameLabel);
+        nameGroup.appendChild(nameInput);
         
-        freeTextContainer.appendChild(freeTextInput);
-        selectedItemDiv.insertBefore(freeTextContainer, selectedItemDiv.querySelector('.form-group'));
+        // Nutrition inputs
+        const nutritionGroup = document.createElement('div');
+        nutritionGroup.className = 'form-group';
+        nutritionGroup.style.marginTop = '15px';
+        const nutritionLabel = document.createElement('label');
+        nutritionLabel.textContent = 'Nutrition (per serving):';
+        nutritionGroup.appendChild(nutritionLabel);
+        
+        const nutritionGrid = document.createElement('div');
+        nutritionGrid.style.display = 'grid';
+        nutritionGrid.style.gridTemplateColumns = '1fr 1fr';
+        nutritionGrid.style.gap = '10px';
+        nutritionGrid.style.marginTop = '10px';
+        
+        // Calories
+        const caloriesGroup = document.createElement('div');
+        const caloriesLabel = document.createElement('label');
+        caloriesLabel.setAttribute('for', 'custom-meal-calories');
+        caloriesLabel.textContent = 'Calories:';
+        const caloriesInput = document.createElement('input');
+        caloriesInput.type = 'number';
+        caloriesInput.id = 'custom-meal-calories';
+        caloriesInput.min = '0';
+        caloriesInput.step = '1';
+        caloriesInput.value = '0';
+        caloriesInput.className = 'form-control';
+        caloriesGroup.appendChild(caloriesLabel);
+        caloriesGroup.appendChild(caloriesInput);
+        
+        // Protein
+        const proteinGroup = document.createElement('div');
+        const proteinLabel = document.createElement('label');
+        proteinLabel.setAttribute('for', 'custom-meal-protein');
+        proteinLabel.textContent = 'Protein (g):';
+        const proteinInput = document.createElement('input');
+        proteinInput.type = 'number';
+        proteinInput.id = 'custom-meal-protein';
+        proteinInput.min = '0';
+        proteinInput.step = '0.1';
+        proteinInput.value = '0';
+        proteinInput.className = 'form-control';
+        proteinGroup.appendChild(proteinLabel);
+        proteinGroup.appendChild(proteinInput);
+        
+        // Carbs
+        const carbsGroup = document.createElement('div');
+        const carbsLabel = document.createElement('label');
+        carbsLabel.setAttribute('for', 'custom-meal-carbs');
+        carbsLabel.textContent = 'Carbs (g):';
+        const carbsInput = document.createElement('input');
+        carbsInput.type = 'number';
+        carbsInput.id = 'custom-meal-carbs';
+        carbsInput.min = '0';
+        carbsInput.step = '0.1';
+        carbsInput.value = '0';
+        carbsInput.className = 'form-control';
+        carbsGroup.appendChild(carbsLabel);
+        carbsGroup.appendChild(carbsInput);
+        
+        // Fat
+        const fatGroup = document.createElement('div');
+        const fatLabel = document.createElement('label');
+        fatLabel.setAttribute('for', 'custom-meal-fat');
+        fatLabel.textContent = 'Fat (g):';
+        const fatInput = document.createElement('input');
+        fatInput.type = 'number';
+        fatInput.id = 'custom-meal-fat';
+        fatInput.min = '0';
+        fatInput.step = '0.1';
+        fatInput.value = '0';
+        fatInput.className = 'form-control';
+        fatGroup.appendChild(fatLabel);
+        fatGroup.appendChild(fatInput);
+        
+        nutritionGrid.appendChild(caloriesGroup);
+        nutritionGrid.appendChild(proteinGroup);
+        nutritionGrid.appendChild(carbsGroup);
+        nutritionGrid.appendChild(fatGroup);
+        nutritionGroup.appendChild(nutritionGrid);
+        
+        // Cost input
+        const costGroup = document.createElement('div');
+        costGroup.className = 'form-group';
+        costGroup.style.marginTop = '15px';
+        const costLabel = document.createElement('label');
+        costLabel.setAttribute('for', 'custom-meal-cost');
+        costLabel.textContent = 'Cost ($):';
+        const costInput = document.createElement('input');
+        costInput.type = 'number';
+        costInput.id = 'custom-meal-cost';
+        costInput.min = '0';
+        costInput.step = '0.01';
+        costInput.value = '0';
+        costInput.className = 'form-control';
+        costInput.placeholder = '0.00';
+        costGroup.appendChild(costLabel);
+        costGroup.appendChild(costInput);
+        
+        customMealContainer.appendChild(nameGroup);
+        customMealContainer.appendChild(nutritionGroup);
+        customMealContainer.appendChild(costGroup);
+        selectedItemDiv.insertBefore(customMealContainer, selectedItemDiv.querySelector('.form-group'));
     }
     
-    // Hide nutrition info and amount input for free text
+    // Hide nutrition info and amount input for custom meal
     const itemDetails = selectedItemDiv.querySelector('.item-details');
     const amountInputGroup = selectedItemDiv.querySelector('#item-amount')?.closest('.form-group');
     if (itemDetails) itemDetails.style.display = 'none';
     if (amountInputGroup) amountInputGroup.style.display = 'none';
     
-    // Show free text input
-    freeTextInput.style.display = 'block';
-    freeTextInput.value = '';
-    freeTextInput.focus();
+    // Show custom meal inputs
+    customMealContainer.style.display = 'block';
+    customMealContainer.querySelector('#custom-meal-name').value = '';
+    customMealContainer.querySelector('#custom-meal-calories').value = '0';
+    customMealContainer.querySelector('#custom-meal-protein').value = '0';
+    customMealContainer.querySelector('#custom-meal-carbs').value = '0';
+    customMealContainer.querySelector('#custom-meal-fat').value = '0';
+    customMealContainer.querySelector('#custom-meal-cost').value = '0';
+    customMealContainer.querySelector('#custom-meal-name').focus();
     
     // Update selected item display
     selectedItemDiv.style.display = 'block';
-    selectedItemDiv.querySelector('.item-name').textContent = 'Free Text Entry';
+    selectedItemDiv.querySelector('.item-name').textContent = 'Custom Meal Entry';
     
-    // Hide recurring options for free text
+    // Show recurring options for custom meals
     const recurringOptions = selectedItemDiv.querySelector('.recurring-options');
     if (recurringOptions) {
-        recurringOptions.style.display = 'none';
+        recurringOptions.style.display = 'block';
     }
     
     // Enable submit button
     submitButton.disabled = false;
     submitButton.style.display = 'block';
     
-    // Mark that we're in free text mode
+    // Mark that we're in custom meal mode
     selectedItem = {
-        type: 'freetext',
-        id: 'freetext',
+        type: 'custommeal',
+        id: 'custommeal',
         name: '',
         nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0 },
-        servingSize: 0
+        servingSize: 1,
+        cost: 0
     };
 }
 
@@ -751,10 +874,10 @@ function selectItem(item) {
         return;
     }
     
-    // Hide free text input if it exists
-    const freeTextInput = selectedItemDiv.querySelector('#free-text-input');
-    if (freeTextInput) {
-        freeTextInput.style.display = 'none';
+    // Hide custom meal inputs if they exist
+    const customMealContainer = selectedItemDiv.querySelector('.custom-meal-container');
+    if (customMealContainer) {
+        customMealContainer.style.display = 'none';
     }
     
     // Show nutrition info and amount input for regular items
@@ -844,7 +967,7 @@ function closeMealPlanModal() {
         mealPlanForm.reset();
         const selectedItemDiv = mealPlanForm.querySelector('.selected-item');
         const submitButton = mealPlanForm.querySelector('button[type="submit"]');
-        const freeTextInput = selectedItemDiv?.querySelector('#free-text-input');
+        const customMealContainer = selectedItemDiv?.querySelector('.custom-meal-container');
         if (selectedItemDiv) {
             selectedItemDiv.style.display = 'none';
             // Show nutrition info and amount input again
@@ -853,7 +976,7 @@ function closeMealPlanModal() {
             if (itemDetails) itemDetails.style.display = 'block';
             if (amountInputGroup) amountInputGroup.style.display = 'block';
         }
-        if (freeTextInput) freeTextInput.style.display = 'none';
+        if (customMealContainer) customMealContainer.style.display = 'none';
         if (submitButton) submitButton.disabled = true;
     }
 }
@@ -952,6 +1075,7 @@ function applyRecurringItems() {
                 servingSize: recurringItem.servingSize,
                 storeSection: recurringItem.storeSection || '',
                 emoji: recurringItem.emoji || '',
+                cost: recurringItem.cost || 0,
                 isRecurring: true,
                 recurringId: recurringItem.id
             });
@@ -1004,19 +1128,38 @@ function createMealItem(item, amount, itemIndex, slot) {
     div.dataset.itemAmount = amount;
     div.dataset.itemEmoji = item.emoji || '';
     
-    // Handle free text items
-    if (item.type === 'freetext') {
+    // Handle custom meal items
+    if (item.type === 'custommeal') {
         const displayName = item.name;
         const truncatedName = displayName.length > 140 ? `${displayName.substring(0, 137).trimEnd()}...` : displayName;
         
+        // Get nutrition values
+        const nutrition = item.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+        const cost = item.cost || 0;
+        
+        // Build nutrition display
+        let nutritionDisplay = '';
+        if (nutrition.calories > 0 || nutrition.protein > 0 || nutrition.carbs > 0 || nutrition.fat > 0) {
+            nutritionDisplay = `
+                <div class="meal-item-nutrition" style="margin-top: 8px; font-size: 0.85em; color: #666;">
+                    <span>Cal: ${Math.round(nutrition.calories)}</span>
+                    <span style="margin-left: 8px;">P: ${Math.round(nutrition.protein)}g</span>
+                    <span style="margin-left: 8px;">C: ${Math.round(nutrition.carbs)}g</span>
+                    <span style="margin-left: 8px;">F: ${Math.round(nutrition.fat)}g</span>
+                    ${cost > 0 ? `<span style="margin-left: 8px; color: #28a745;">$${cost.toFixed(2)}</span>` : ''}
+                </div>
+            `;
+        }
+        
         div.innerHTML = `
             <div class="meal-item-header">
-                <span class="meal-item-name" title="${displayName}" style="font-style: italic;">${truncatedName}</span>
+                <span class="meal-item-name" title="${displayName}">${truncatedName}</span>
                 <button class="remove-meal" title="Remove Item">&times;</button>
             </div>
             <div class="meal-item-details">
-                <span class="meal-item-type" style="color: #666;">Free Text</span>
+                <span class="meal-item-type" style="color: #666;">Custom Meal</span>
             </div>
+            ${nutritionDisplay}
         `;
         
         // Remove item handler
@@ -1193,7 +1336,15 @@ async function calculateDayNutrition(date) {
         console.log(`Items for ${mealType}:`, items);
         
         for (const itemData of items) {
-            if (itemData.type === 'meal') {
+            if (itemData.type === 'custommeal') {
+                // Custom meals have nutrition stored directly per serving
+                const mealNutrition = itemData.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+                const servings = itemData.amount || 1;
+                nutrition.calories += mealNutrition.calories * servings;
+                nutrition.protein += mealNutrition.protein * servings;
+                nutrition.carbs += mealNutrition.carbs * servings;
+                nutrition.fat += mealNutrition.fat * servings;
+            } else if (itemData.type === 'meal') {
                 const recipe = window.recipes.find(r => r.id === itemData.id);
                 if (recipe && recipe.nutrition) {
                     // Convert recipe nutrition to per-gram values
@@ -1390,25 +1541,37 @@ async function handleMealPlanSubmit(e) {
         return;
     }
     
-    // Handle free text items
-    if (selectedItem.type === 'freetext') {
-        const freeTextInput = document.getElementById('free-text-input');
-        const freeText = freeTextInput ? freeTextInput.value.trim() : '';
+    // Handle custom meal items
+    if (selectedItem.type === 'custommeal') {
+        const nameInput = document.getElementById('custom-meal-name');
+        const caloriesInput = document.getElementById('custom-meal-calories');
+        const proteinInput = document.getElementById('custom-meal-protein');
+        const carbsInput = document.getElementById('custom-meal-carbs');
+        const fatInput = document.getElementById('custom-meal-fat');
+        const costInput = document.getElementById('custom-meal-cost');
         
-        if (!freeText) {
-            alert('Please enter some text for this meal.');
+        const mealName = nameInput ? nameInput.value.trim() : '';
+        const calories = parseFloat(caloriesInput?.value || 0);
+        const protein = parseFloat(proteinInput?.value || 0);
+        const carbs = parseFloat(carbsInput?.value || 0);
+        const fat = parseFloat(fatInput?.value || 0);
+        const cost = parseFloat(costInput?.value || 0);
+        
+        if (!mealName) {
+            alert('Please enter a meal name.');
             return;
         }
         
         const mealKey = getMealKey(selectedSlot.dataset.day, selectedSlot.dataset.meal);
         if (!mealPlan[mealKey]) mealPlan[mealKey] = [];
         mealPlan[mealKey].push({
-            type: 'freetext',
-            id: `freetext-${Date.now()}`,
-            name: freeText,
-            amount: 0,
-            nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0 },
-            servingSize: 0,
+            type: 'custommeal',
+            id: `custommeal-${Date.now()}`,
+            name: mealName,
+            amount: 1, // Custom meals are per serving
+            nutrition: { calories: calories, protein: protein, carbs: carbs, fat: fat },
+            servingSize: 1,
+            cost: cost,
             storeSection: '',
             emoji: ''
         });
@@ -1447,7 +1610,8 @@ async function handleMealPlanSubmit(e) {
             emoji: selectedItem.emoji || '',
             endDate: endDate || null,
             source: selectedItem.source || 'custom',
-            fdcId: selectedItem.fdcId || null
+            fdcId: selectedItem.fdcId || null,
+            cost: selectedItem.cost || 0
         };
         
         recurringItems.push(recurringItem);
@@ -1470,7 +1634,8 @@ async function handleMealPlanSubmit(e) {
             storeSection: selectedItem.storeSection || '',
             emoji: selectedItem.emoji || '',
             source: selectedItem.source || 'custom',
-            fdcId: selectedItem.fdcId || null
+            fdcId: selectedItem.fdcId || null,
+            cost: selectedItem.cost || 0
         });
         saveMealPlan();
     }
@@ -1495,14 +1660,15 @@ async function addAddMealButton(slot) {
     if (items && Array.isArray(items) && items.length > 0) {
         items.forEach((itemData, idx) => {
             let item;
-            if (itemData.type === 'freetext') {
-                // Handle free text items
+            if (itemData.type === 'custommeal') {
+                // Handle custom meal items
                 item = {
-                    type: 'freetext',
+                    type: 'custommeal',
                     id: itemData.id,
                     name: itemData.name || '',
-                    nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0 },
-                    servingSize: 0,
+                    nutrition: itemData.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 },
+                    servingSize: itemData.servingSize || 1,
+                    cost: itemData.cost || 0,
                     emoji: ''
                 };
             } else if (itemData.type === 'meal') {
