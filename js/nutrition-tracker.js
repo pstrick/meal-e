@@ -1,8 +1,6 @@
 // Nutrition Tracker Module
 import { settings } from './settings.js';
 import { showAlert } from './alert.js';
-import { searchUSDAIngredients } from './usda-api.js';
-import { searchOpenFoodFactsIngredients } from './open-food-facts-api.js';
 
 // Global variables
 let currentDate = new Date();
@@ -371,8 +369,7 @@ async function searchFoods(query) {
         return JSON.parse(localStorage.getItem(newKey) || '[]');
     }
     
-    // Search my ingredients first (faster, local) - show immediately
-    // Prioritize exact matches and starts-with matches
+    // Search my ingredients only (no API calls)
     const queryLower = query.toLowerCase().trim();
     const allMyIngredients = getMyIngredients();
     
@@ -445,126 +442,6 @@ async function searchFoods(query) {
         }
     });
     
-    // Search USDA API (async, network call) - for generic foods
-    // Only get the most relevant result
-    try {
-        const usdaResults = await searchUSDAIngredients(query, 20); // Get more to find best match
-        if (usdaResults && usdaResults.length > 0) {
-            // Find the most relevant USDA result
-            const bestUSDAResult = usdaResults
-                .map(result => {
-                    const nameLower = (result.name || '').toLowerCase();
-                    let relevance = 0;
-                    if (nameLower === queryLower) {
-                        relevance = 3; // Exact match
-                    } else if (nameLower.startsWith(queryLower)) {
-                        relevance = 2; // Starts with
-                    } else if (nameLower.includes(queryLower)) {
-                        relevance = 1; // Contains
-                    }
-                    // Boost relevance if it has nutrition data
-                    if (result.nutrition && (result.nutrition.calories > 0 || result.nutrition.protein > 0)) {
-                        relevance += 0.5;
-                    }
-                    return { result, relevance };
-                })
-                .sort((a, b) => b.relevance - a.relevance)[0];
-            
-            if (bestUSDAResult && bestUSDAResult.relevance > 0) {
-                // Convert USDA ingredient to nutrition tracker format
-                // USDA nutrition is already per-gram (from usda-api.js), keep it that way
-                results.push({
-                    type: 'ingredient',
-                    data: {
-                        id: bestUSDAResult.result.fdcId,
-                        name: bestUSDAResult.result.name,
-                        servingSize: bestUSDAResult.result.servingSize || 100,
-                        nutrition: {
-                            calories: bestUSDAResult.result.nutrition.calories, // per-gram
-                            protein: bestUSDAResult.result.nutrition.protein,   // per-gram
-                            carbs: bestUSDAResult.result.nutrition.carbs,         // per-gram
-                            fat: bestUSDAResult.result.nutrition.fat              // per-gram
-                        },
-                        source: 'usda',
-                        brandOwner: bestUSDAResult.result.brandOwner || 'USDA Database',
-                        pricePerGram: bestUSDAResult.result.pricePerGram || null,
-                        pricePer100g: bestUSDAResult.result.pricePer100g || null
-                    }
-                });
-            }
-        }
-    } catch (error) {
-        console.error('Error searching USDA API:', error);
-        // Continue with other sources if USDA fails
-    }
-    
-    // Search Open Food Facts API (async, network call) - for branded products
-    // Only get the most relevant result
-    try {
-        const offResults = await searchOpenFoodFactsIngredients(query, 20); // Get more to find best match
-        if (offResults && offResults.length > 0) {
-            // Find the most relevant Open Food Facts result
-            const bestOFFResult = offResults
-                .map(result => {
-                    const nameLower = (result.name || '').toLowerCase();
-                    let relevance = 0;
-                    if (nameLower === queryLower) {
-                        relevance = 3; // Exact match
-                    } else if (nameLower.startsWith(queryLower)) {
-                        relevance = 2; // Starts with
-                    } else if (nameLower.includes(queryLower)) {
-                        relevance = 1; // Contains
-                    }
-                    // Boost relevance if it has nutrition data
-                    if (result.nutrition && (result.nutrition.calories > 0 || result.nutrition.protein > 0)) {
-                        relevance += 0.5;
-                    }
-                    return { result, relevance };
-                })
-                .sort((a, b) => b.relevance - a.relevance)[0];
-            
-            if (bestOFFResult && bestOFFResult.relevance > 0) {
-                // Double-check that the result has valid nutrition data
-                const result = bestOFFResult.result;
-                if (result && result.nutrition) {
-                    const hasValidNutrition = 
-                        (result.nutrition.calories && result.nutrition.calories > 0) || 
-                        (result.nutrition.protein && result.nutrition.protein > 0) || 
-                        (result.nutrition.carbs && result.nutrition.carbs > 0) || 
-                        (result.nutrition.fat && result.nutrition.fat > 0);
-                    
-                    if (hasValidNutrition) {
-                        // Convert Open Food Facts ingredient to nutrition tracker format
-                        // Open Food Facts nutrition is already per-gram (from open-food-facts-api.js), keep it that way
-                        results.push({
-                            type: 'ingredient',
-                            data: {
-                                id: result.fdcId || result.id,
-                                name: result.name,
-                                servingSize: result.servingSize || 100,
-                                nutrition: {
-                                    calories: result.nutrition.calories, // per-gram
-                                    protein: result.nutrition.protein,   // per-gram
-                                    carbs: result.nutrition.carbs,         // per-gram
-                                    fat: result.nutrition.fat              // per-gram
-                                },
-                                source: 'openfoodfacts',
-                                brandOwner: result.brandOwner || 'Open Food Facts',
-                                pricePerGram: result.pricePerGram || null,
-                                pricePer100g: result.pricePer100g || null
-                            }
-                        });
-                    } else {
-                        console.log('Skipping Open Food Facts result without valid nutrition in nutrition-tracker:', result.name);
-                    }
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Error searching Open Food Facts API:', error);
-        // Continue with other sources if Open Food Facts fails
-    }
-    
     // Search custom recipes
     const recipes = JSON.parse(localStorage.getItem('recipes') || '[]');
     console.log('Searching recipes:', recipes.length, 'found');
@@ -577,7 +454,7 @@ async function searchFoods(query) {
         }
     });
     
-    // Sort results: my ingredients first, then USDA, then recipes
+    // Sort results: my ingredients first, then recipes
     results.sort((a, b) => {
         if (a.type === 'recipe' && b.type !== 'recipe') return 1;
         if (a.type !== 'recipe' && b.type === 'recipe') return -1;
@@ -587,61 +464,86 @@ async function searchFoods(query) {
     });
     
     console.log('Search results:', results.length, 'total');
-    return results.slice(0, 15); // Limit to 15 results (increased to show more options)
+    return results.slice(0, 15); // Limit to 15 results
 }
 
 function displaySearchResults(results) {
     foodSearchResults.innerHTML = '';
     
+    // Display search results
     if (results.length === 0) {
         foodSearchResults.innerHTML = '<div class="no-results">No foods found</div>';
-        return;
+    } else {
+        results.forEach(result => {
+            const div = document.createElement('div');
+            div.className = 'search-result-item';
+            
+            // Determine source label and icon
+            let sourceLabel = result.type === 'recipe' ? 'Recipe' : 'Ingredient';
+            let sourceIcon = '';
+            if (result.type === 'ingredient' && result.data.source) {
+                if (result.data.source === 'usda') {
+                    sourceLabel = 'USDA Database';
+                    sourceIcon = '🌾 ';
+                } else if (result.data.source === 'openfoodfacts') {
+                    sourceLabel = 'Open Food Facts';
+                    sourceIcon = '🏷️ ';
+                } else {
+                    sourceLabel = 'My Ingredient';
+                    sourceIcon = '🏠 ';
+                }
+            }
+            
+            // Format price information for ingredients
+            let priceInfo = '';
+            if (result.type === 'ingredient' && result.data) {
+                if (result.data.pricePer100g) {
+                    priceInfo = `<p style="color: #666; font-size: 0.9em;">Price: $${result.data.pricePer100g.toFixed(2)}/100g</p>`;
+                } else if (result.data.pricePerGram) {
+                    priceInfo = `<p style="color: #666; font-size: 0.9em;">Price: $${(result.data.pricePerGram * 100).toFixed(2)}/100g</p>`;
+                } else {
+                    priceInfo = '<p style="color: #999; font-size: 0.9em;">Price: N/A</p>';
+                }
+            }
+            
+            div.innerHTML = `
+                <div class="result-header">
+                    <span class="result-type ${result.type}">${result.type}</span>
+                    <h4>${sourceIcon}${result.data.name}</h4>
+                </div>
+                <p>${sourceLabel}${result.data.brandOwner ? ` - ${result.data.brandOwner}` : ''}</p>
+                ${priceInfo}
+            `;
+            
+            div.addEventListener('click', () => selectFood(result));
+            foodSearchResults.appendChild(div);
+        });
     }
     
-    results.forEach(result => {
-        const div = document.createElement('div');
-        div.className = 'search-result-item';
+    // Always show "Add New Ingredient" option at the end
+    const addNewDiv = document.createElement('div');
+    addNewDiv.className = 'search-result-item add-new-ingredient';
+    addNewDiv.style.borderTop = '2px solid #ddd';
+    addNewDiv.style.marginTop = '10px';
+    addNewDiv.style.paddingTop = '10px';
+    addNewDiv.innerHTML = `
+        <div class="result-header">
+            <span class="result-type add-new">➕ Add New Ingredient</span>
+        </div>
+        <p style="color: #666; font-size: 0.9em;">Create a new custom ingredient or search APIs</p>
+    `;
+    
+    addNewDiv.addEventListener('click', () => {
+        // Close the add food modal
+        closeAddFoodModal();
         
-        // Determine source label and icon
-        let sourceLabel = result.type === 'recipe' ? 'Recipe' : 'Ingredient';
-        let sourceIcon = '';
-        if (result.type === 'ingredient' && result.data.source) {
-            if (result.data.source === 'usda') {
-                sourceLabel = 'USDA Database';
-                sourceIcon = '🌾 ';
-            } else if (result.data.source === 'openfoodfacts') {
-                sourceLabel = 'Open Food Facts';
-                sourceIcon = '🏷️ ';
-            } else {
-                sourceLabel = 'My Ingredient';
-                sourceIcon = '🏠 ';
-            }
+        // Redirect to ingredients page to add new ingredient
+        if (confirm('To add a new ingredient, you\'ll be taken to the My Ingredients page. Continue?')) {
+            window.location.href = 'ingredients.html';
         }
-        
-        // Format price information for ingredients
-        let priceInfo = '';
-        if (result.type === 'ingredient' && result.data) {
-            if (result.data.pricePer100g) {
-                priceInfo = `<p style="color: #666; font-size: 0.9em;">Price: $${result.data.pricePer100g.toFixed(2)}/100g</p>`;
-            } else if (result.data.pricePerGram) {
-                priceInfo = `<p style="color: #666; font-size: 0.9em;">Price: $${(result.data.pricePerGram * 100).toFixed(2)}/100g</p>`;
-            } else {
-                priceInfo = '<p style="color: #999; font-size: 0.9em;">Price: N/A</p>';
-            }
-        }
-        
-        div.innerHTML = `
-            <div class="result-header">
-                <span class="result-type ${result.type}">${result.type}</span>
-                <h4>${sourceIcon}${result.data.name}</h4>
-            </div>
-            <p>${sourceLabel}${result.data.brandOwner ? ` - ${result.data.brandOwner}` : ''}</p>
-            ${priceInfo}
-        `;
-        
-        div.addEventListener('click', () => selectFood(result));
-        foodSearchResults.appendChild(div);
     });
+    
+    foodSearchResults.appendChild(addNewDiv);
 }
 
 function selectFood(foodResult) {

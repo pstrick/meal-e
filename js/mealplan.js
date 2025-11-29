@@ -493,6 +493,29 @@ async function updateUnifiedList() {
     // Clear the current list
     unifiedList.innerHTML = '';
     
+    // Add Free Text option at the top (always visible, not filtered)
+    const freeTextOption = document.createElement('div');
+    freeTextOption.className = 'unified-option free-text-option';
+    freeTextOption.innerHTML = `
+        <div class="item-header">
+            <span class="item-icon">✏️</span>
+            <span class="item-type">Free Text</span>
+            <h4>Type custom text (e.g., "Eat out", "Leftovers")</h4>
+        </div>
+        <p style="color: #666; font-size: 0.9em;">Add a custom note or label to this meal</p>
+    `;
+    freeTextOption.addEventListener('click', () => {
+        // Remove selection from other options
+        unifiedList.querySelectorAll('.unified-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        
+        // Select this option
+        freeTextOption.classList.add('selected');
+        selectFreeTextItem();
+    });
+    unifiedList.appendChild(freeTextOption);
+    
     const results = [];
     
     // Search meals (recipes)
@@ -631,6 +654,74 @@ async function updateUnifiedList() {
     }
 }
 
+function selectFreeTextItem() {
+    console.log('Selecting free text item');
+    
+    // Get elements from the form
+    const selectedItemDiv = mealPlanForm.querySelector('.selected-item');
+    const submitButton = mealPlanForm.querySelector('button[type="submit"]');
+    
+    if (!selectedItemDiv || !submitButton) {
+        console.error('Required elements not found in the form');
+        return;
+    }
+    
+    // Check if free text input already exists, if not create it
+    let freeTextInput = selectedItemDiv.querySelector('#free-text-input');
+    if (!freeTextInput) {
+        // Create free text input container
+        const freeTextContainer = document.createElement('div');
+        freeTextContainer.className = 'free-text-container';
+        freeTextContainer.style.marginTop = '15px';
+        
+        freeTextInput = document.createElement('input');
+        freeTextInput.type = 'text';
+        freeTextInput.id = 'free-text-input';
+        freeTextInput.placeholder = 'Enter custom text (e.g., "Eat out", "Leftovers")';
+        freeTextInput.className = 'form-control';
+        freeTextInput.style.width = '100%';
+        freeTextInput.style.padding = '8px';
+        freeTextInput.style.marginTop = '10px';
+        
+        freeTextContainer.appendChild(freeTextInput);
+        selectedItemDiv.insertBefore(freeTextContainer, selectedItemDiv.querySelector('.form-group'));
+    }
+    
+    // Hide nutrition info and amount input for free text
+    const itemDetails = selectedItemDiv.querySelector('.item-details');
+    const amountInputGroup = selectedItemDiv.querySelector('#item-amount')?.closest('.form-group');
+    if (itemDetails) itemDetails.style.display = 'none';
+    if (amountInputGroup) amountInputGroup.style.display = 'none';
+    
+    // Show free text input
+    freeTextInput.style.display = 'block';
+    freeTextInput.value = '';
+    freeTextInput.focus();
+    
+    // Update selected item display
+    selectedItemDiv.style.display = 'block';
+    selectedItemDiv.querySelector('.item-name').textContent = 'Free Text Entry';
+    
+    // Hide recurring options for free text
+    const recurringOptions = selectedItemDiv.querySelector('.recurring-options');
+    if (recurringOptions) {
+        recurringOptions.style.display = 'none';
+    }
+    
+    // Enable submit button
+    submitButton.disabled = false;
+    submitButton.style.display = 'block';
+    
+    // Mark that we're in free text mode
+    selectedItem = {
+        type: 'freetext',
+        id: 'freetext',
+        name: '',
+        nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+        servingSize: 0
+    };
+}
+
 function selectItem(item) {
     console.log('Selecting item:', item);
     const sanitizedEmoji = (item.emoji || '').trim();
@@ -647,6 +738,18 @@ function selectItem(item) {
         console.error('Required elements not found in the form');
         return;
     }
+    
+    // Hide free text input if it exists
+    const freeTextInput = selectedItemDiv.querySelector('#free-text-input');
+    if (freeTextInput) {
+        freeTextInput.style.display = 'none';
+    }
+    
+    // Show nutrition info and amount input for regular items
+    const itemDetails = selectedItemDiv.querySelector('.item-details');
+    const amountInputGroup = selectedItemDiv.querySelector('#item-amount')?.closest('.form-group');
+    if (itemDetails) itemDetails.style.display = 'block';
+    if (amountInputGroup) amountInputGroup.style.display = 'block';
     
     // Update selected item display
     selectedItemDiv.style.display = 'block';
@@ -1234,6 +1337,34 @@ async function handleMealPlanSubmit(e) {
     e.preventDefault();
     if (!selectedSlot || !selectedItem) {
         console.error('No slot or item selected');
+        return;
+    }
+    
+    // Handle free text items
+    if (selectedItem.type === 'freetext') {
+        const freeTextInput = document.getElementById('free-text-input');
+        const freeText = freeTextInput ? freeTextInput.value.trim() : '';
+        
+        if (!freeText) {
+            alert('Please enter some text for this meal.');
+            return;
+        }
+        
+        const mealKey = getMealKey(selectedSlot.dataset.day, selectedSlot.dataset.meal);
+        if (!mealPlan[mealKey]) mealPlan[mealKey] = [];
+        mealPlan[mealKey].push({
+            type: 'freetext',
+            id: `freetext-${Date.now()}`,
+            name: freeText,
+            amount: 0,
+            nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+            servingSize: 0,
+            storeSection: '',
+            emoji: ''
+        });
+        saveMealPlan();
+        await updateMealPlanDisplay();
+        closeMealPlanModal();
         return;
     }
     

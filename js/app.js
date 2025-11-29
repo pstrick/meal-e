@@ -4,8 +4,6 @@ import './mealplan.js';
 import { initializeMealPlanner } from './mealplan.js';
 import { settings, normalizeThemeSettings } from './settings.js';
 import { showAlert } from './alert.js';
-import { searchUSDAIngredients } from './usda-api.js';
-import { searchOpenFoodFactsIngredients } from './open-food-facts-api.js';
 
 // DOM Elements
 const navLinks = document.querySelectorAll('nav a');
@@ -2193,8 +2191,7 @@ async function searchAllIngredients(query) {
         return JSON.parse(localStorage.getItem(newKey) || '[]');
     }
     
-    // Search my ingredients first (faster, local) - show immediately
-    // Prioritize exact matches and starts-with matches
+    // Search my ingredients only (no API calls)
     const queryLower = query.toLowerCase().trim();
     const allMyIngredients = getMyIngredients();
     
@@ -2372,256 +2369,12 @@ async function searchAllIngredients(query) {
         });
     });
     
-    // Search USDA and Open Food Facts APIs in parallel for faster results
-    const [usdaResults, offResults] = await Promise.allSettled([
-        (async () => {
-    try {
-        console.log('Searching USDA API for:', query);
-                const results = await searchUSDAIngredients(query, 5); // Reduced to 5 for speed
-                console.log('USDA API returned', results.length, 'results');
-                return results || [];
-            } catch (error) {
-                console.error('Error searching USDA API:', error);
-                if (error.message && error.message.includes('API key is required')) {
-                    console.warn('⚠️ USDA API key missing. Get a free key at: https://fdc.nal.usda.gov/api-key-signup.html');
-                }
-                return [];
-            }
-        })(),
-        (async () => {
-            try {
-                console.log('Searching Open Food Facts API for:', query);
-                const results = await searchOpenFoodFactsIngredients(query, 5); // Reduced to 5 for speed
-                console.log('Open Food Facts API returned', results.length, 'results');
-                return results || [];
-            } catch (error) {
-                console.error('Error searching Open Food Facts API:', error);
-                return [];
-            }
-        })()
-    ]);
-    
-    // Helper function to calculate relevance score
-    function calculateRelevance(text, query) {
-        if (!text || !query) return 0;
-        
-        const textLower = text.toLowerCase().trim();
-            const queryLower = query.toLowerCase().trim();
-        const queryWords = queryLower.split(/\s+/).filter(w => w.length > 0);
-        
-        let score = 0;
-        
-        // Exact match (highest priority)
-        if (textLower === queryLower) {
-            score += 10;
-        }
-        // Starts with query (very high priority)
-        else if (textLower.startsWith(queryLower)) {
-            score += 8;
-        }
-        // Contains query as whole phrase
-        else if (textLower.includes(queryLower)) {
-            score += 5;
-        }
-        // Word-based matching - check if all query words appear
-        else if (queryWords.length > 1) {
-            const textWords = textLower.split(/\s+/);
-            const matchingWords = queryWords.filter(qw => 
-                textWords.some(tw => tw === qw || tw.startsWith(qw) || tw.includes(qw))
-            );
-            const wordMatchRatio = matchingWords.length / queryWords.length;
-            score += wordMatchRatio * 4; // Up to 4 points for word matching
-            
-            // Bonus if words appear in order
-            let wordsInOrder = 0;
-            let lastIndex = -1;
-            for (const qw of queryWords) {
-                const index = textWords.findIndex(tw => tw === qw || tw.startsWith(qw));
-                if (index > lastIndex) {
-                    wordsInOrder++;
-                    lastIndex = index;
-                }
-            }
-            if (wordsInOrder === queryWords.length) {
-                score += 2; // Bonus for words in order
-            }
-        }
-        // Single word - check for word boundaries
-        else if (queryWords.length === 1) {
-            const queryWord = queryWords[0];
-            const wordBoundaryRegex = new RegExp(`\\b${queryWord}`, 'i');
-            if (wordBoundaryRegex.test(textLower)) {
-                score += 4; // Word boundary match
-            } else if (textLower.includes(queryWord)) {
-                score += 2; // Partial match
-            }
-        }
-        
-        // Boost for shorter names (more specific matches)
-        if (textLower.length < queryLower.length * 2) {
-            score += 1;
-        }
-        
-        return score;
-    }
-    
-    // Process USDA results
-    if (usdaResults.status === 'fulfilled' && usdaResults.value && usdaResults.value.length > 0) {
-        const scoredUSDAResults = usdaResults.value
-                .map(result => {
-                const name = result.name || '';
-                const brandOwner = result.brandOwner || '';
-                const fullText = `${name} ${brandOwner}`.trim();
-                
-                // Calculate base relevance from name
-                let relevance = calculateRelevance(name, query);
-                
-                // Boost if brand/owner also matches
-                if (brandOwner) {
-                    relevance += calculateRelevance(brandOwner, query) * 0.3;
-                }
-                
-                    // Boost relevance if it has nutrition data
-                    if (result.nutrition && (result.nutrition.calories > 0 || result.nutrition.protein > 0)) {
-                        relevance += 0.5;
-                    }
-                
-                // Penalize very long names (less specific)
-                if (name.length > 100) {
-                    relevance -= 0.5;
-                }
-                
-                    return { result, relevance };
-                })
-            .filter(item => item.relevance > 0)
-            .sort((a, b) => {
-                // Sort by relevance first
-                if (b.relevance !== a.relevance) {
-                    return b.relevance - a.relevance;
-                }
-                // Then by word count (fewer words = simpler/better)
-                const aWords = (a.result.name || '').split(/\s+/).length;
-                const bWords = (b.result.name || '').split(/\s+/).length;
-                if (aWords !== bWords) {
-                    return aWords - bWords;
-                }
-                // Then by name length (shorter = more specific)
-                return a.result.name.length - b.result.name.length;
-            })
-                .map(item => item.result);
-            
-            results.push(...scoredUSDAResults);
-            console.log('Added', scoredUSDAResults.length, 'USDA results');
-    }
-    
-    // Process Open Food Facts results
-    if (offResults.status === 'fulfilled' && offResults.value && offResults.value.length > 0) {
-        // First, filter out any results without valid nutrition data
-        const validOFFResults = offResults.value.filter(result => {
-            if (!result || !result.nutrition) {
-                return false;
-            }
-            const hasValidNutrition = 
-                (result.nutrition.calories && result.nutrition.calories > 0) || 
-                (result.nutrition.protein && result.nutrition.protein > 0) || 
-                (result.nutrition.carbs && result.nutrition.carbs > 0) || 
-                (result.nutrition.fat && result.nutrition.fat > 0);
-            
-            if (!hasValidNutrition) {
-                console.log('Filtering out Open Food Facts result without valid nutrition in searchAllIngredients:', result.name);
-            }
-            return hasValidNutrition;
-        });
-        
-        const scoredOFFResults = validOFFResults
-                .map(result => {
-                const name = result.name || '';
-                const brandOwner = result.brandOwner || '';
-                const fullText = `${name} ${brandOwner}`.trim();
-                
-                // Calculate base relevance from name
-                let relevance = calculateRelevance(name, query);
-                
-                // Boost if brand/owner also matches
-                if (brandOwner) {
-                    relevance += calculateRelevance(brandOwner, query) * 0.3;
-                }
-                
-                    // Boost relevance if it has nutrition data
-                    if (result.nutrition && (result.nutrition.calories > 0 || result.nutrition.protein > 0)) {
-                        relevance += 0.5;
-                    }
-                
-                // Penalize very long names (less specific)
-                if (name.length > 100) {
-                    relevance -= 0.5;
-                }
-                
-                    return { result, relevance };
-                })
-            .filter(item => item.relevance > 0)
-            .sort((a, b) => {
-                // Sort by relevance first
-                if (b.relevance !== a.relevance) {
-                    return b.relevance - a.relevance;
-                }
-                // Then by word count (fewer words = simpler/better)
-                const aWords = (a.result.name || '').split(/\s+/).length;
-                const bWords = (b.result.name || '').split(/\s+/).length;
-                if (aWords !== bWords) {
-                    return aWords - bWords;
-                }
-                // Then by name length (shorter = more specific)
-                return a.result.name.length - b.result.name.length;
-            })
-                .map(item => item.result);
-            
-            results.push(...scoredOFFResults);
-            console.log('Added', scoredOFFResults.length, 'Open Food Facts results (filtered from', offResults.value.length, 'total)');
-    }
-    
-    // Sort results: my ingredients first (already added first), then API results by relevance and shortest name
-    results.sort((a, b) => {
-        // Custom ingredients first
-        if (a.source === 'custom' && b.source !== 'custom') return -1;
-        if (a.source !== 'custom' && b.source === 'custom') return 1;
-        
-        // Calculate relevance scores for both
-        const aRelevance = calculateRelevance(a.name, query);
-        const bRelevance = calculateRelevance(b.name, query);
-        
-        // Boost relevance if it has nutrition data
-        const aFinalRelevance = aRelevance + (a.nutrition && (a.nutrition.calories > 0 || a.nutrition.protein > 0) ? 0.5 : 0);
-        const bFinalRelevance = bRelevance + (b.nutrition && (b.nutrition.calories > 0 || b.nutrition.protein > 0) ? 0.5 : 0);
-        
-        if (aFinalRelevance !== bFinalRelevance) return bFinalRelevance - aFinalRelevance;
-        
-        // If same relevance, sort by source priority: Open Food Facts > USDA
-        if (a.source === 'openfoodfacts' && b.source === 'usda') return -1;
-        if (a.source === 'usda' && b.source === 'openfoodfacts') return 1;
-        
-        // Then by word count (fewer words = simpler/better)
-        const aWords = (a.name || '').split(/\s+/).length;
-        const bWords = (b.name || '').split(/\s+/).length;
-        if (aWords !== bWords) return aWords - bWords;
-        
-        // Then by name length (shorter = more specific)
-        if (a.name.length !== b.name.length) return a.name.length - b.name.length;
-        
-        // Finally alphabetically
-        return a.name.localeCompare(b.name);
+    console.log('Search results (custom ingredients only):', {
+        total: results.length,
+        custom: results.filter(r => r.source === 'custom').length
     });
     
-    // Limit to 10 results total
-    const limitedResults = results.slice(0, 10);
-    console.log('Final results (limited to 10):', {
-        total: limitedResults.length,
-        custom: limitedResults.filter(r => r.source === 'custom').length,
-        usda: limitedResults.filter(r => r.source === 'usda').length,
-        openfoodfacts: limitedResults.filter(r => r.source === 'openfoodfacts').length
-    });
-    
-    return limitedResults;
+    return results;
 }
 
 // Modified Ingredient Search Result Handler
@@ -2634,48 +2387,47 @@ async function displaySearchResults(results) {
     
     searchResultsElement.innerHTML = '';
     
+    // Display search results
     if (results.length === 0) {
         searchResultsElement.innerHTML = '<div class="no-results">No matching ingredients found</div>';
-        return;
-    }
-    
-    for (const ingredient of results) {
-        const div = document.createElement('div');
-        div.className = 'search-result-item';
-        
-        // Create visual indicator for ingredient source
-        let sourceConfig = { icon: '🏠', label: 'Custom Ingredient' };
-        if (ingredient.source === 'usda') {
-            sourceConfig = { icon: '🌾', label: 'USDA Database' };
-        } else if (ingredient.source === 'openfoodfacts') {
-            sourceConfig = { icon: '🏷️', label: 'Open Food Facts' };
-        }
-        
-        const [mainName, ...details] = ingredient.name.split(',');
-        const emoji = (ingredient.emoji || '').trim();
-        
-        // Format price information
-        let priceInfo = '';
-        if (ingredient.pricePer100g) {
-            priceInfo = `$${ingredient.pricePer100g.toFixed(2)}/100g`;
-        } else if (ingredient.pricePerGram) {
-            priceInfo = `$${(ingredient.pricePerGram * 100).toFixed(2)}/100g`;
-        } else {
-            priceInfo = 'Price: N/A';
-        }
-        
-        div.innerHTML = `
-            <div class="search-result-header">
-                <span class="source-indicator ${ingredient.source}">
-                    ${sourceConfig.icon} ${sourceConfig.label}
-                </span>
-                <h4>${emoji ? `<span class="ingredient-emoji">${emoji}</span> ` : ''}${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
-            </div>
-            <p>${ingredient.brandOwner || ''}</p>
-            <p style="color: #666; font-size: 0.9em;">${priceInfo}</p>
-        `;
-        
-        div.addEventListener('click', async () => {
+    } else {
+        for (const ingredient of results) {
+            const div = document.createElement('div');
+            div.className = 'search-result-item';
+            
+            // Create visual indicator for ingredient source
+            let sourceConfig = { icon: '🏠', label: 'Custom Ingredient' };
+            if (ingredient.source === 'usda') {
+                sourceConfig = { icon: '🌾', label: 'USDA Database' };
+            } else if (ingredient.source === 'openfoodfacts') {
+                sourceConfig = { icon: '🏷️', label: 'Open Food Facts' };
+            }
+            
+            const [mainName, ...details] = ingredient.name.split(',');
+            const emoji = (ingredient.emoji || '').trim();
+            
+            // Format price information
+            let priceInfo = '';
+            if (ingredient.pricePer100g) {
+                priceInfo = `$${ingredient.pricePer100g.toFixed(2)}/100g`;
+            } else if (ingredient.pricePerGram) {
+                priceInfo = `$${(ingredient.pricePerGram * 100).toFixed(2)}/100g`;
+            } else {
+                priceInfo = 'Price: N/A';
+            }
+            
+            div.innerHTML = `
+                <div class="search-result-header">
+                    <span class="source-indicator ${ingredient.source}">
+                        ${sourceConfig.icon} ${sourceConfig.label}
+                    </span>
+                    <h4>${emoji ? `<span class="ingredient-emoji">${emoji}</span> ` : ''}${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
+                </div>
+                <p>${ingredient.brandOwner || ''}</p>
+                <p style="color: #666; font-size: 0.9em;">${priceInfo}</p>
+            `;
+            
+            div.addEventListener('click', async () => {
             try {
                 if (!currentIngredientInput) {
                     showAlert('No ingredient input is currently selected. Please click an ingredient input field first.', { type: 'warning' });
@@ -2925,7 +2677,33 @@ async function displaySearchResults(results) {
         });
         
         searchResultsElement.appendChild(div);
+        }
     }
+    
+    // Always show "Add New Ingredient" option at the end
+    const addNewDiv = document.createElement('div');
+    addNewDiv.className = 'search-result-item add-new-ingredient';
+    addNewDiv.style.borderTop = '2px solid #ddd';
+    addNewDiv.style.marginTop = '10px';
+    addNewDiv.style.paddingTop = '10px';
+    addNewDiv.innerHTML = `
+        <div class="search-result-header">
+            <span class="source-indicator add-new">
+                ➕ Add New Ingredient
+            </span>
+        </div>
+        <p style="color: #666; font-size: 0.9em;">Create a new custom ingredient or search APIs</p>
+    `;
+    
+    addNewDiv.addEventListener('click', () => {
+        // Close the search modal/dropdown
+        removeSearchDropdown();
+        
+        // Redirect to ingredients page to add new ingredient
+        window.location.href = 'ingredients.html';
+    });
+    
+    searchResultsElement.appendChild(addNewDiv);
 }
 
 // Modified Ingredient Input Handler

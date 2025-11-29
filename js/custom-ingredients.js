@@ -546,6 +546,15 @@ function openIngredientModal(ingredient = null) {
     }
     closeEmojiPicker();
     
+    // Clear API search
+    if (apiSearchInput) apiSearchInput.value = '';
+    if (apiSearchResults) apiSearchResults.innerHTML = '';
+    // Remove any success messages
+    if (apiSearchSection) {
+        const messages = apiSearchSection.querySelectorAll('p[style*="color: #27ae60"]');
+        messages.forEach(msg => msg.remove());
+    }
+    
     // Show modal
     ingredientModal.classList.add('active');
 }
@@ -1173,19 +1182,6 @@ if (apiSearchInput) {
     });
 }
 
-// Clear API search when modal opens
-const originalOpenIngredientModal = openIngredientModal;
-openIngredientModal = function(ingredient = null) {
-    originalOpenIngredientModal(ingredient);
-    if (apiSearchInput) apiSearchInput.value = '';
-    if (apiSearchResults) apiSearchResults.innerHTML = '';
-    // Remove any success messages
-    if (apiSearchSection) {
-        const messages = apiSearchSection.querySelectorAll('p[style*="color: #27ae60"]');
-        messages.forEach(msg => msg.remove());
-    }
-};
-
 if (form) {
     form.addEventListener('submit', saveCustomIngredient);
     form.addEventListener('reset', closeEmojiPicker);
@@ -1257,6 +1253,7 @@ window.addEventListener('click', (event) => {
 // Make functions available globally
 window.deleteCustomIngredient = deleteCustomIngredient;
 window.editCustomIngredient = editCustomIngredient;
+window.openIngredientModal = openIngredientModal;
 
 // Initialize
 loadCustomIngredients();
