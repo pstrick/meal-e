@@ -516,29 +516,6 @@ async function updateUnifiedList() {
     // Clear the current list
     unifiedList.innerHTML = '';
     
-    // Add Custom Meal option at the top (always visible, not filtered)
-    const customMealOption = document.createElement('div');
-    customMealOption.className = 'unified-option custom-meal-option';
-    customMealOption.innerHTML = `
-        <div class="item-header">
-            <span class="item-icon">✏️</span>
-            <span class="item-type">Custom Meal</span>
-            <h4>Create a custom meal with macros and cost</h4>
-        </div>
-        <p style="color: #666; font-size: 0.9em;">Add a custom meal with nutrition info and cost</p>
-    `;
-    customMealOption.addEventListener('click', () => {
-        // Remove selection from other options
-        unifiedList.querySelectorAll('.unified-option').forEach(option => {
-            option.classList.remove('selected');
-        });
-        
-        // Select this option
-        customMealOption.classList.add('selected');
-        selectCustomMealItem();
-    });
-    unifiedList.appendChild(customMealOption);
-    
     const results = [];
     
     // Search meals (recipes)
@@ -673,8 +650,34 @@ async function updateUnifiedList() {
     
     // Show message if no items found
     if (results.length === 0) {
-        unifiedList.innerHTML = '<div class="unified-option">No items found</div>';
+        const noItemsDiv = document.createElement('div');
+        noItemsDiv.className = 'unified-option no-results';
+        noItemsDiv.textContent = 'No items found';
+        unifiedList.appendChild(noItemsDiv);
     }
+    
+    // Add Custom Meal option at the bottom (always visible, not filtered)
+    const customMealOption = document.createElement('div');
+    customMealOption.className = 'unified-option custom-meal-option';
+    customMealOption.innerHTML = `
+        <div class="item-header">
+            <span class="item-icon">✏️</span>
+            <span class="item-type">Custom Meal</span>
+            <h4>Create a custom meal with macros and cost</h4>
+        </div>
+        <p style="color: #666; font-size: 0.9em;">Add a custom meal with nutrition info and cost</p>
+    `;
+    customMealOption.addEventListener('click', () => {
+        // Remove selection from other options
+        unifiedList.querySelectorAll('.unified-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        
+        // Select this option
+        customMealOption.classList.add('selected');
+        selectCustomMealItem();
+    });
+    unifiedList.appendChild(customMealOption);
 }
 
 function selectCustomMealItem() {
