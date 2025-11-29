@@ -447,15 +447,27 @@ function openMealPlanModal(slot) {
     const amountInput = mealPlanForm.querySelector('#item-amount');
     const selectedItemDiv = mealPlanForm.querySelector('.selected-item');
     const submitButton = mealPlanForm.querySelector('button[type="submit"]');
+    const freeTextInput = selectedItemDiv?.querySelector('#free-text-input');
     
     if (unifiedSearch) unifiedSearch.value = '';
     if (categoryFilter) categoryFilter.value = 'all';
     if (amountInput) amountInput.value = '100';
-    if (selectedItemDiv) selectedItemDiv.style.display = 'none';
+    if (selectedItemDiv) {
+        selectedItemDiv.style.display = 'none';
+        // Show nutrition info and amount input again
+        const itemDetails = selectedItemDiv.querySelector('.item-details');
+        const amountInputGroup = selectedItemDiv.querySelector('#item-amount')?.closest('.form-group');
+        if (itemDetails) itemDetails.style.display = 'block';
+        if (amountInputGroup) amountInputGroup.style.display = 'block';
+    }
+    if (freeTextInput) {
+        freeTextInput.style.display = 'none';
+        freeTextInput.value = '';
+    }
     if (submitButton) submitButton.disabled = true;
     
     // Hide recurring options initially - they will show when item is selected
-    const recurringOptions = selectedItemDiv.querySelector('.recurring-options');
+    const recurringOptions = selectedItemDiv?.querySelector('.recurring-options');
     if (recurringOptions) {
         recurringOptions.style.display = 'none';
     }
@@ -832,7 +844,16 @@ function closeMealPlanModal() {
         mealPlanForm.reset();
         const selectedItemDiv = mealPlanForm.querySelector('.selected-item');
         const submitButton = mealPlanForm.querySelector('button[type="submit"]');
-        if (selectedItemDiv) selectedItemDiv.style.display = 'none';
+        const freeTextInput = selectedItemDiv?.querySelector('#free-text-input');
+        if (selectedItemDiv) {
+            selectedItemDiv.style.display = 'none';
+            // Show nutrition info and amount input again
+            const itemDetails = selectedItemDiv.querySelector('.item-details');
+            const amountInputGroup = selectedItemDiv.querySelector('#item-amount')?.closest('.form-group');
+            if (itemDetails) itemDetails.style.display = 'block';
+            if (amountInputGroup) amountInputGroup.style.display = 'block';
+        }
+        if (freeTextInput) freeTextInput.style.display = 'none';
         if (submitButton) submitButton.disabled = true;
     }
 }
@@ -982,6 +1003,35 @@ function createMealItem(item, amount, itemIndex, slot) {
     div.dataset.itemId = item.id;
     div.dataset.itemAmount = amount;
     div.dataset.itemEmoji = item.emoji || '';
+    
+    // Handle free text items
+    if (item.type === 'freetext') {
+        const displayName = item.name;
+        const truncatedName = displayName.length > 140 ? `${displayName.substring(0, 137).trimEnd()}...` : displayName;
+        
+        div.innerHTML = `
+            <div class="meal-item-header">
+                <span class="meal-item-name" title="${displayName}" style="font-style: italic;">${truncatedName}</span>
+                <button class="remove-meal" title="Remove Item">&times;</button>
+            </div>
+            <div class="meal-item-details">
+                <span class="meal-item-type" style="color: #666;">Free Text</span>
+            </div>
+        `;
+        
+        // Remove item handler
+        div.querySelector('.remove-meal').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const mealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
+            if (mealPlan[mealKey] && Array.isArray(mealPlan[mealKey])) {
+                mealPlan[mealKey].splice(itemIndex, 1);
+                if (mealPlan[mealKey].length === 0) delete mealPlan[mealKey];
+                saveMealPlan();
+                updateMealPlanDisplay();
+            }
+        });
+        return div;
+    }
     
     const label = item.type === 'meal' ? 'Recipe' : 'Custom Ingredient';
     
@@ -1445,7 +1495,17 @@ async function addAddMealButton(slot) {
     if (items && Array.isArray(items) && items.length > 0) {
         items.forEach((itemData, idx) => {
             let item;
-            if (itemData.type === 'meal') {
+            if (itemData.type === 'freetext') {
+                // Handle free text items
+                item = {
+                    type: 'freetext',
+                    id: itemData.id,
+                    name: itemData.name || '',
+                    nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+                    servingSize: 0,
+                    emoji: ''
+                };
+            } else if (itemData.type === 'meal') {
                 const recipe = window.recipes.find(r => r.id === itemData.id);
                 if (recipe) {
                     item = {
