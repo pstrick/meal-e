@@ -178,6 +178,121 @@ function extractWeightInGrams(text) {
 }
 
 /**
+ * Wegmans-specific data mapping for CSS selectors
+ * Maps field names to arrays of possible CSS selectors to try
+ */
+const WEGMANS_SELECTORS = {
+    name: [
+        'h1[data-testid="product-title"]',
+        'h1.product-title',
+        '.product-name h1',
+        'h1',
+        '[data-testid="product-name"]',
+        '.PDPProductTile-title',
+        '.product-detail-title'
+    ],
+    price: [
+        '[data-testid="product-price"]',
+        '.product-price',
+        '.price-value',
+        '[data-testid="price"]',
+        '.PDPProductTile-price',
+        '.product-detail-price',
+        '.price'
+    ],
+    size: [
+        '[data-testid="product-size"]',
+        '.product-size',
+        '.size-value',
+        '.quantity',
+        '.product-quantity',
+        '[data-testid="quantity"]',
+        '.PDPProductTile-size'
+    ],
+    servingSize: [
+        '.serving-size-value',
+        '[data-serving-size]',
+        '.nutrition-serving-size'
+    ],
+    nutrition: {
+        calories: [
+            '.calories-value',
+            '[data-calories]',
+            '.nutrition-calories',
+            '.calories'
+        ],
+        fat: [
+            '.fat-value',
+            '[data-fat]',
+            '.nutrition-fat',
+            '.total-fat-value',
+            '.fat'
+        ],
+        carbs: [
+            '.carbs-value',
+            '[data-carbs]',
+            '.nutrition-carbs',
+            '.carbohydrate-value',
+            '.carbs',
+            '.carbohydrates'
+        ],
+        protein: [
+            '.protein-value',
+            '[data-protein]',
+            '.nutrition-protein',
+            '.protein'
+        ]
+    }
+};
+
+/**
+ * Try multiple selectors and return the first match
+ * @param {Document} doc - DOM document
+ * @param {Array<string>} selectors - Array of CSS selectors to try
+ * @returns {Element|null} First matching element or null
+ */
+function trySelectors(doc, selectors) {
+    for (const selector of selectors) {
+        const element = doc.querySelector(selector);
+        if (element) {
+            return element;
+        }
+    }
+    return null;
+}
+
+/**
+ * Scrape Wegmans product page
+ * @param {string} url - Wegmans product URL
+ * @returns {Promise<Object>} Scraped product data
+ */
+/**
+ * Debug function to log all elements matching nutrition-related selectors
+ * @param {Document} doc - DOM document
+ */
+function debugNutritionElements(doc) {
+    console.log('=== Debugging Wegmans nutrition elements ===');
+    
+    // Log all elements with nutrition-related classes/ids
+    const nutritionClasses = [
+        'calories', 'calorie', 'fat', 'carb', 'protein', 
+        'nutrition', 'serving', 'value'
+    ];
+    
+    nutritionClasses.forEach(className => {
+        const elements = doc.querySelectorAll(`[class*="${className}" i], [id*="${className}" i]`);
+        if (elements.length > 0) {
+            console.log(`Found ${elements.length} elements with "${className}":`);
+            Array.from(elements).slice(0, 5).forEach(elem => {
+                console.log(`  - ${elem.tagName}.${elem.className || ''}#${elem.id || ''}: "${extractText(elem).substring(0, 50)}"`);
+            });
+        }
+    });
+    
+    console.log('=== End debugging ===');
+}
+
+/**
  * Scrape Wegmans product page
  * @param {string} url - Wegmans product URL
  * @returns {Promise<Object>} Scraped product data
@@ -187,6 +302,9 @@ async function scrapeWegmansProduct(url) {
         console.log('Scraping Wegmans product:', url);
         const html = await fetchWithCorsProxy(url);
         const doc = parseHTML(html);
+        
+        // Debug: Log nutrition-related elements found on the page
+        debugNutritionElements(doc);
         
         const product = {
             name: '',
@@ -201,133 +319,178 @@ async function scrapeWegmansProduct(url) {
             }
         };
         
-        // Extract product name - Wegmans typically has this in various locations
-        const nameSelectors = [
-            'h1[data-testid="product-title"]',
-            'h1.product-title',
-            'h1.PDPProductTile-title',
-            '.product-name h1',
-            'h1',
-            '[data-testid="product-name"]',
-            '.product-detail-title'
-        ];
+        // Extract product name using Wegmans selectors
+        const nameElement = trySelectors(doc, WEGMANS_SELECTORS.name);
+        if (nameElement) {
+            product.name = extractText(nameElement);
+            console.log('Found product name:', product.name);
+        }
         
-        for (const selector of nameSelectors) {
-            const element = doc.querySelector(selector);
-            if (element) {
-                product.name = extractText(element);
-                if (product.name) break;
+        // Extract price using Wegmans selectors
+        const priceElement = trySelectors(doc, WEGMANS_SELECTORS.price);
+        if (priceElement) {
+            const priceText = extractText(priceElement);
+            product.price = extractNumber(priceText);
+            console.log('Found price:', product.price);
+        }
+        
+        // Extract size/weight
+        const sizeElement = trySelectors(doc, WEGMANS_SELECTORS.size);
+        if (sizeElement) {
+            const sizeText = extractText(sizeElement);
+            product.totalWeight = extractWeightInGrams(sizeText);
+            console.log('Found total weight:', product.totalWeight);
+        }
+        
+        // If we didn't find size, look in the product name
+        if (!product.totalWeight && product.name) {
+            product.totalWeight = extractWeightInGrams(product.name);
+            if (product.totalWeight) {
+                console.log('Extracted weight from product name:', product.totalWeight);
             }
         }
         
-        // Extract price - Wegmans price selectors
-        const priceSelectors = [
-            '[data-testid="product-price"]',
-            '.product-price',
-            '.price',
-            '.PDPProductTile-price',
-            '[data-testid="price"]',
-            '.product-detail-price'
-        ];
-        
-        for (const selector of priceSelectors) {
-            const element = doc.querySelector(selector);
-            if (element) {
-                const priceText = extractText(element);
-                product.price = extractNumber(priceText);
-                if (product.price) break;
+        // Extract serving size
+        const servingSizeElement = trySelectors(doc, WEGMANS_SELECTORS.servingSize);
+        if (servingSizeElement) {
+            const servingSizeText = extractText(servingSizeElement);
+            const servingSize = extractWeightInGrams(servingSizeText);
+            if (servingSize) {
+                product.servingSize = servingSize;
+                console.log('Found serving size:', product.servingSize);
             }
         }
         
-        // Extract size/weight - look for quantity, size, or weight info
-        const sizeSelectors = [
-            '[data-testid="product-size"]',
-            '.product-size',
-            '.size',
-            '.quantity',
-            '.product-quantity',
-            '[data-testid="quantity"]',
-            '.PDPProductTile-size'
-        ];
-        
-        for (const selector of sizeSelectors) {
-            const element = doc.querySelector(selector);
-            if (element) {
-                const sizeText = extractText(element);
-                product.totalWeight = extractWeightInGrams(sizeText);
-                if (product.totalWeight) break;
+        // Extract nutrition values using Wegmans-specific selectors
+        // Try direct value classes first (e.g., .calories-value)
+        const caloriesElement = trySelectors(doc, WEGMANS_SELECTORS.nutrition.calories);
+        if (caloriesElement) {
+            const caloriesText = extractText(caloriesElement);
+            product.nutrition.calories = extractNumber(caloriesText) || 0;
+            console.log('Found calories via selector:', product.nutrition.calories, 'from:', caloriesText);
+        } else {
+            // Try searching the entire document for calories-related elements
+            const allCaloriesElements = doc.querySelectorAll('[class*="calories"], [id*="calories"], [data-calories]');
+            for (const elem of allCaloriesElements) {
+                const text = extractText(elem);
+                const num = extractNumber(text);
+                if (num && num > 0 && num < 10000) { // Reasonable calorie range
+                    product.nutrition.calories = num;
+                    console.log('Found calories via fallback search:', num, 'from:', text);
+                    break;
+                }
             }
         }
         
-        // If we didn't find size, look in the product name or description
-        if (!product.totalWeight) {
-            const descriptionSelectors = [
-                '.product-description',
-                '[data-testid="product-description"]',
-                '.product-details',
-                '.PDPProductTile-description'
+        const fatElement = trySelectors(doc, WEGMANS_SELECTORS.nutrition.fat);
+        if (fatElement) {
+            const fatText = extractText(fatElement);
+            product.nutrition.fat = extractNumber(fatText) || 0;
+            console.log('Found fat via selector:', product.nutrition.fat);
+        } else {
+            // Fallback search for fat
+            const allFatElements = doc.querySelectorAll('[class*="fat"], [id*="fat"], [data-fat]');
+            for (const elem of allFatElements) {
+                const label = extractText(elem).toLowerCase();
+                if (label.includes('total fat') || (label.includes('fat') && !label.includes('saturated'))) {
+                    const text = extractText(elem);
+                    const num = extractNumber(text);
+                    if (num && num >= 0 && num < 200) { // Reasonable fat range
+                        product.nutrition.fat = num;
+                        console.log('Found fat via fallback search:', num);
+                        break;
+                    }
+                }
+            }
+        }
+        
+        const carbsElement = trySelectors(doc, WEGMANS_SELECTORS.nutrition.carbs);
+        if (carbsElement) {
+            const carbsText = extractText(carbsElement);
+            product.nutrition.carbs = extractNumber(carbsText) || 0;
+            console.log('Found carbs via selector:', product.nutrition.carbs);
+        } else {
+            // Fallback search for carbs
+            const allCarbsElements = doc.querySelectorAll('[class*="carb"], [id*="carb"], [data-carbs]');
+            for (const elem of allCarbsElements) {
+                const label = extractText(elem).toLowerCase();
+                if (label.includes('carbohydrate') || label.includes('carb')) {
+                    const text = extractText(elem);
+                    const num = extractNumber(text);
+                    if (num && num >= 0 && num < 500) { // Reasonable carbs range
+                        product.nutrition.carbs = num;
+                        console.log('Found carbs via fallback search:', num);
+                        break;
+                    }
+                }
+            }
+        }
+        
+        const proteinElement = trySelectors(doc, WEGMANS_SELECTORS.nutrition.protein);
+        if (proteinElement) {
+            const proteinText = extractText(proteinElement);
+            product.nutrition.protein = extractNumber(proteinText) || 0;
+            console.log('Found protein via selector:', product.nutrition.protein);
+        } else {
+            // Fallback search for protein
+            const allProteinElements = doc.querySelectorAll('[class*="protein"], [id*="protein"], [data-protein]');
+            for (const elem of allProteinElements) {
+                const text = extractText(elem);
+                const num = extractNumber(text);
+                if (num && num >= 0 && num < 200) { // Reasonable protein range
+                    product.nutrition.protein = num;
+                    console.log('Found protein via fallback search:', num);
+                    break;
+                }
+            }
+        }
+        
+        // If we didn't find nutrition values via direct selectors, try nutrition facts table
+        if (!product.nutrition.calories && !product.nutrition.fat && !product.nutrition.carbs && !product.nutrition.protein) {
+            const nutritionSelectors = [
+                '.nutrition-facts',
+                '[data-testid="nutrition-facts"]',
+                '.nutrition-information',
+                '.product-nutrition',
+                'table.nutrition-facts',
+                '.nutrition-label'
             ];
             
-            for (const selector of descriptionSelectors) {
-                const element = doc.querySelector(selector);
-                if (element) {
-                    const descText = extractText(element);
-                    product.totalWeight = extractWeightInGrams(descText);
-                    if (product.totalWeight) break;
+            let nutritionTable = trySelectors(doc, nutritionSelectors);
+            
+            if (nutritionTable) {
+                // First, try to extract serving size from the table
+                const tableText = nutritionTable.textContent || '';
+                const servingSizeMatch = tableText.match(/serving size[:\s]*(\d+\.?\d*)\s*(?:g|gram|grams|oz|ounce|ounces|ml|milliliter)/i);
+                if (servingSizeMatch) {
+                    product.servingSize = extractWeightInGrams(servingSizeMatch[0]) || product.servingSize;
                 }
-            }
-            
-            // Also check the name itself
-            if (!product.totalWeight && product.name) {
-                product.totalWeight = extractWeightInGrams(product.name);
-            }
-        }
-        
-        // Extract nutrition facts - Wegmans may have this in different formats
-        // Look for nutrition facts table or structured data
-        const nutritionSelectors = [
-            '.nutrition-facts',
-            '[data-testid="nutrition-facts"]',
-            '.nutrition-information',
-            '.product-nutrition',
-            'table.nutrition-facts'
-        ];
-        
-        // Try to find nutrition facts table
-        let nutritionTable = null;
-        for (const selector of nutritionSelectors) {
-            nutritionTable = doc.querySelector(selector);
-            if (nutritionTable) break;
-        }
-        
-        if (nutritionTable) {
-            // First, try to extract serving size from the table
-            const tableText = nutritionTable.textContent || '';
-            const servingSizeMatch = tableText.match(/serving size[:\s]*(\d+\.?\d*)\s*(?:g|gram|grams|oz|ounce|ounces|ml|milliliter)/i);
-            if (servingSizeMatch) {
-                product.servingSize = extractWeightInGrams(servingSizeMatch[0]) || product.servingSize;
-            }
-            
-            // Parse nutrition table rows
-            const rows = nutritionTable.querySelectorAll('tr, .nutrition-row');
-            rows.forEach(row => {
-                const label = extractText(row.querySelector('td:first-child, .nutrition-label, th')).toLowerCase();
-                const value = extractText(row.querySelector('td:last-child, .nutrition-value, td:nth-child(2)'));
-                const numValue = extractNumber(value);
                 
-                if (label.includes('serving size')) {
-                    const servingSize = extractWeightInGrams(value);
-                    if (servingSize) product.servingSize = servingSize;
-                } else if (label.includes('calorie')) {
-                    product.nutrition.calories = numValue || 0;
-                } else if (label.includes('total fat') || (label.includes('fat') && !label.includes('saturated') && !label.includes('trans'))) {
-                    product.nutrition.fat = numValue || 0;
-                } else if (label.includes('total carbohydrate') || (label.includes('carbohydrate') || label.includes('carb')) && !label.includes('fiber') && !label.includes('sugar')) {
-                    product.nutrition.carbs = numValue || 0;
-                } else if (label.includes('protein')) {
-                    product.nutrition.protein = numValue || 0;
+                // Parse nutrition table rows
+                const rows = nutritionTable.querySelectorAll('tr, .nutrition-row, .nutrition-item');
+                rows.forEach(row => {
+                    const label = extractText(row.querySelector('td:first-child, .nutrition-label, th, .nutrition-name')).toLowerCase();
+                    const value = extractText(row.querySelector('td:last-child, .nutrition-value, td:nth-child(2), .nutrition-amount'));
+                    const numValue = extractNumber(value);
+                    
+                    if (label.includes('serving size')) {
+                        const servingSize = extractWeightInGrams(value);
+                        if (servingSize) product.servingSize = servingSize;
+                    } else if (label.includes('calorie')) {
+                        product.nutrition.calories = numValue || 0;
+                    } else if (label.includes('total fat') || (label.includes('fat') && !label.includes('saturated') && !label.includes('trans'))) {
+                        product.nutrition.fat = numValue || 0;
+                    } else if (label.includes('total carbohydrate') || (label.includes('carbohydrate') || label.includes('carb')) && !label.includes('fiber') && !label.includes('sugar')) {
+                        product.nutrition.carbs = numValue || 0;
+                    } else if (label.includes('protein')) {
+                        product.nutrition.protein = numValue || 0;
+                    }
+                });
+                
+                if (product.nutrition.calories || product.nutrition.fat || product.nutrition.carbs || product.nutrition.protein) {
+                    console.log('Found nutrition from table:', product.nutrition);
                 }
-            });
+            }
         }
         
         // Try to find JSON-LD structured data which often contains nutrition info
