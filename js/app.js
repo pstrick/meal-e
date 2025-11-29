@@ -1783,29 +1783,12 @@ function showInlineSearchResults(input, results) {
     // Create dropdown container
     const dropdown = document.createElement('div');
     dropdown.className = 'ingredient-search-dropdown';
-    dropdown.style.cssText = `
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        max-height: 400px;
-        overflow-y: auto;
-        z-index: 1000;
-    `;
     
     // Show "no results" message if there are no results (but still show "Add New" option)
     if (results.length === 0) {
         const noResultsItem = document.createElement('div');
-        noResultsItem.style.cssText = `
-            padding: 10px 12px;
-            color: #666;
-            font-size: 0.9em;
-            border-bottom: 1px solid #eee;
-        `;
+        noResultsItem.className = 'search-result-item';
+        noResultsItem.style.cssText = 'color: var(--color-text-muted); font-size: 0.9em;';
         noResultsItem.textContent = 'No matching ingredients found';
         dropdown.appendChild(noResultsItem);
     }
@@ -1814,11 +1797,6 @@ function showInlineSearchResults(input, results) {
     results.forEach(result => {
         const item = document.createElement('div');
         item.className = 'search-result-item';
-        item.style.cssText = `
-            padding: 8px 12px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-        `;
         let sourceLabel = 'My Ingredient';
         let sourceIcon = '🏠';
         if (result.source === 'usda') {
@@ -1840,9 +1818,9 @@ function showInlineSearchResults(input, results) {
         }
         
         item.innerHTML = `
-            <div style="font-weight: 600;">${sourceIcon} ${result.name}</div>
-            <div style="font-size: 0.8em; color: #666;">${result.brandOwner || sourceLabel}</div>
-            <div style="font-size: 0.8em; color: #888;">${priceInfo}</div>
+            <div style="font-weight: 600; color: var(--color-text);">${sourceIcon} ${result.name}</div>
+            <div style="font-size: 0.8em; color: var(--color-text-muted);">${result.brandOwner || sourceLabel}</div>
+            <div style="font-size: 0.8em; color: var(--color-text-muted);">${priceInfo}</div>
         `;
         
         item.addEventListener('mousedown', (e) => {
@@ -1851,31 +1829,16 @@ function showInlineSearchResults(input, results) {
             removeSearchDropdown();
         });
         
-        item.addEventListener('mouseenter', () => {
-            item.style.backgroundColor = '#f5f5f5';
-        });
-        
-        item.addEventListener('mouseleave', () => {
-            item.style.backgroundColor = 'white';
-        });
-        
         dropdown.appendChild(item);
     });
     
     // Always add "New Custom Ingredient" option at the bottom
     const addNewItem = document.createElement('div');
     addNewItem.className = 'search-result-item add-new-ingredient';
-    addNewItem.style.cssText = `
-        padding: 10px 12px;
-        cursor: pointer;
-        border-top: 2px solid #ddd;
-        margin-top: 5px;
-        background-color: #f9f9f9;
-    `;
     
     addNewItem.innerHTML = `
-        <div style="font-weight: 600; color: #27ae60;">➕ New Custom Ingredient</div>
-        <div style="font-size: 0.8em; color: #666;">Create a new ingredient or search APIs</div>
+        <div style="font-weight: 600; color: var(--color-success);">➕ New Custom Ingredient</div>
+        <div style="font-size: 0.8em; color: var(--color-text-muted);">Create a new ingredient or search APIs</div>
     `;
     
     addNewItem.addEventListener('mousedown', (e) => {
@@ -1897,14 +1860,6 @@ function showInlineSearchResults(input, results) {
         } else {
             console.warn('openIngredientModal not available');
         }
-    });
-    
-    addNewItem.addEventListener('mouseenter', () => {
-        addNewItem.style.backgroundColor = '#f0f0f0';
-    });
-    
-    addNewItem.addEventListener('mouseleave', () => {
-        addNewItem.style.backgroundColor = '#f9f9f9';
     });
     
     dropdown.appendChild(addNewItem);
@@ -2483,7 +2438,7 @@ async function displaySearchResults(results) {
                 <h4>${emoji ? `<span class="ingredient-emoji">${emoji}</span> ` : ''}${mainName}${details.length > 0 ? ',' : ''}<span class="details">${details.join(',')}</span></h4>
             </div>
             <p>${ingredient.brandOwner || ''}</p>
-            <p style="color: #666; font-size: 0.9em;">${priceInfo}</p>
+            <p style="color: var(--color-text-muted); font-size: 0.9em;">${priceInfo}</p>
         `;
         
         div.addEventListener('click', async () => {
@@ -2742,16 +2697,16 @@ async function displaySearchResults(results) {
     // Always show "Add New Ingredient" option at the end
     const addNewDiv = document.createElement('div');
     addNewDiv.className = 'search-result-item add-new-ingredient';
-    addNewDiv.style.borderTop = '2px solid #ddd';
-    addNewDiv.style.marginTop = '10px';
-    addNewDiv.style.paddingTop = '10px';
+    addNewDiv.style.borderTop = '2px solid var(--color-border-strong)';
+    addNewDiv.style.marginTop = 'var(--space-3)';
+    addNewDiv.style.paddingTop = 'var(--space-3)';
     addNewDiv.innerHTML = `
         <div class="search-result-header">
             <span class="source-indicator add-new">
                 ➕ Add New Ingredient
             </span>
         </div>
-        <p style="color: #666; font-size: 0.9em;">Create a new custom ingredient or search APIs</p>
+        <p style="color: var(--color-text-muted); font-size: 0.9em;">Create a new custom ingredient or search APIs</p>
     `;
     
     addNewDiv.addEventListener('click', () => {

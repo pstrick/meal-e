@@ -1250,7 +1250,7 @@ function populateFormFromAPIResult(result) {
     // Show success message
     if (apiSearchSection) {
         const successMsg = document.createElement('p');
-        successMsg.style.cssText = 'color: #27ae60; font-size: 0.9em; margin-top: 10px;';
+        successMsg.style.cssText = 'color: var(--color-success); font-size: 0.9em; margin-top: var(--space-3);';
         successMsg.textContent = `✓ Filled form with data from ${result.source === 'usda' ? 'USDA' : 'Open Food Facts'}. Complete the remaining fields and save.`;
         apiSearchSection.appendChild(successMsg);
         setTimeout(() => successMsg.remove(), 5000);
