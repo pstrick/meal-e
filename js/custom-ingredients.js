@@ -1317,13 +1317,29 @@ async function handleURLScrape() {
             urlScrapeProgress.hidden = true;
         }
         
+        // Build success message with summary of what was found
+        let successMessage = '✓ Product information scraped successfully!';
+        const foundFields = [];
+        if (scrapedData.name) foundFields.push('name');
+        if (scrapedData.price) foundFields.push('price');
+        if (scrapedData.totalWeight) foundFields.push('weight');
+        if (scrapedData.nutrition && (scrapedData.nutrition.calories || scrapedData.nutrition.fat || scrapedData.nutrition.carbs || scrapedData.nutrition.protein)) {
+            foundFields.push('nutrition');
+        }
+        
+        if (foundFields.length > 0) {
+            successMessage += ` Found: ${foundFields.join(', ')}. Review the form below and complete any missing fields, then save.`;
+        } else {
+            successMessage += ' Review the form and complete any missing information, then save.';
+        }
+        
         // Show success message
         if (urlScrapeSection) {
             const successMsg = document.createElement('p');
             successMsg.style.cssText = 'color: var(--color-success); font-size: 0.9em; margin-top: var(--space-3);';
-            successMsg.textContent = '✓ Product information scraped successfully! Review and complete any missing fields, then save.';
+            successMsg.textContent = successMessage;
             urlScrapeSection.appendChild(successMsg);
-            setTimeout(() => successMsg.remove(), 5000);
+            setTimeout(() => successMsg.remove(), 8000); // Show longer since it has more info
         }
         
         // Clear URL input
@@ -1352,55 +1368,108 @@ async function handleURLScrape() {
 }
 
 function populateFormFromScrapedData(scrapedData) {
+    console.log('Populating form with scraped data:', scrapedData);
+    
     // Populate name
     const nameInput = document.getElementById('ingredient-name');
-    if (nameInput && scrapedData.name) {
-        nameInput.value = scrapedData.name;
+    if (nameInput) {
+        nameInput.value = scrapedData.name || '';
+        // Trigger input event to ensure any validation/listeners are notified
+        nameInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
     
-    // Populate price
+    // Populate price (required field)
     const priceInput = document.getElementById('total-price');
-    if (priceInput && scrapedData.price) {
-        priceInput.value = scrapedData.price.toFixed(2);
+    if (priceInput) {
+        if (scrapedData.price && scrapedData.price > 0) {
+            priceInput.value = scrapedData.price.toFixed(2);
+        } else {
+            priceInput.value = ''; // Leave empty so user knows to fill it
+        }
+        priceInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
     
-    // Populate total weight
+    // Populate total weight (required field)
     const weightInput = document.getElementById('total-weight');
-    if (weightInput && scrapedData.totalWeight) {
-        weightInput.value = Math.round(scrapedData.totalWeight);
+    if (weightInput) {
+        if (scrapedData.totalWeight && scrapedData.totalWeight > 0) {
+            weightInput.value = Math.round(scrapedData.totalWeight);
+        } else {
+            weightInput.value = ''; // Leave empty so user knows to fill it
+        }
+        weightInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
     
-    // Populate serving size
+    // Populate serving size (required field) - default to 100g if not found
     const servingSizeInput = document.getElementById('serving-size');
+    const servingSize = scrapedData.servingSize || 100;
     if (servingSizeInput) {
-        servingSizeInput.value = scrapedData.servingSize || 100;
+        servingSizeInput.value = servingSize;
+        servingSizeInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
     
-    // Populate nutrition data
+    // Populate nutrition data (all required fields)
     const nutrition = scrapedData.nutrition || {};
     
+    // Nutrition values from nutrition facts tables are typically per serving
+    // Set to 0 if not found (better than empty for required fields)
     const caloriesInput = document.getElementById('calories');
     if (caloriesInput) {
-        // Nutrition data from scraping is typically per serving size already
-        caloriesInput.value = Math.round(nutrition.calories || 0);
+        const calories = nutrition.calories ? Math.round(nutrition.calories) : 0;
+        caloriesInput.value = calories;
+        caloriesInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
     
     const fatInput = document.getElementById('fat');
     if (fatInput) {
-        fatInput.value = (nutrition.fat || 0).toFixed(1);
+        const fat = nutrition.fat ? parseFloat(nutrition.fat.toFixed(1)) : 0;
+        fatInput.value = fat;
+        fatInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
     
     const carbsInput = document.getElementById('carbs');
     if (carbsInput) {
-        carbsInput.value = (nutrition.carbs || 0).toFixed(1);
+        const carbs = nutrition.carbs ? parseFloat(nutrition.carbs.toFixed(1)) : 0;
+        carbsInput.value = carbs;
+        carbsInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
     
     const proteinInput = document.getElementById('protein');
     if (proteinInput) {
-        proteinInput.value = (nutrition.protein || 0).toFixed(1);
+        const protein = nutrition.protein ? parseFloat(nutrition.protein.toFixed(1)) : 0;
+        proteinInput.value = protein;
+        proteinInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
     
-    console.log('Form populated with scraped data');
+    // Try to auto-detect store section based on product name if not already set
+    const storeSectionInput = document.getElementById('store-section');
+    if (storeSectionInput && !storeSectionInput.value && scrapedData.name) {
+        const name = scrapedData.name.toLowerCase();
+        
+        // Simple category detection based on keywords
+        if (name.match(/\b(fresh|organic|produce|fruit|vegetable|apple|banana|lettuce|tomato|carrot|onion|garlic)\b/)) {
+            storeSectionInput.value = 'Produce';
+        } else if (name.match(/\b(milk|cheese|yogurt|butter|cream|dairy)\b/)) {
+            storeSectionInput.value = 'Dairy';
+        } else if (name.match(/\b(chicken|beef|pork|meat|turkey|fish|seafood|salmon|steak)\b/)) {
+            storeSectionInput.value = 'Meat';
+        } else if (name.match(/\b(bread|bagel|roll|bakery|muffin|donut)\b/)) {
+            storeSectionInput.value = 'Bakery';
+        } else if (name.match(/\b(canned|beans|soup|pasta|rice|grain|cereal)\b/)) {
+            storeSectionInput.value = 'Pantry';
+        } else if (name.match(/\b(frozen|ice cream|pizza)\b/)) {
+            storeSectionInput.value = 'Frozen';
+        }
+    }
+    
+    // Scroll the form into view to show the populated data
+    if (nameInput) {
+        setTimeout(() => {
+            nameInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+    }
+    
+    console.log('Form populated successfully with scraped data');
 }
 
 // Event Listeners for URL Scraping
