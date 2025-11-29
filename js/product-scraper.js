@@ -2,40 +2,87 @@
 // Scrapes product information from retail websites like Wegmans
 
 /**
+ * List of domains that are known to block CORS requests
+ * For these domains, we skip direct fetch and go straight to proxy
+ */
+const CORS_BLOCKED_DOMAINS = [
+    'wegmans.com',
+    'target.com',
+    'walmart.com',
+    'kroger.com',
+    'safeway.com'
+];
+
+/**
+ * Check if a URL is from a domain that blocks CORS
+ * @param {string} url - URL to check
+ * @returns {boolean} True if domain is known to block CORS
+ */
+function isCorsBlockedDomain(url) {
+    try {
+        const urlObj = new URL(url);
+        const hostname = urlObj.hostname.toLowerCase();
+        return CORS_BLOCKED_DOMAINS.some(domain => hostname.includes(domain));
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
  * Fetch HTML from a URL using CORS proxy if needed
  * @param {string} url - URL to fetch
  * @returns {Promise<string>} HTML content
  */
 async function fetchWithCorsProxy(url) {
-    // Try direct fetch first (some sites allow it)
-    try {
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
-            },
-            mode: 'cors'
-        });
-        
-        if (response.ok) {
-            return await response.text();
+    const skipDirectFetch = isCorsBlockedDomain(url);
+    
+    // Try direct fetch first only for sites that might allow CORS
+    if (!skipDirectFetch) {
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                },
+                mode: 'cors'
+            });
+            
+            if (response.ok) {
+                const text = await response.text();
+                if (text && text.length > 100) { // Basic validation that we got HTML
+                    return text;
+                }
+            }
+        } catch (error) {
+            console.log('Direct fetch failed (expected for CORS-blocked sites), using CORS proxy:', error.message);
         }
-    } catch (error) {
-        console.log('Direct fetch failed, trying CORS proxy:', error.message);
+    } else {
+        console.log('Skipping direct fetch for CORS-blocked domain, using proxy');
     }
     
-    // If direct fetch fails, try CORS proxy
+    // Use CORS proxy - try multiple proxies in order
     const corsProxies = [
-        'https://api.allorigins.win/raw?url=',
-        'https://corsproxy.io/?',
-        'https://cors-anywhere.herokuapp.com/' // May be rate-limited
+        {
+            prefix: 'https://api.allorigins.win/raw?url=',
+            name: 'AllOrigins'
+        },
+        {
+            prefix: 'https://corsproxy.io/?',
+            name: 'CORSProxy.io'
+        },
+        {
+            prefix: 'https://api.codetabs.com/v1/proxy?quest=',
+            name: 'CodeTabs'
+        }
     ];
     
     for (const proxy of corsProxies) {
         try {
-            const proxyUrl = proxy + encodeURIComponent(url);
+            const proxyUrl = proxy.prefix + encodeURIComponent(url);
+            console.log(`Trying CORS proxy: ${proxy.name}`);
+            
             const response = await fetch(proxyUrl, {
                 method: 'GET',
                 headers: {
@@ -44,15 +91,24 @@ async function fetchWithCorsProxy(url) {
             });
             
             if (response.ok) {
-                return await response.text();
+                const text = await response.text();
+                // Validate we got actual HTML content
+                if (text && text.length > 100 && (text.includes('<html') || text.includes('<!DOCTYPE'))) {
+                    console.log(`Successfully fetched via ${proxy.name}`);
+                    return text;
+                } else {
+                    console.warn(`${proxy.name} returned invalid content (too short or not HTML)`);
+                }
+            } else {
+                console.warn(`${proxy.name} returned status ${response.status}`);
             }
         } catch (error) {
-            console.log(`CORS proxy ${proxy} failed:`, error.message);
+            console.log(`${proxy.name} failed:`, error.message);
             continue;
         }
     }
     
-    throw new Error('Failed to fetch URL with all CORS proxy attempts');
+    throw new Error('Failed to fetch URL with all CORS proxy attempts. The website may be blocking requests or the proxies may be temporarily unavailable.');
 }
 
 /**

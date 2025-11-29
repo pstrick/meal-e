@@ -1336,7 +1336,16 @@ async function handleURLScrape() {
             urlScrapeProgress.hidden = true;
         }
         if (urlScrapeError) {
-            urlScrapeError.textContent = `Failed to scrape product: ${error.message}`;
+            let errorMessage = `Failed to scrape product: ${error.message}`;
+            
+            // Provide more helpful error messages for common issues
+            if (error.message.includes('CORS') || error.message.includes('proxy')) {
+                errorMessage = 'Unable to access this website due to browser security restrictions. Some sites block automated access. You may need to manually enter the product information, or try again later.';
+            } else if (error.message.includes('Failed to fetch')) {
+                errorMessage = 'Network error: Could not connect to the website. Please check your internet connection and try again.';
+            }
+            
+            urlScrapeError.textContent = errorMessage;
             urlScrapeError.hidden = false;
         }
     }
