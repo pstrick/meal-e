@@ -1588,7 +1588,7 @@ async function handleMealPlanSubmit(e) {
         return;
     }
     
-    // Handle custom meal items
+    // Handle custom meal items (supports one-time and recurring)
     if (selectedItem.type === 'custommeal') {
         const nameInput = document.getElementById('custom-meal-name');
         const caloriesInput = document.getElementById('custom-meal-calories');
@@ -1609,20 +1609,59 @@ async function handleMealPlanSubmit(e) {
             return;
         }
         
-        const mealKey = getMealKey(selectedSlot.dataset.day, selectedSlot.dataset.meal);
-        if (!mealPlan[mealKey]) mealPlan[mealKey] = [];
-        mealPlan[mealKey].push({
-            type: 'custommeal',
-            id: `custommeal-${Date.now()}`,
-            name: mealName,
-            amount: 1, // Custom meals are per serving
-            nutrition: { calories: calories, protein: protein, carbs: carbs, fat: fat },
-            servingSize: 1,
-            cost: cost,
-            storeSection: '',
-            emoji: ''
-        });
-        saveMealPlan();
+        const isRecurringCustom = document.getElementById('make-recurring')?.checked;
+        
+        if (isRecurringCustom) {
+            // Recurring custom meal
+            const selectedDays = Array.from(document.querySelectorAll('input[name="recurring-days"]:checked'))
+                .map(checkbox => parseInt(checkbox.value));
+            const endDate = document.getElementById('recurring-end-date')?.value;
+            
+            if (selectedDays.length === 0) {
+                alert('Please select at least one day of the week for recurring items.');
+                return;
+            }
+            
+            const recurringItem = {
+                id: Date.now(),
+                name: mealName,
+                type: 'custommeal',
+                amount: 1, // per serving
+                mealType: selectedSlot.dataset.meal,
+                days: selectedDays,
+                itemId: `custommeal-${Date.now()}`,
+                nutrition: { calories, protein, carbs, fat },
+                servingSize: 1,
+                storeSection: '',
+                emoji: '',
+                endDate: endDate || null,
+                source: 'custom',
+                fdcId: null,
+                cost: cost || 0
+            };
+            
+            recurringItems.push(recurringItem);
+            saveRecurringItems();
+            applyRecurringItems();
+            await updateMealPlanDisplay();
+        } else {
+            // One-time custom meal
+            const mealKey = getMealKey(selectedSlot.dataset.day, selectedSlot.dataset.meal);
+            if (!mealPlan[mealKey]) mealPlan[mealKey] = [];
+            mealPlan[mealKey].push({
+                type: 'custommeal',
+                id: `custommeal-${Date.now()}`,
+                name: mealName,
+                amount: 1, // Custom meals are per serving
+                nutrition: { calories, protein, carbs, fat },
+                servingSize: 1,
+                cost: cost,
+                storeSection: '',
+                emoji: ''
+            });
+            saveMealPlan();
+        }
+        
         await updateMealPlanDisplay();
         closeMealPlanModal();
         return;
