@@ -22,270 +22,38 @@ let editingIngredientId = null;
 let lastScrapedIngredientData = null;
 let selectedIconValue = '';
 
-const ICONIFY_FOOD_ICONS = [
-    // Fruits - Material Design Icons
-    { icon: 'mdi:food-apple', emoji: '🍎', label: 'Apple', keywords: ['apple', 'produce', 'fruit'] },
-    { icon: 'mdi:food-apple-outline', emoji: '🍎', label: 'Apple Outline', keywords: ['apple', 'produce', 'fruit'] },
-    { icon: 'mdi:food-apple-plus', emoji: '🍎', label: 'Apple Plus', keywords: ['apple', 'nutrition'] },
-    { icon: 'mdi:food-banana', emoji: '🍌', label: 'Banana', keywords: ['banana', 'fruit', 'produce'] },
-    { icon: 'mdi:fruit-grapes', emoji: '🍇', label: 'Grapes', keywords: ['grapes', 'fruit', 'produce'] },
-    { icon: 'mdi:fruit-watermelon', emoji: '🍉', label: 'Watermelon', keywords: ['watermelon', 'fruit', 'produce'] },
-    { icon: 'mdi:fruit-cherries', emoji: '🍒', label: 'Cherries', keywords: ['cherries', 'fruit', 'produce'] },
-    { icon: 'mdi:fruit-pineapple', emoji: '🍍', label: 'Pineapple', keywords: ['pineapple', 'fruit', 'tropical'] },
-    { icon: 'mdi:fruit-pear', emoji: '🍐', label: 'Pear', keywords: ['pear', 'fruit'] },
-    { icon: 'mdi:food-kiwi', emoji: '🥝', label: 'Kiwi', keywords: ['kiwi', 'fruit'] },
-    { icon: 'mdi:fruit-citrus', emoji: '🍊', label: 'Orange', keywords: ['orange', 'citrus', 'fruit'] },
-    { icon: 'mdi:fruit-grapes-outline', emoji: '🍇', label: 'Grapes Outline', keywords: ['grapes', 'fruit'] },
-    
-    // Vegetables - Material Design Icons
-    { icon: 'mdi:carrot', emoji: '🥕', label: 'Carrot', keywords: ['carrot', 'vegetable', 'produce'] },
-    { icon: 'mdi:corn', emoji: '🌽', label: 'Corn', keywords: ['corn', 'vegetable'] },
-    { icon: 'mdi:food-corn', emoji: '🌽', label: 'Corn Alt', keywords: ['corn', 'vegetable'] },
-    { icon: 'mdi:food-pepper', emoji: '🫑', label: 'Pepper', keywords: ['pepper', 'vegetable', 'spice'] },
-    { icon: 'mdi:food-onion', emoji: '🧅', label: 'Onion', keywords: ['onion', 'aromatic'] },
-    { icon: 'mdi:garlic', emoji: '🧄', label: 'Garlic', keywords: ['garlic', 'aromatic'] },
-    { icon: 'mdi:mushroom', emoji: '🍄', label: 'Mushroom', keywords: ['mushroom', 'vegetable'] },
-    { icon: 'mdi:food-variant-off', emoji: '🥬', label: 'Lettuce', keywords: ['lettuce', 'vegetable', 'greens'] },
-    { icon: 'mdi:food-variant', emoji: '🥬', label: 'Vegetable', keywords: ['vegetable', 'greens'] },
-    
-    // Proteins - Material Design Icons
-    { icon: 'mdi:food-drumstick', emoji: '🍗', label: 'Chicken', keywords: ['chicken', 'protein', 'meat'] },
-    { icon: 'mdi:food-steak', emoji: '🥩', label: 'Steak', keywords: ['steak', 'beef', 'protein'] },
-    { icon: 'mdi:fish', emoji: '🐟', label: 'Fish', keywords: ['fish', 'seafood', 'protein'] },
-    { icon: 'mdi:food-turkey', emoji: '🦃', label: 'Turkey', keywords: ['turkey', 'protein', 'meat'] },
-    { icon: 'mdi:food-egg', emoji: '🥚', label: 'Egg', keywords: ['egg', 'protein'] },
-    { icon: 'mdi:egg-easter', emoji: '🥚', label: 'Egg (Decorated)', keywords: ['egg', 'protein'] },
-    { icon: 'mdi:barbecue', emoji: '🍖', label: 'Barbecue', keywords: ['bbq', 'grill', 'meat'] },
-    { icon: 'mdi:food-drumstick-outline', emoji: '🍗', label: 'Chicken Outline', keywords: ['chicken', 'protein'] },
-    
-    // Grains & Bread - Material Design Icons
-    { icon: 'mdi:food-grains', emoji: '🌾', label: 'Grains', keywords: ['grains', 'wheat'] },
-    { icon: 'mdi:rice', emoji: '🍚', label: 'Rice', keywords: ['rice', 'grain'] },
-    { icon: 'mdi:bread-slice', emoji: '🍞', label: 'Bread Slice', keywords: ['bread', 'bakery'] },
-    { icon: 'mdi:baguette', emoji: '🥖', label: 'Baguette', keywords: ['bread', 'baguette'] },
-    { icon: 'mdi:pretzel', emoji: '🥨', label: 'Pretzel', keywords: ['pretzel', 'snack'] },
-    { icon: 'mdi:food-croissant', emoji: '🥐', label: 'Croissant', keywords: ['croissant', 'pastry', 'bakery'] },
-    { icon: 'mdi:noodles', emoji: '🍝', label: 'Noodles', keywords: ['noodles', 'pasta'] },
-    { icon: 'mdi:pasta', emoji: '🍝', label: 'Pasta', keywords: ['pasta', 'italian'] },
-    { icon: 'mdi:food-ramen', emoji: '🍜', label: 'Ramen', keywords: ['ramen', 'noodles'] },
-    
-    // Fast Food - Material Design Icons
-    { icon: 'mdi:pizza', emoji: '🍕', label: 'Pizza', keywords: ['pizza', 'fastfood'] },
-    { icon: 'mdi:hamburger', emoji: '🍔', label: 'Burger', keywords: ['burger', 'fastfood'] },
-    { icon: 'mdi:food-hot-dog', emoji: '🌭', label: 'Hot Dog', keywords: ['hotdog', 'fastfood'] },
-    { icon: 'mdi:food-burrito', emoji: '🌯', label: 'Burrito', keywords: ['burrito', 'wrap'] },
-    { icon: 'mdi:food-taco', emoji: '🌮', label: 'Taco', keywords: ['taco', 'mexican'] },
-    { icon: 'mdi:food-takeout-box', emoji: '🥡', label: 'Takeout', keywords: ['takeout', 'box', 'meal'] },
-    
-    // Desserts - Material Design Icons
-    { icon: 'mdi:cupcake', emoji: '🧁', label: 'Cupcake', keywords: ['cupcake', 'dessert', 'sweet'] },
-    { icon: 'mdi:cookie', emoji: '🍪', label: 'Cookie', keywords: ['cookie', 'dessert'] },
-    { icon: 'mdi:cake-variant', emoji: '🍰', label: 'Cake', keywords: ['cake', 'dessert'] },
-    { icon: 'mdi:cake', emoji: '🎂', label: 'Birthday Cake', keywords: ['cake', 'dessert', 'birthday'] },
-    { icon: 'mdi:ice-cream', emoji: '🍦', label: 'Ice Cream', keywords: ['ice cream', 'dessert', 'frozen'] },
-    
-    // Drinks - Material Design Icons
-    { icon: 'mdi:cup-water', emoji: '🥤', label: 'Water', keywords: ['water', 'drink'] },
-    { icon: 'mdi:coffee', emoji: '☕️', label: 'Coffee', keywords: ['coffee', 'drink'] },
-    { icon: 'mdi:coffee-outline', emoji: '☕️', label: 'Coffee Outline', keywords: ['coffee', 'drink'] },
-    { icon: 'mdi:tea', emoji: '🍵', label: 'Tea', keywords: ['tea', 'drink'] },
-    { icon: 'mdi:glass-cocktail', emoji: '🍸', label: 'Cocktail', keywords: ['cocktail', 'drink'] },
-    { icon: 'mdi:beer', emoji: '🍺', label: 'Beer', keywords: ['beer', 'drink'] },
-    { icon: 'mdi:bottle-wine', emoji: '🍷', label: 'Wine', keywords: ['wine', 'drink'] },
-    { icon: 'mdi:bottle-soda', emoji: '🥤', label: 'Soda', keywords: ['soda', 'drink', 'pop'] },
-    { icon: 'mdi:cup', emoji: '☕️', label: 'Cup', keywords: ['cup', 'drink'] },
-    
-    // Meals & Dishes - Material Design Icons
-    { icon: 'mdi:food-variant', emoji: '🍽️', label: 'Meal', keywords: ['meal', 'plate', 'food'] },
-    { icon: 'mdi:food-soup', emoji: '🍲', label: 'Soup', keywords: ['soup', 'stew', 'comfort'] },
-    { icon: 'mdi:food-bowl', emoji: '🥣', label: 'Bowl', keywords: ['bowl', 'meal'] },
-    { icon: 'mdi:food-fork-drink', emoji: '🍴', label: 'Utensils', keywords: ['utensils', 'fork', 'knife'] },
-    
-    // Fluent UI Icons
-    { icon: 'fluent:food-grains-24-filled', emoji: '🌾', label: 'Grains Filled', keywords: ['grain', 'bread'] },
-    { icon: 'fluent:food-pizza-24-filled', emoji: '🍕', label: 'Pizza Fluent', keywords: ['pizza', 'fastfood'] },
-    { icon: 'fluent:drink-coffee-24-filled', emoji: '☕️', label: 'Coffee Fluent', keywords: ['coffee', 'drink'] },
-    { icon: 'fluent:food-carrot-24-filled', emoji: '🥕', label: 'Carrot Fluent', keywords: ['carrot', 'vegetable'] },
-    { icon: 'fluent:food-cake-24-filled', emoji: '🍰', label: 'Cake Fluent', keywords: ['cake', 'dessert'] },
-    { icon: 'fluent:food-egg-24-filled', emoji: '🥚', label: 'Egg Fluent', keywords: ['egg', 'protein'] },
-    { icon: 'fluent:food-apple-24-filled', emoji: '🍎', label: 'Apple Fluent', keywords: ['apple', 'fruit'] },
-    { icon: 'fluent:food-fish-24-filled', emoji: '🐟', label: 'Fish Fluent', keywords: ['fish', 'seafood'] },
-    { icon: 'fluent:drink-beer-24-filled', emoji: '🍺', label: 'Beer Fluent', keywords: ['beer', 'drink'] },
-    { icon: 'fluent:drink-wine-24-filled', emoji: '🍷', label: 'Wine Fluent', keywords: ['wine', 'drink'] },
-    
-    // Carbon Icons
-    { icon: 'carbon:apple', emoji: '🍎', label: 'Apple Carbon', keywords: ['apple', 'fruit'] },
-    { icon: 'carbon:restaurant', emoji: '🍽️', label: 'Restaurant', keywords: ['restaurant', 'meal', 'food'] },
-    { icon: 'carbon:restaurant-fine', emoji: '🍽️', label: 'Fine Dining', keywords: ['restaurant', 'dining'] },
-    
-    // Heroicons
-    { icon: 'heroicons:cake-solid', emoji: '🍰', label: 'Cake Hero', keywords: ['cake', 'dessert'] },
-    { icon: 'heroicons:beaker-solid', emoji: '🥤', label: 'Beaker', keywords: ['drink', 'beaker'] },
-    
-    // Font Awesome
-    { icon: 'fa-solid:apple-alt', emoji: '🍎', label: 'Apple FA', keywords: ['apple', 'fruit'] },
-    { icon: 'fa-solid:carrot', emoji: '🥕', label: 'Carrot FA', keywords: ['carrot', 'vegetable'] },
-    { icon: 'fa-solid:fish', emoji: '🐟', label: 'Fish FA', keywords: ['fish', 'seafood'] },
-    { icon: 'fa-solid:cheese', emoji: '🧀', label: 'Cheese', keywords: ['cheese', 'dairy'] },
-    { icon: 'fa-solid:bread-slice', emoji: '🍞', label: 'Bread FA', keywords: ['bread', 'bakery'] },
-    { icon: 'fa-solid:ice-cream', emoji: '🍦', label: 'Ice Cream FA', keywords: ['ice cream', 'dessert'] },
-    { icon: 'fa-solid:lemon', emoji: '🍋', label: 'Lemon', keywords: ['lemon', 'citrus', 'fruit'] },
-    { icon: 'fa-solid:pepper-hot', emoji: '🌶️', label: 'Hot Pepper', keywords: ['pepper', 'spicy', 'hot'] },
-    { icon: 'fa-solid:shrimp', emoji: '🦐', label: 'Shrimp', keywords: ['shrimp', 'seafood'] },
-    { icon: 'fa-solid:utensils', emoji: '🍴', label: 'Utensils FA', keywords: ['utensils', 'fork', 'knife'] },
-    
-    // Bootstrap Icons
-    { icon: 'bootstrap:apple', emoji: '🍎', label: 'Apple Bootstrap', keywords: ['apple', 'fruit'] },
-    { icon: 'bootstrap:egg-fried', emoji: '🍳', label: 'Fried Egg', keywords: ['egg', 'fried', 'breakfast'] },
-    { icon: 'bootstrap:cup-hot', emoji: '☕️', label: 'Hot Cup', keywords: ['coffee', 'hot', 'drink'] },
-    
-    // Lucide Icons
-    { icon: 'lucide:apple', emoji: '🍎', label: 'Apple Lucide', keywords: ['apple', 'fruit'] },
-    { icon: 'lucide:carrot', emoji: '🥕', label: 'Carrot Lucide', keywords: ['carrot', 'vegetable'] },
-    { icon: 'lucide:fish', emoji: '🐟', label: 'Fish Lucide', keywords: ['fish', 'seafood'] },
-    { icon: 'lucide:coffee', emoji: '☕️', label: 'Coffee Lucide', keywords: ['coffee', 'drink'] },
-    { icon: 'lucide:chef-hat', emoji: '👨‍🍳', label: 'Chef Hat', keywords: ['chef', 'cooking'] },
-    { icon: 'lucide:utensils-crossed', emoji: '🍴', label: 'Utensils Lucide', keywords: ['utensils', 'dining'] },
-    
-    // Twemoji (Emoji Icons)
-    { icon: 'twemoji:grapes', emoji: '🍇', label: 'Emoji Grapes', keywords: ['grapes', 'fruit'] },
-    { icon: 'twemoji:hot-dog', emoji: '🌭', label: 'Emoji Hot Dog', keywords: ['hotdog', 'fastfood'] },
-    { icon: 'twemoji:hamburger', emoji: '🍔', label: 'Emoji Burger', keywords: ['burger'] },
-    { icon: 'twemoji:shallow-pan-of-food', emoji: '🥘', label: 'Emoji Paella', keywords: ['meal', 'food'] },
-    { icon: 'twemoji:teacup-without-handle', emoji: '🍵', label: 'Emoji Tea', keywords: ['tea', 'drink'] },
-    { icon: 'twemoji:green-apple', emoji: '🍏', label: 'Green Apple', keywords: ['apple', 'green', 'fruit'] },
-    { icon: 'twemoji:red-apple', emoji: '🍎', label: 'Red Apple', keywords: ['apple', 'red', 'fruit'] },
-    { icon: 'twemoji:pear', emoji: '🍐', label: 'Emoji Pear', keywords: ['pear', 'fruit'] },
-    { icon: 'twemoji:peach', emoji: '🍑', label: 'Peach', keywords: ['peach', 'fruit'] },
-    { icon: 'twemoji:cherries', emoji: '🍒', label: 'Emoji Cherries', keywords: ['cherries', 'fruit'] },
-    { icon: 'twemoji:strawberry', emoji: '🍓', label: 'Strawberry', keywords: ['strawberry', 'fruit'] },
-    { icon: 'twemoji:kiwi-fruit', emoji: '🥝', label: 'Emoji Kiwi', keywords: ['kiwi', 'fruit'] },
-    { icon: 'twemoji:tomato', emoji: '🍅', label: 'Tomato', keywords: ['tomato', 'vegetable', 'fruit'] },
-    { icon: 'twemoji:coconut', emoji: '🥥', label: 'Coconut', keywords: ['coconut', 'fruit', 'tropical'] },
-    { icon: 'twemoji:mango', emoji: '🥭', label: 'Mango', keywords: ['mango', 'fruit', 'tropical'] },
-    { icon: 'twemoji:pineapple', emoji: '🍍', label: 'Emoji Pineapple', keywords: ['pineapple', 'fruit'] },
-    { icon: 'twemoji:watermelon', emoji: '🍉', label: 'Emoji Watermelon', keywords: ['watermelon', 'fruit'] },
-    { icon: 'twemoji:tangerine', emoji: '🍊', label: 'Tangerine', keywords: ['tangerine', 'orange', 'citrus'] },
-    { icon: 'twemoji:lemon', emoji: '🍋', label: 'Lemon Emoji', keywords: ['lemon', 'citrus'] },
-    { icon: 'twemoji:banana', emoji: '🍌', label: 'Emoji Banana', keywords: ['banana', 'fruit'] },
-    { icon: 'twemoji:carrot', emoji: '🥕', label: 'Emoji Carrot', keywords: ['carrot', 'vegetable'] },
-    { icon: 'twemoji:corn-on-the-cob', emoji: '🌽', label: 'Emoji Corn', keywords: ['corn', 'vegetable'] },
-    { icon: 'twemoji:hot-pepper', emoji: '🌶️', label: 'Hot Pepper Emoji', keywords: ['pepper', 'spicy', 'hot'] },
-    { icon: 'twemoji:cucumber', emoji: '🥒', label: 'Cucumber', keywords: ['cucumber', 'vegetable'] },
-    { icon: 'twemoji:leafy-green', emoji: '🥬', label: 'Leafy Greens', keywords: ['lettuce', 'greens', 'vegetable'] },
-    { icon: 'twemoji:broccoli', emoji: '🥦', label: 'Broccoli', keywords: ['broccoli', 'vegetable'] },
-    { icon: 'twemoji:garlic', emoji: '🧄', label: 'Emoji Garlic', keywords: ['garlic', 'aromatic'] },
-    { icon: 'twemoji:onion', emoji: '🧅', label: 'Emoji Onion', keywords: ['onion', 'aromatic'] },
-    { icon: 'twemoji:mushroom', emoji: '🍄', label: 'Emoji Mushroom', keywords: ['mushroom', 'vegetable'] },
-    { icon: 'twemoji:peanuts', emoji: '🥜', label: 'Peanuts', keywords: ['peanuts', 'nuts', 'snack'] },
-    { icon: 'twemoji:bread', emoji: '🍞', label: 'Emoji Bread', keywords: ['bread', 'bakery'] },
-    { icon: 'twemoji:croissant', emoji: '🥐', label: 'Emoji Croissant', keywords: ['croissant', 'pastry'] },
-    { icon: 'twemoji:baguette-bread', emoji: '🥖', label: 'Emoji Baguette', keywords: ['baguette', 'bread'] },
-    { icon: 'twemoji:pretzel', emoji: '🥨', label: 'Emoji Pretzel', keywords: ['pretzel', 'snack'] },
-    { icon: 'twemoji:cheese-wedge', emoji: '🧀', label: 'Cheese', keywords: ['cheese', 'dairy'] },
-    { icon: 'twemoji:meat-on-bone', emoji: '🍖', label: 'Meat on Bone', keywords: ['meat', 'bone', 'protein'] },
-    { icon: 'twemoji:poultry-leg', emoji: '🍗', label: 'Chicken Leg', keywords: ['chicken', 'leg', 'protein'] },
-    { icon: 'twemoji:cut-of-meat', emoji: '🥩', label: 'Cut of Meat', keywords: ['meat', 'steak', 'protein'] },
-    { icon: 'twemoji:bacon', emoji: '🥓', label: 'Bacon', keywords: ['bacon', 'meat', 'breakfast'] },
-    { icon: 'twemoji:hamburger', emoji: '🍔', label: 'Emoji Hamburger', keywords: ['hamburger', 'burger', 'fastfood'] },
-    { icon: 'twemoji:french-fries', emoji: '🍟', label: 'French Fries', keywords: ['fries', 'potato', 'fastfood'] },
-    { icon: 'twemoji:pizza', emoji: '🍕', label: 'Emoji Pizza', keywords: ['pizza', 'fastfood'] },
-    { icon: 'twemoji:hot-dog', emoji: '🌭', label: 'Emoji Hot Dog', keywords: ['hotdog', 'fastfood'] },
-    { icon: 'twemoji:sandwich', emoji: '🥪', label: 'Sandwich', keywords: ['sandwich', 'lunch'] },
-    { icon: 'twemoji:taco', emoji: '🌮', label: 'Emoji Taco', keywords: ['taco', 'mexican'] },
-    { icon: 'twemoji:burrito', emoji: '🌯', label: 'Emoji Burrito', keywords: ['burrito', 'mexican', 'wrap'] },
-    { icon: 'twemoji:tamale', emoji: '🫔', label: 'Tamale', keywords: ['tamale', 'mexican'] },
-    { icon: 'twemoji:stuffed-flatbread', emoji: '🥙', label: 'Stuffed Flatbread', keywords: ['flatbread', 'wrap'] },
-    { icon: 'twemoji:falafel', emoji: '🧆', label: 'Falafel', keywords: ['falafel', 'middle eastern'] },
-    { icon: 'twemoji:egg', emoji: '🥚', label: 'Emoji Egg', keywords: ['egg', 'protein'] },
-    { icon: 'twemoji:cooking', emoji: '🍳', label: 'Cooking', keywords: ['cooking', 'pan', 'breakfast'] },
-    { icon: 'twemoji:shallow-pan-of-food', emoji: '🥘', label: 'Shallow Pan', keywords: ['pan', 'food', 'cooking'] },
-    { icon: 'twemoji:pot-of-food', emoji: '🍲', label: 'Pot of Food', keywords: ['pot', 'soup', 'stew'] },
-    { icon: 'twemoji:fondue', emoji: '🫕', label: 'Fondue', keywords: ['fondue', 'cheese'] },
-    { icon: 'twemoji:bowl-with-spoon', emoji: '🥣', label: 'Bowl with Spoon', keywords: ['bowl', 'spoon', 'meal'] },
-    { icon: 'twemoji:green-salad', emoji: '🥗', label: 'Green Salad', keywords: ['salad', 'greens', 'healthy'] },
-    { icon: 'twemoji:popcorn', emoji: '🍿', label: 'Popcorn', keywords: ['popcorn', 'snack', 'movie'] },
-    { icon: 'twemoji:butter', emoji: '🧈', label: 'Butter', keywords: ['butter', 'dairy'] },
-    { icon: 'twemoji:salt', emoji: '🧂', label: 'Salt', keywords: ['salt', 'seasoning'] },
-    { icon: 'twemoji:canned-food', emoji: '🥫', label: 'Canned Food', keywords: ['canned', 'food'] },
-    { icon: 'twemoji:bento-box', emoji: '🍱', label: 'Bento Box', keywords: ['bento', 'japanese', 'lunch'] },
-    { icon: 'twemoji:rice-cracker', emoji: '🍘', label: 'Rice Cracker', keywords: ['rice', 'cracker', 'snack'] },
-    { icon: 'twemoji:rice-ball', emoji: '🍙', label: 'Rice Ball', keywords: ['rice', 'ball', 'japanese'] },
-    { icon: 'twemoji:cooked-rice', emoji: '🍚', label: 'Cooked Rice', keywords: ['rice', 'cooked', 'grain'] },
-    { icon: 'twemoji:curry-rice', emoji: '🍛', label: 'Curry Rice', keywords: ['curry', 'rice', 'indian'] },
-    { icon: 'twemoji:steaming-bowl', emoji: '🍜', label: 'Steaming Bowl', keywords: ['noodles', 'ramen', 'soup'] },
-    { icon: 'twemoji:spaghetti', emoji: '🍝', label: 'Spaghetti', keywords: ['spaghetti', 'pasta', 'italian'] },
-    { icon: 'twemoji:roasted-sweet-potato', emoji: '🍠', label: 'Sweet Potato', keywords: ['sweet potato', 'roasted'] },
-    { icon: 'twemoji:oden', emoji: '🍢', label: 'Oden', keywords: ['oden', 'japanese'] },
-    { icon: 'twemoji:sushi', emoji: '🍣', label: 'Sushi', keywords: ['sushi', 'japanese', 'seafood'] },
-    { icon: 'twemoji:fried-shrimp', emoji: '🍤', label: 'Fried Shrimp', keywords: ['shrimp', 'fried', 'seafood'] },
-    { icon: 'twemoji:fish-cake-with-swirl', emoji: '🍥', label: 'Fish Cake', keywords: ['fish', 'cake', 'japanese'] },
-    { icon: 'twemoji:moon-cake', emoji: '🥮', label: 'Moon Cake', keywords: ['moon cake', 'chinese', 'dessert'] },
-    { icon: 'twemoji:dango', emoji: '🍡', label: 'Dango', keywords: ['dango', 'japanese', 'dessert'] },
-    { icon: 'twemoji:dumpling', emoji: '🥟', label: 'Dumpling', keywords: ['dumpling', 'chinese'] },
-    { icon: 'twemoji:fortune-cookie', emoji: '🥠', label: 'Fortune Cookie', keywords: ['fortune cookie', 'chinese'] },
-    { icon: 'twemoji:takeout-box', emoji: '🥡', label: 'Takeout Box', keywords: ['takeout', 'box', 'chinese'] },
-    { icon: 'twemoji:crab', emoji: '🦀', label: 'Crab', keywords: ['crab', 'seafood'] },
-    { icon: 'twemoji:lobster', emoji: '🦞', label: 'Lobster', keywords: ['lobster', 'seafood'] },
-    { icon: 'twemoji:shrimp', emoji: '🦐', label: 'Shrimp', keywords: ['shrimp', 'seafood'] },
-    { icon: 'twemoji:squid', emoji: '🦑', label: 'Squid', keywords: ['squid', 'seafood'] },
-    { icon: 'twemoji:oyster', emoji: '🦪', label: 'Oyster', keywords: ['oyster', 'seafood'] },
-    { icon: 'twemoji:soft-ice-cream', emoji: '🍦', label: 'Soft Ice Cream', keywords: ['ice cream', 'soft', 'dessert'] },
-    { icon: 'twemoji:shaved-ice', emoji: '🍧', label: 'Shaved Ice', keywords: ['shaved ice', 'dessert'] },
-    { icon: 'twemoji:ice-cream', emoji: '🍨', label: 'Ice Cream', keywords: ['ice cream', 'dessert'] },
-    { icon: 'twemoji:doughnut', emoji: '🍩', label: 'Doughnut', keywords: ['doughnut', 'donut', 'dessert'] },
-    { icon: 'twemoji:cookie', emoji: '🍪', label: 'Emoji Cookie', keywords: ['cookie', 'dessert'] },
-    { icon: 'twemoji:birthday-cake', emoji: '🎂', label: 'Birthday Cake', keywords: ['birthday', 'cake', 'dessert'] },
-    { icon: 'twemoji:shortcake', emoji: '🍰', label: 'Shortcake', keywords: ['cake', 'shortcake', 'dessert'] },
-    { icon: 'twemoji:cupcake', emoji: '🧁', label: 'Emoji Cupcake', keywords: ['cupcake', 'dessert'] },
-    { icon: 'twemoji:pie', emoji: '🥧', label: 'Pie', keywords: ['pie', 'dessert'] },
-    { icon: 'twemoji:chocolate-bar', emoji: '🍫', label: 'Chocolate Bar', keywords: ['chocolate', 'candy', 'dessert'] },
-    { icon: 'twemoji:candy', emoji: '🍬', label: 'Candy', keywords: ['candy', 'sweet'] },
-    { icon: 'twemoji:lollipop', emoji: '🍭', label: 'Lollipop', keywords: ['lollipop', 'candy'] },
-    { icon: 'twemoji:custard', emoji: '🍮', label: 'Custard', keywords: ['custard', 'dessert'] },
-    { icon: 'twemoji:honey-pot', emoji: '🍯', label: 'Honey Pot', keywords: ['honey', 'sweetener'] },
-    { icon: 'twemoji:baby-bottle', emoji: '🍼', label: 'Baby Bottle', keywords: ['baby', 'bottle', 'milk'] },
-    { icon: 'twemoji:glass-of-milk', emoji: '🥛', label: 'Glass of Milk', keywords: ['milk', 'dairy', 'drink'] },
-    { icon: 'twemoji:hot-beverage', emoji: '☕', label: 'Hot Beverage', keywords: ['coffee', 'tea', 'hot', 'drink'] },
-    { icon: 'twemoji:teapot', emoji: '🫖', label: 'Teapot', keywords: ['teapot', 'tea'] },
-    { icon: 'twemoji:teacup-without-handle', emoji: '🍵', label: 'Teacup', keywords: ['tea', 'cup', 'drink'] },
-    { icon: 'twemoji:sake', emoji: '🍶', label: 'Sake', keywords: ['sake', 'japanese', 'drink'] },
-    { icon: 'twemoji:bottle-with-popping-cork', emoji: '🍾', label: 'Champagne', keywords: ['champagne', 'wine', 'drink'] },
-    { icon: 'twemoji:wine-glass', emoji: '🍷', label: 'Wine Glass', keywords: ['wine', 'glass', 'drink'] },
-    { icon: 'twemoji:cocktail-glass', emoji: '🍸', label: 'Cocktail Glass', keywords: ['cocktail', 'drink'] },
-    { icon: 'twemoji:tropical-drink', emoji: '🍹', label: 'Tropical Drink', keywords: ['tropical', 'drink', 'cocktail'] },
-    { icon: 'twemoji:beer-mug', emoji: '🍺', label: 'Beer Mug', keywords: ['beer', 'mug', 'drink'] },
-    { icon: 'twemoji:clinking-beer-mugs', emoji: '🍻', label: 'Clinking Beer Mugs', keywords: ['beer', 'cheers', 'drink'] },
-    { icon: 'twemoji:clinking-glasses', emoji: '🥂', label: 'Clinking Glasses', keywords: ['champagne', 'cheers', 'drink'] },
-    { icon: 'twemoji:tumbler-glass', emoji: '🥃', label: 'Tumbler Glass', keywords: ['whiskey', 'glass', 'drink'] },
-    { icon: 'twemoji:pouring-liquid', emoji: '🫗', label: 'Pouring Liquid', keywords: ['pour', 'liquid', 'drink'] },
-    { icon: 'twemoji:cup-with-straw', emoji: '🥤', label: 'Cup with Straw', keywords: ['cup', 'straw', 'drink'] },
-    { icon: 'twemoji:bubble-tea', emoji: '🧋', label: 'Bubble Tea', keywords: ['bubble tea', 'boba', 'drink'] },
-    { icon: 'twemoji:mate', emoji: '🧉', label: 'Mate', keywords: ['mate', 'drink', 'tea'] },
-    { icon: 'twemoji:ice', emoji: '🧊', label: 'Ice', keywords: ['ice', 'cold'] }
+const FOOD_ICON_OPTIONS = [
+    { value: 'food-icon:apple', label: 'Apple', keywords: ['apple', 'fruit', 'produce'] },
+    { value: 'food-icon:banana', label: 'Banana', keywords: ['banana', 'fruit', 'produce'] },
+    { value: 'food-icon:bread', label: 'Bread', keywords: ['bread', 'bakery', 'grain'] },
+    { value: 'food-icon:meat', label: 'Meat', keywords: ['meat', 'protein'] },
+    { value: 'food-icon:fish', label: 'Fish', keywords: ['fish', 'seafood', 'protein'] },
+    { value: 'food-icon:salad', label: 'Salad', keywords: ['salad', 'greens', 'vegetable'] },
+    { value: 'food-icon:cheese', label: 'Cheese', keywords: ['cheese', 'dairy'] },
+    { value: 'food-icon:egg', label: 'Egg', keywords: ['egg', 'protein', 'breakfast'] },
+    { value: 'food-icon:milk', label: 'Milk', keywords: ['milk', 'dairy', 'drink'] },
+    { value: 'food-icon:drink', label: 'Drink', keywords: ['drink', 'beverage'] },
+    { value: 'food-icon:snack', label: 'Snack', keywords: ['snack', 'chips', 'treat'] }
 ].map((item) => ({
     ...item,
-    value: `iconify:${item.icon}`,
-    search: `${item.label} ${item.keywords.join(' ')} ${item.icon}`.toLowerCase()
+    search: `${item.label} ${item.keywords.join(' ')} ${item.value}`.toLowerCase()
 }));
-
-function findIconDefinition(iconValue) {
-    const normalized = (iconValue || '').trim();
-    if (!normalized) {
-        return null;
-    }
-    return ICONIFY_FOOD_ICONS.find((item) => item.value === normalized) || null;
-}
 
 let emojiPickerInitialized = false;
 let emojiPickerFilter = '';
 
+function updateIconPreview(iconValue) {
+    const preview = document.getElementById('ingredient-icon-preview');
+    if (!preview) return;
+    preview.innerHTML = iconValue ? renderIcon(iconValue, { className: 'ingredient-icon', size: '24px' }) : '';
+}
+
 function filterEmojiOptions(term) {
     const normalized = (term || '').trim().toLowerCase();
     if (!normalized) {
-        return ICONIFY_FOOD_ICONS;
+        return FOOD_ICON_OPTIONS;
     }
-    return ICONIFY_FOOD_ICONS.filter((item) => item.search.includes(normalized));
+    return FOOD_ICON_OPTIONS.filter((item) => item.search.includes(normalized));
 }
 
 function ensureEmojiPickerPanel() {
@@ -350,7 +118,7 @@ function renderEmojiResults(term) {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'emoji-picker-option';
-        button.innerHTML = `<span class="iconify" data-icon="${item.icon}" aria-hidden="true"></span>`;
+        button.innerHTML = renderIcon(item.value, { className: 'ingredient-icon', size: '24px' });
         button.title = item.label;
         button.dataset.iconify = item.value;
         button.addEventListener('click', async () => {
@@ -358,7 +126,6 @@ function renderEmojiResults(term) {
         });
         grid.appendChild(button);
     });
-    ensureIconify().then(() => scanIconifyElements(grid));
 }
 
 function openEmojiPicker(anchor = emojiPickerToggle || emojiInput) {
@@ -423,6 +190,7 @@ async function applyIconSelection(selectedItem) {
         label: selectedItem?.label,
         isDataUrl: isDataUrl(selectedIconValue)
     });
+    updateIconPreview(selectedIconValue);
     closeEmojiPicker();
     emojiInput.focus();
 }
@@ -559,6 +327,7 @@ function openIngredientModal(ingredient = null) {
                 delete emojiInput.dataset.iconifyValue;
                 delete emojiInput.dataset.iconifyLabel;
             }
+            updateIconPreview(iconValue);
         }
     } else {
         if (storeSectionInput) {
@@ -570,6 +339,7 @@ function openIngredientModal(ingredient = null) {
             delete emojiInput.dataset.iconifyLabel;
         }
         selectedIconValue = '';
+        updateIconPreview('');
     }
     closeEmojiPicker();
     
