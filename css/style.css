@@ -920,6 +920,21 @@ tbody tr:hover {
     font-weight: 700;
 }
 
+/* Recipe Modal - Fit within viewport */
+#recipe-modal .modal-content {
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+#recipe-modal .modal-content form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-height: 0;
+}
+
 .scrape-progress,
 .scrape-error,
 .scrape-results {
