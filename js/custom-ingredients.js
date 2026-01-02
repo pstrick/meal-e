@@ -1,13 +1,5 @@
 import { version } from './version.js';
 import { settings, applyDarkMode } from './settings.js';
-import {
-    ensureIconify,
-    scanIconifyElements,
-    normalizeIconValue,
-    renderIcon,
-    iconifyToDataUrl,
-    isDataUrl
-} from './icon-utils.js';
 
 // Update version in footer
 const versionEl = document.getElementById('version');
@@ -16,192 +8,69 @@ if (versionEl) versionEl.textContent = version;
 // Custom ingredients data structure
 let customIngredients = [];
 let editingIngredientId = null;
-let selectedIconValue = '';
+let selectedImageDataUrl = '';
 
-const FOOD_ICON_OPTIONS = [
-    { value: 'food-icon:apple', label: 'Apple', keywords: ['apple', 'fruit', 'produce'] },
-    { value: 'food-icon:banana', label: 'Banana', keywords: ['banana', 'fruit', 'produce'] },
-    { value: 'food-icon:bread', label: 'Bread', keywords: ['bread', 'bakery', 'grain'] },
-    { value: 'food-icon:meat', label: 'Meat', keywords: ['meat', 'protein'] },
-    { value: 'food-icon:fish', label: 'Fish', keywords: ['fish', 'seafood', 'protein'] },
-    { value: 'food-icon:salad', label: 'Salad', keywords: ['salad', 'greens', 'vegetable'] },
-    { value: 'food-icon:cheese', label: 'Cheese', keywords: ['cheese', 'dairy'] },
-    { value: 'food-icon:egg', label: 'Egg', keywords: ['egg', 'protein', 'breakfast'] },
-    { value: 'food-icon:milk', label: 'Milk', keywords: ['milk', 'dairy', 'drink'] },
-    { value: 'food-icon:drink', label: 'Drink', keywords: ['drink', 'beverage'] },
-    { value: 'food-icon:snack', label: 'Snack', keywords: ['snack', 'chips', 'treat'] }
-].map((item) => ({
-    ...item,
-    search: `${item.label} ${item.keywords.join(' ')} ${item.value}`.toLowerCase()
-}));
-
-let emojiPickerInitialized = false;
-let emojiPickerFilter = '';
-
-function updateIconPreview(iconValue) {
-    const preview = document.getElementById('ingredient-icon-preview');
-    if (!preview) return;
-    preview.innerHTML = iconValue ? renderIcon(iconValue, { className: 'ingredient-icon', size: '24px' }) : '';
-}
-
-function filterEmojiOptions(term) {
-    const normalized = (term || '').trim().toLowerCase();
-    if (!normalized) {
-        return FOOD_ICON_OPTIONS;
-    }
-    return FOOD_ICON_OPTIONS.filter((item) => item.search.includes(normalized));
-}
-
-function ensureEmojiPickerPanel() {
-    if (!emojiPickerPanel || emojiPickerInitialized) {
-        return;
-    }
-
-    emojiPickerPanel.innerHTML = '';
-
-    const searchWrapper = document.createElement('div');
-    searchWrapper.className = 'emoji-picker-search';
-
-    const searchInput = document.createElement('input');
-    searchInput.type = 'search';
-    searchInput.placeholder = 'Search food emojis...';
-    searchInput.setAttribute('aria-label', 'Search emojis');
-    searchInput.autocomplete = 'off';
-    searchWrapper.appendChild(searchInput);
-
-    const grid = document.createElement('div');
-    grid.className = 'emoji-picker-grid';
-    grid.dataset.role = 'emoji-grid';
-
-    const emptyState = document.createElement('div');
-    emptyState.className = 'emoji-picker-empty';
-    emptyState.dataset.role = 'emoji-empty';
-    emptyState.hidden = true;
-
-    emojiPickerPanel.appendChild(searchWrapper);
-    emojiPickerPanel.appendChild(grid);
-    emojiPickerPanel.appendChild(emptyState);
-
-    searchInput.addEventListener('input', (event) => {
-        emojiPickerFilter = event.target.value;
-        renderEmojiResults(emojiPickerFilter);
-    });
-
-    emojiPickerInitialized = true;
-    renderEmojiResults('');
-}
-
-function renderEmojiResults(term) {
-    if (!emojiPickerPanel) return;
-    const grid = emojiPickerPanel.querySelector('[data-role="emoji-grid"]');
-    const emptyState = emojiPickerPanel.querySelector('[data-role="emoji-empty"]');
-    if (!grid || !emptyState) return;
-
-    const results = filterEmojiOptions(term);
-    grid.innerHTML = '';
-
-    if (results.length === 0) {
-        emptyState.textContent = 'No emojis match your search.';
-        emptyState.hidden = false;
-        grid.hidden = true;
-        return;
-    }
-
-    emptyState.hidden = true;
-    grid.hidden = false;
-
-    results.forEach((item) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'emoji-picker-option';
-        button.innerHTML = renderIcon(item.value, { className: 'ingredient-icon', size: '24px' });
-        button.title = item.label;
-        button.dataset.iconify = item.value;
-        button.addEventListener('click', async () => {
-            await applyIconSelection(item);
-        });
-        grid.appendChild(button);
-    });
-}
-
-function openEmojiPicker(anchor = emojiPickerToggle || emojiInput) {
-    if (!emojiPickerPanel) return;
-    ensureEmojiPickerPanel();
-    emojiPickerPanel.hidden = false;
-    const searchInput = emojiPickerPanel.querySelector('input[type="search"]');
-    if (searchInput) {
-        searchInput.value = '';
-        emojiPickerFilter = '';
-        renderEmojiResults('');
-        setTimeout(() => {
-            searchInput.focus({ preventScroll: true });
-        }, 10);
-    }
-}
-
-function closeEmojiPicker() {
-    if (!emojiPickerPanel) return;
-    emojiPickerPanel.hidden = true;
-}
-
-function toggleEmojiPicker(anchor = emojiPickerToggle || emojiInput) {
-    if (!emojiPickerPanel) return;
-    if (emojiPickerPanel.hidden) {
-        openEmojiPicker(anchor);
+// Image upload handling
+function updateImagePreview(imageDataUrl) {
+    const previewImg = document.getElementById('ingredient-image-preview-img');
+    const removeBtn = document.getElementById('ingredient-image-remove-btn');
+    if (!previewImg || !removeBtn) return;
+    
+    if (imageDataUrl) {
+        previewImg.src = imageDataUrl;
+        previewImg.style.display = 'block';
+        removeBtn.style.display = 'inline-block';
     } else {
-        closeEmojiPicker();
+        previewImg.src = '';
+        previewImg.style.display = 'none';
+        removeBtn.style.display = 'none';
     }
 }
 
-async function applyIconSelection(selectedItem) {
-    if (!emojiInput) return;
-    const iconifyValue = selectedItem?.value || '';
+function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
     
-    // Convert Iconify icon to image data URL
-    let iconDataUrl = null;
-    if (iconifyValue && iconifyValue.startsWith('iconify:')) {
-        const iconName = iconifyValue.slice('iconify:'.length);
-        try {
-            iconDataUrl = await iconifyToDataUrl(iconName);
-            if (iconDataUrl) {
-                console.log('Icon converted to data URL:', iconName);
-            } else {
-                console.warn('Failed to convert icon to data URL, keeping iconify reference');
-            }
-        } catch (error) {
-            console.error('Error converting icon to data URL:', error);
-        }
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        alert('Please select an image file.');
+        return;
     }
     
-    // Store the icon value (prefer data URL, fallback to iconify reference)
-    selectedIconValue = iconDataUrl || iconifyValue || '';
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('Image size must be less than 5MB.');
+        return;
+    }
     
-    // Store the icon value in the input's dataset so it persists even if user types.
-    // Do not display emoji text in the field – we rely solely on the icon value.
-    emojiInput.value = '';
-    emojiInput.dataset.iconifyValue = selectedIconValue;
-    emojiInput.dataset.iconifyLabel = selectedItem?.label || '';
-    console.log('Icon selected:', { 
-        icon: selectedIconValue, 
-        label: selectedItem?.label,
-        isDataUrl: isDataUrl(selectedIconValue)
-    });
-    updateIconPreview(selectedIconValue);
-    closeEmojiPicker();
-    emojiInput.focus();
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        selectedImageDataUrl = e.target.result;
+        updateImagePreview(selectedImageDataUrl);
+        console.log('Image uploaded:', file.name, 'Size:', file.size, 'bytes');
+    };
+    reader.onerror = () => {
+        alert('Error reading image file.');
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeImage() {
+    const fileInput = document.getElementById('ingredient-image');
+    if (fileInput) {
+        fileInput.value = '';
+    }
+    selectedImageDataUrl = '';
+    updateImagePreview('');
 }
 
 // DOM Elements
 const form = document.getElementById('custom-ingredient-form');
 const ingredientsList = document.getElementById('custom-ingredients-list');
 const searchInput = document.getElementById('ingredient-search');
-const emojiInput = document.getElementById('ingredient-emoji');
-const emojiPickerToggle = document.getElementById('emoji-picker-toggle');
-const emojiPickerPanel = document.getElementById('emoji-picker-panel');
-
-if (emojiPickerToggle) {
-    void ensureEmojiPickerPanel();
-}
+const imageInput = document.getElementById('ingredient-image');
+const imageUploadBtn = document.getElementById('ingredient-image-upload-btn');
+const imageRemoveBtn = document.getElementById('ingredient-image-remove-btn');
 const addIngredientBtn = document.getElementById('add-ingredient-btn');
 const ingredientModal = document.getElementById('ingredient-modal');
 const cancelIngredientBtn = document.getElementById('cancel-ingredient');
@@ -250,14 +119,13 @@ function loadCustomIngredients() {
         const savedIngredients = localStorage.getItem('meale-my-ingredients');
         if (savedIngredients) {
             customIngredients = JSON.parse(savedIngredients).map(ingredient => {
-                const iconValue = typeof ingredient.icon === 'string' ? ingredient.icon.trim() : '';
+                // Support both image and icon for backward compatibility
+                const imageValue = ingredient.image || ingredient.icon || '';
                 return {
                 ...ingredient,
                 storeSection: ingredient.storeSection || '',
-                    // Stop using emoji for custom ingredients; rely entirely on icon
                     emoji: '',
-                    icon: iconValue,
-                    iconLabel: ingredient.iconLabel || ''
+                    image: imageValue
                 };
             });
             console.log('Loaded my ingredients:', customIngredients.length);
@@ -311,33 +179,17 @@ function openIngredientModal(ingredient = null) {
         if (storeSectionInput) {
             storeSectionInput.value = ingredient.storeSection || '';
         }
-        if (emojiInput) {
-            const iconValue = typeof ingredient.icon === 'string' ? ingredient.icon.trim() : '';
-            selectedIconValue = iconValue;
-            // Do not display emoji text; just keep icon metadata for the picker
-            emojiInput.value = '';
-            if (iconValue) {
-                emojiInput.dataset.iconifyValue = iconValue;
-                emojiInput.dataset.iconifyLabel = ingredient.iconLabel || '';
-            } else {
-                delete emojiInput.dataset.iconifyValue;
-                delete emojiInput.dataset.iconifyLabel;
-            }
-            updateIconPreview(iconValue);
-        }
+        // Load image if available
+        const imageValue = typeof ingredient.image === 'string' ? ingredient.image.trim() : '';
+        selectedImageDataUrl = imageValue;
+        updateImagePreview(imageValue);
     } else {
         if (storeSectionInput) {
             storeSectionInput.value = '';
         }
-        if (emojiInput) {
-            emojiInput.value = '';
-            delete emojiInput.dataset.iconifyValue;
-            delete emojiInput.dataset.iconifyLabel;
-        }
-        selectedIconValue = '';
-        updateIconPreview('');
+        selectedImageDataUrl = '';
+        updateImagePreview('');
     }
-    closeEmojiPicker();
     
     // Show modal
     ingredientModal.classList.add('active');
@@ -348,11 +200,10 @@ function closeIngredientModal() {
     ingredientModal.classList.remove('active');
     editingIngredientId = null;
     form.reset();
-    closeEmojiPicker();
-    selectedIconValue = '';
-    if (emojiInput) {
-        delete emojiInput.dataset.iconifyValue;
-        delete emojiInput.dataset.iconifyLabel;
+    selectedImageDataUrl = '';
+    updateImagePreview('');
+    if (imageInput) {
+        imageInput.value = '';
     }
 }
 
@@ -363,28 +214,6 @@ async function saveCustomIngredient(event) {
         console.log('Saving custom ingredient...');
         
         const storeSectionInput = document.getElementById('store-section');
-        // Prioritize icon from dataset (persists even if user types), then selectedIconValue
-        let iconValue = emojiInput?.dataset.iconifyValue || selectedIconValue || '';
-        const iconLabel = emojiInput?.dataset.iconifyLabel || '';
-        
-        // If icon is an iconify reference (not already a data URL), convert it to data URL
-        if (iconValue && iconValue.startsWith('iconify:') && !isDataUrl(iconValue)) {
-            const iconName = iconValue.slice('iconify:'.length);
-            console.log('Converting iconify reference to data URL:', iconName);
-            const dataUrl = await iconifyToDataUrl(iconName);
-            if (dataUrl) {
-                iconValue = dataUrl;
-                console.log('Icon converted to data URL');
-            } else {
-                console.warn('Failed to convert icon to data URL, keeping iconify reference');
-            }
-        }
-        
-        console.log('Saving ingredient with icon:', { 
-            iconValue: iconValue ? (isDataUrl(iconValue) ? 'data URL (length: ' + iconValue.length + ')' : iconValue) : 'none',
-            iconLabel, 
-            isDataUrl: isDataUrl(iconValue)
-        });
         
         const ingredient = {
             id: editingIngredientId || Date.now().toString(),
@@ -400,10 +229,8 @@ async function saveCustomIngredient(event) {
             },
             isCustom: true,
             storeSection: storeSectionInput ? storeSectionInput.value.trim() : '',
-            // Do not store emoji anymore; rely entirely on icon
             emoji: '',
-            icon: iconValue, // Primary: icon as data URL (e.g., "data:image/svg+xml;base64,...")
-            iconLabel: iconLabel
+            image: selectedImageDataUrl || '' // Store uploaded image as data URL
         };
         
         // Calculate price per gram
@@ -429,7 +256,7 @@ async function saveCustomIngredient(event) {
         }
         
         closeIngredientModal();
-        selectedIconValue = '';
+        selectedImageDataUrl = '';
         
         console.log('Saved ingredient:', ingredient);
         
@@ -504,11 +331,11 @@ function renderIngredientsList(filteredIngredients = null) {
         
         ingredients.forEach(ingredient => {
             const row = document.createElement('tr');
-            const iconSource = ingredient.icon;
-            // renderIcon now handles data URLs and iconify references
-            const iconMarkup = iconSource ? renderIcon(iconSource, { className: 'ingredient-icon', size: '24px' }) : '';
-            const nameHTML = iconMarkup
-                ? `${iconMarkup}<span class="ingredient-name-text">${ingredient.name}</span>`
+            const imageSource = ingredient.image || ingredient.icon; // Support both for backward compatibility
+            // Display image if available, otherwise show nothing
+            const imageMarkup = imageSource ? `<img src="${imageSource}" class="ingredient-image" style="width: 24px; height: 24px; object-fit: cover; border-radius: 4px; margin-right: 8px;" alt="">` : '';
+            const nameHTML = imageMarkup
+                ? `${imageMarkup}<span class="ingredient-name-text">${ingredient.name}</span>`
                 : `<span class="ingredient-name-text">${ingredient.name}</span>`;
             
             // Handle price and weight display - API ingredients might not have these
@@ -561,7 +388,6 @@ function renderIngredientsList(filteredIngredients = null) {
                 </td>
             `;
             tbody.appendChild(row);
-            scanIconifyElements(row);
         });
     } catch (error) {
         console.error('Error rendering ingredients list:', error);
@@ -896,49 +722,20 @@ if (closeModalBtn) {
     closeModalBtn.addEventListener('click', closeIngredientModal);
 }
 
-if (emojiInput) {
-    emojiInput.addEventListener('focus', () => {
-        void openEmojiPicker(emojiInput);
-    });
-    emojiInput.addEventListener('click', () => {
-        void openEmojiPicker(emojiInput);
-    });
-    emojiInput.addEventListener('input', () => {
-        const sanitized = normalizeIconValue(emojiInput.value);
-        if (emojiInput.value !== sanitized) {
-            emojiInput.value = sanitized;
-        }
-        selectedIconValue = '';
-        delete emojiInput.dataset.iconifyValue;
-        delete emojiInput.dataset.iconifyLabel;
+// Image upload event listeners
+if (imageUploadBtn && imageInput) {
+    imageUploadBtn.addEventListener('click', () => {
+        imageInput.click();
     });
 }
 
-if (emojiPickerToggle) {
-    emojiPickerToggle.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        void toggleEmojiPicker(emojiPickerToggle);
-    });
+if (imageInput) {
+    imageInput.addEventListener('change', handleImageUpload);
 }
 
-document.addEventListener('click', (event) => {
-    if (!emojiPickerPanel || emojiPickerPanel.hidden) return;
-    if (
-        emojiPickerPanel.contains(event.target) ||
-        (emojiPickerToggle && emojiPickerToggle.contains(event.target)) ||
-        (emojiInput && emojiInput.contains(event.target))
-    ) {
-        return;
-    }
-    closeEmojiPicker();
-});
-
-document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && emojiPickerPanel && !emojiPickerPanel.hidden) {
-        closeEmojiPicker();
-    }
-});
+if (imageRemoveBtn) {
+    imageRemoveBtn.addEventListener('click', removeImage);
+}
 
 // Close modal when clicking outside
 window.addEventListener('click', (event) => {
