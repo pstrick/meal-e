@@ -1134,35 +1134,14 @@ function createMealItem(item, amount, itemIndex, slot) {
     // Handle custom meal items
     if (item.type === 'custommeal') {
         const displayName = item.name;
-        const truncatedName = displayName.length > 140 ? `${displayName.substring(0, 137).trimEnd()}...` : displayName;
-        
-        // Get nutrition values
-        const nutrition = item.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
-        const cost = item.cost || 0;
-        
-        // Build nutrition display
-        let nutritionDisplay = '';
-        if (nutrition.calories > 0 || nutrition.protein > 0 || nutrition.carbs > 0 || nutrition.fat > 0) {
-            nutritionDisplay = `
-                <div class="meal-item-nutrition" style="margin-top: 8px; font-size: 0.85em; color: #666;">
-                    <span>Cal: ${Math.round(nutrition.calories)}</span>
-                    <span style="margin-left: 8px;">P: ${Math.round(nutrition.protein)}g</span>
-                    <span style="margin-left: 8px;">C: ${Math.round(nutrition.carbs)}g</span>
-                    <span style="margin-left: 8px;">F: ${Math.round(nutrition.fat)}g</span>
-                    ${cost > 0 ? `<span style="margin-left: 8px; color: #28a745;">$${cost.toFixed(2)}</span>` : ''}
-                </div>
-            `;
-        }
+        // Reduced from 140 to 60 characters for smaller display
+        const truncatedName = displayName.length > 60 ? `${displayName.substring(0, 57).trimEnd()}...` : displayName;
         
         div.innerHTML = `
             <div class="meal-item-header">
                 <span class="meal-item-name" title="${displayName}">${truncatedName}</span>
                 <button class="remove-meal" title="Remove Item">&times;</button>
             </div>
-            <div class="meal-item-details">
-                <span class="meal-item-type" style="color: #666;">Custom Meal</span>
-            </div>
-            ${nutritionDisplay}
         `;
         
         // Remove item handler
@@ -1179,11 +1158,9 @@ function createMealItem(item, amount, itemIndex, slot) {
         return div;
     }
     
-    const label = item.type === 'meal' ? 'Recipe' : 'Custom Ingredient';
-    
-    // Truncate item name to keep cards compact
+    // Truncate item name to keep cards compact - reduced from 140 to 60 characters
     const displayName = item.emoji ? `${item.emoji} ${item.name}` : item.name;
-    const truncatedName = displayName.length > 140 ? `${displayName.substring(0, 137).trimEnd()}...` : displayName;
+    const truncatedName = displayName.length > 60 ? `${displayName.substring(0, 57).trimEnd()}...` : displayName;
     
     // Calculate nutrition for this item
     let itemNutrition = { calories: 0, protein: 0, carbs: 0, fat: 0 };
@@ -1242,14 +1219,11 @@ function createMealItem(item, amount, itemIndex, slot) {
     
     console.log('Final item nutrition:', itemNutrition);
     
+    // Simplified display - removed type label and amount, only show name
     div.innerHTML = `
         <div class="meal-item-header">
             <span class="meal-item-name" title="${displayName}">${truncatedName}</span>
             <button class="remove-meal" title="Remove Item">&times;</button>
-        </div>
-        <div class="meal-item-details">
-            <span class="meal-item-amount">${amount}g</span>
-            <span class="meal-item-type">${label}</span>
         </div>
     `;
     
@@ -1445,6 +1419,114 @@ async function calculateDayNutrition(date) {
     }
 
     console.log('Calculated nutrition for', date, ':', nutrition);
+    return nutrition;
+}
+
+// Calculate nutrition for a single meal slot (date + meal type)
+async function calculateSlotNutrition(date, mealType) {
+    const nutrition = {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        cost: 0
+    };
+
+    const key = getMealKey(date, mealType);
+    const items = mealPlan[key] || [];
+    
+    for (const itemData of items) {
+        if (itemData.type === 'custommeal') {
+            const mealNutrition = itemData.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+            const servings = itemData.amount || 1;
+            nutrition.calories += mealNutrition.calories * servings;
+            nutrition.protein += mealNutrition.protein * servings;
+            nutrition.carbs += mealNutrition.carbs * servings;
+            nutrition.fat += mealNutrition.fat * servings;
+            if (itemData.cost) {
+                nutrition.cost += itemData.cost * servings;
+            }
+        } else if (itemData.type === 'meal') {
+            const recipe = window.recipes.find(r => r.id === itemData.id);
+            if (recipe && recipe.nutrition) {
+                const servingSize = recipe.servingSize || 100;
+                const nutritionPerGram = {
+                    calories: recipe.nutrition.calories / servingSize,
+                    protein: recipe.nutrition.protein / servingSize,
+                    carbs: recipe.nutrition.carbs / servingSize,
+                    fat: recipe.nutrition.fat / servingSize
+                };
+                
+                nutrition.calories += nutritionPerGram.calories * itemData.amount;
+                nutrition.protein += nutritionPerGram.protein * itemData.amount;
+                nutrition.carbs += nutritionPerGram.carbs * itemData.amount;
+                nutrition.fat += nutritionPerGram.fat * itemData.amount;
+                
+                if (recipe.ingredients && recipe.ingredients.length > 0) {
+                    let totalRecipeCost = 0;
+                    let totalRecipeWeight = 0;
+                    recipe.ingredients.forEach(ing => {
+                        if (ing.totalPrice) {
+                            totalRecipeCost += ing.totalPrice;
+                        } else if (ing.pricePerGram && ing.amount) {
+                            totalRecipeCost += ing.pricePerGram * ing.amount;
+                        }
+                        if (ing.amount) {
+                            totalRecipeWeight += ing.amount;
+                        }
+                    });
+                    
+                    if (totalRecipeWeight > 0 && totalRecipeCost > 0) {
+                        const costPerGram = totalRecipeCost / totalRecipeWeight;
+                        nutrition.cost += costPerGram * itemData.amount;
+                    }
+                } else if (itemData.cost) {
+                    nutrition.cost += itemData.cost;
+                }
+            }
+        } else if (itemData.type === 'ingredient') {
+            try {
+                let ingredientNutrition;
+                let ingredientCost = 0;
+                
+                if (itemData.id.startsWith('custom-')) {
+                    const customIngredients = getMyIngredients();
+                    const customId = itemData.id.replace('custom-', '');
+                    const customIngredient = customIngredients.find(ing => ing.id === customId);
+                    if (customIngredient) {
+                        const servingSize = customIngredient.servingSize || 100;
+                        ingredientNutrition = {
+                            calories: customIngredient.nutrition.calories / servingSize,
+                            protein: customIngredient.nutrition.protein / servingSize,
+                            carbs: customIngredient.nutrition.carbs / servingSize,
+                            fat: customIngredient.nutrition.fat / servingSize
+                        };
+                        if (customIngredient.pricePerGram) {
+                            ingredientCost = customIngredient.pricePerGram * itemData.amount;
+                        }
+                    }
+                } else {
+                    ingredientNutrition = itemData.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+                    if (itemData.pricePerGram) {
+                        ingredientCost = itemData.pricePerGram * itemData.amount;
+                    } else if (itemData.cost) {
+                        ingredientCost = itemData.cost;
+                    }
+                }
+                
+                if (ingredientNutrition) {
+                    nutrition.calories += ingredientNutrition.calories * itemData.amount;
+                    nutrition.protein += ingredientNutrition.protein * itemData.amount;
+                    nutrition.carbs += ingredientNutrition.carbs * itemData.amount;
+                    nutrition.fat += ingredientNutrition.fat * itemData.amount;
+                }
+                nutrition.cost += ingredientCost;
+            } catch (error) {
+                console.error('Error calculating ingredient nutrition:', error);
+            }
+        }
+    }
+
     return nutrition;
 }
 
@@ -1799,6 +1881,22 @@ async function addAddMealButton(slot) {
         slot.classList.add('has-meal');
     } else {
         slot.classList.remove('has-meal');
+    }
+    
+    // Calculate and display slot totals if there are items
+    if (items && Array.isArray(items) && items.length > 0) {
+        const slotNutrition = await calculateSlotNutrition(slot.dataset.day, slot.dataset.meal);
+        
+        // Add slot totals footer
+        const slotTotals = document.createElement('div');
+        slotTotals.className = 'slot-totals';
+        slotTotals.innerHTML = `
+            <div class="slot-totals-content">
+                <span class="slot-calories">${Math.round(slotNutrition.calories)}</span>
+                <span class="slot-macros">P:${Math.round(slotNutrition.protein)} C:${Math.round(slotNutrition.carbs)} F:${Math.round(slotNutrition.fat)}</span>
+            </div>
+        `;
+        contentContainer.appendChild(slotTotals);
     }
     
     // Add the Add Item button (always visible)
