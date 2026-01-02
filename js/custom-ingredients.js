@@ -707,7 +707,13 @@ if (uploadCsvBtn && uploadCsvModal && uploadCsvForm) {
 
 if (form) {
     form.addEventListener('submit', saveCustomIngredient);
-    form.addEventListener('reset', closeEmojiPicker);
+    form.addEventListener('reset', () => {
+        selectedImageDataUrl = '';
+        updateImagePreview('');
+        if (imageInput) {
+            imageInput.value = '';
+        }
+    });
 }
 if (searchInput) {
     searchInput.addEventListener('input', searchIngredients);
