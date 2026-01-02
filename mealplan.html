@@ -184,6 +184,38 @@
         </div>
     </div>
 
+    <!-- Edit Meal Item Modal -->
+    <div id="edit-meal-item-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Edit Meal Item</h2>
+            <form id="edit-meal-item-form">
+                <div class="selected-item">
+                    <div class="item-details">
+                        <p class="item-name"></p>
+                        <div class="item-nutrition">
+                            <span>Per 100g:</span>
+                            <span class="nutrition-value">Cal: <span class="calories">0</span></span>
+                            <span class="nutrition-value">P: <span class="protein">0</span>g</span>
+                            <span class="nutrition-value">C: <span class="carbs">0</span>g</span>
+                            <span class="nutrition-value">F: <span class="fat">0</span>g</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-item-amount">Amount (g):</label>
+                        <input type="number" id="edit-item-amount" min="1" step="1" value="100" required>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-danger" id="delete-meal-item">Delete Item</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-edit-meal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Shopping List Selection Modal -->
     <div id="shopping-list-selection-modal" class="modal">
         <div class="modal-content">

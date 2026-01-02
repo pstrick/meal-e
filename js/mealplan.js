@@ -23,6 +23,9 @@ let currentWeekOffset = 0;  // Track week offset instead of modifying date direc
 let baseStartOfWeekTimestamp = null; // Anchor for week navigation as timestamp
 let selectedSlot = null;
 let selectedItem = null;
+let editingItem = null;
+let editingSlot = null;
+let editingItemIndex = null;
 let mealPlanForm = null;
 let mealPlanModal = null;
 let cancelMeal = null;
@@ -987,6 +990,133 @@ function closeMealPlanModal() {
 // Make closeMealPlanModal available globally
 window.closeMealPlanModal = closeMealPlanModal;
 
+// Edit meal item modal functions
+function openEditMealItemModal(item, amount, itemIndex, slot) {
+    editingItem = item;
+    editingSlot = slot;
+    editingItemIndex = itemIndex;
+    
+    const editModal = document.getElementById('edit-meal-item-modal');
+    if (!editModal) {
+        console.error('Edit meal item modal not found');
+        return;
+    }
+    
+    // Get the actual item data from meal plan
+    const mealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
+    const items = mealPlan[mealKey];
+    if (!items || !items[itemIndex]) {
+        console.error('Item not found in meal plan');
+        return;
+    }
+    
+    const itemData = items[itemIndex];
+    
+    // Update modal content
+    const itemNameEl = editModal.querySelector('.item-name');
+    const caloriesEl = editModal.querySelector('.calories');
+    const proteinEl = editModal.querySelector('.protein');
+    const carbsEl = editModal.querySelector('.carbs');
+    const fatEl = editModal.querySelector('.fat');
+    const amountInput = editModal.querySelector('#edit-item-amount');
+    
+    if (itemNameEl) {
+        const displayName = item.emoji ? `${item.emoji} ${item.name}` : item.name;
+        itemNameEl.textContent = displayName;
+    }
+    
+    // Calculate and display nutrition (matching the format from selectItem function)
+    const nutrition = item.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    const servingSize = item.servingSize || 100;
+    
+    // Display nutrition - matching selectItem which multiplies by servingSize
+    if (caloriesEl) caloriesEl.textContent = Math.round(nutrition.calories * servingSize);
+    if (proteinEl) proteinEl.textContent = Math.round(nutrition.protein * servingSize);
+    if (carbsEl) carbsEl.textContent = Math.round(nutrition.carbs * servingSize);
+    if (fatEl) fatEl.textContent = Math.round(nutrition.fat * servingSize);
+    
+    if (amountInput) {
+        amountInput.value = itemData.amount || amount || 100;
+    }
+    
+    editModal.classList.add('active');
+}
+
+function closeEditMealItemModal() {
+    const editModal = document.getElementById('edit-meal-item-modal');
+    if (editModal) {
+        editModal.classList.remove('active');
+    }
+    editingItem = null;
+    editingSlot = null;
+    editingItemIndex = null;
+}
+
+async function handleEditMealItemSubmit(e) {
+    e.preventDefault();
+    
+    if (!editingSlot || editingItemIndex === null) {
+        console.error('No item being edited');
+        return;
+    }
+    
+    const mealKey = getMealKey(editingSlot.dataset.day, editingSlot.dataset.meal);
+    const items = mealPlan[mealKey];
+    if (!items || !items[editingItemIndex]) {
+        console.error('Item not found');
+        return;
+    }
+    
+    const amountInput = document.getElementById('edit-item-amount');
+    const newAmount = parseInt(amountInput?.value) || 100;
+    
+    // Update the amount
+    items[editingItemIndex].amount = newAmount;
+    
+    saveMealPlan();
+    await updateMealPlanDisplay();
+    closeEditMealItemModal();
+}
+
+function handleDeleteMealItem() {
+    if (!editingSlot || editingItemIndex === null) {
+        console.error('No item being edited');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to delete this item?')) {
+        return;
+    }
+    
+    const mealKey = getMealKey(editingSlot.dataset.day, editingSlot.dataset.meal);
+    const items = mealPlan[mealKey];
+    if (!items || !items[editingItemIndex]) {
+        console.error('Item not found');
+        return;
+    }
+    
+    const item = items[editingItemIndex];
+    
+    // If it's a recurring item, mark this specific instance as deleted
+    if (item.isRecurring && item.recurringId) {
+        const deletedKey = `${item.recurringId}-${editingSlot.dataset.day}-${editingSlot.dataset.meal}`;
+        let deletedInstances = JSON.parse(localStorage.getItem('meale-deleted-recurring-instances') || '[]');
+        if (!deletedInstances.includes(deletedKey)) {
+            deletedInstances.push(deletedKey);
+            localStorage.setItem('meale-deleted-recurring-instances', JSON.stringify(deletedInstances));
+        }
+    }
+    
+    items.splice(editingItemIndex, 1);
+    if (items.length === 0) {
+        delete mealPlan[mealKey];
+    }
+    
+    saveMealPlan();
+    updateMealPlanDisplay();
+    closeEditMealItemModal();
+}
+
 // Make week offset functions available globally for debugging
 window.resetWeekOffset = resetWeekOffset;
 window.saveWeekOffset = saveWeekOffset;
@@ -1155,6 +1285,14 @@ function createMealItem(item, amount, itemIndex, slot) {
                 updateMealPlanDisplay();
             }
         });
+        
+        // Add click handler to open edit modal
+        div.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-meal')) return;
+            e.stopPropagation();
+            openEditMealItemModal(item, amount, itemIndex, slot);
+        });
+        
         return div;
     }
     
@@ -1252,6 +1390,14 @@ function createMealItem(item, amount, itemIndex, slot) {
             updateMealPlanDisplay();
         }
     });
+    
+    // Add click handler to open edit modal
+    div.addEventListener('click', (e) => {
+        if (e.target.closest('.remove-meal')) return;
+        e.stopPropagation();
+        openEditMealItemModal(item, amount, itemIndex, slot);
+    });
+    
     return div;
 }
 
@@ -1626,6 +1772,37 @@ async function continueInitialization() {
         
         // Initialize recurring options in modal
         initializeRecurringModalOptions();
+        
+        // Initialize edit meal item modal
+        const editMealItemModal = document.getElementById('edit-meal-item-modal');
+        const editMealItemForm = document.getElementById('edit-meal-item-form');
+        const cancelEditMealBtn = document.getElementById('cancel-edit-meal');
+        const deleteMealItemBtn = document.getElementById('delete-meal-item');
+        
+        if (editMealItemForm) {
+            editMealItemForm.addEventListener('submit', handleEditMealItemSubmit);
+        }
+        
+        if (cancelEditMealBtn) {
+            cancelEditMealBtn.addEventListener('click', closeEditMealItemModal);
+        }
+        
+        if (deleteMealItemBtn) {
+            deleteMealItemBtn.addEventListener('click', handleDeleteMealItem);
+        }
+        
+        if (editMealItemModal) {
+            const editCloseBtn = editMealItemModal.querySelector('.close');
+            if (editCloseBtn) {
+                editCloseBtn.addEventListener('click', closeEditMealItemModal);
+            }
+            
+            editMealItemModal.addEventListener('click', (event) => {
+                if (event.target === editMealItemModal) {
+                    closeEditMealItemModal();
+                }
+            });
+        }
         
         // Initialize cancel meal button
         if (cancelMeal) {
