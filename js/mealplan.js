@@ -1,6 +1,4 @@
 import { showAlert } from './alert.js';
-import { searchUSDAIngredients } from './usda-api.js';
-import { searchOpenFoodFactsIngredients } from './open-food-facts-api.js';
 
 // Helper function to get my ingredients with migration support
 function getMyIngredients() {
@@ -101,7 +99,7 @@ function resetWeekOffset() {
     console.log('Week offset reset to current week');
 }
 
-// Ingredient search function for meal plan (includes USDA API)
+// Ingredient search function for meal plan (custom ingredients only)
 async function searchAllIngredients(query) {
     const results = [];
     
@@ -192,139 +190,34 @@ async function searchAllIngredients(query) {
         });
     });
     
-    // Search USDA API (async, network call) - for generic foods
-    // Only get the most relevant result
-    try {
-        const usdaResults = await searchUSDAIngredients(query, 20); // Get more to find best match
-        if (usdaResults && usdaResults.length > 0) {
-            // Find the most relevant USDA result
-            const bestUSDAResult = usdaResults
-                .map(result => {
-                    const nameLower = (result.name || '').toLowerCase();
-                    let relevance = 0;
-                    if (nameLower === queryLower) {
-                        relevance = 3; // Exact match
-                    } else if (nameLower.startsWith(queryLower)) {
-                        relevance = 2; // Starts with
-                    } else if (nameLower.includes(queryLower)) {
-                        relevance = 1; // Contains
-                    }
-                    // Boost relevance if it has nutrition data
-                    if (result.nutrition && (result.nutrition.calories > 0 || result.nutrition.protein > 0)) {
-                        relevance += 0.5;
-                    }
-                    return { result, relevance };
-                })
-                .sort((a, b) => b.relevance - a.relevance)[0];
-            
-            if (bestUSDAResult && bestUSDAResult.relevance > 0) {
-                results.push({
-                    ...bestUSDAResult.result,
-                    category: bestUSDAResult.result.category || 'ingredient',
-                    pricePerGram: null,
-                    totalPrice: null,
-                    totalWeight: null
-                });
-            }
-        }
-    } catch (error) {
-        console.error('Error searching USDA API:', error);
-        // Continue with other sources if USDA fails
-    }
-    
-    // Search Open Food Facts API (async, network call) - for branded products
-    // Only get the most relevant result
-    try {
-        const offResults = await searchOpenFoodFactsIngredients(query, 20); // Get more to find best match
-        if (offResults && offResults.length > 0) {
-            // Find the most relevant Open Food Facts result
-            const bestOFFResult = offResults
-                .map(result => {
-                    const nameLower = (result.name || '').toLowerCase();
-                    let relevance = 0;
-                    if (nameLower === queryLower) {
-                        relevance = 3; // Exact match
-                    } else if (nameLower.startsWith(queryLower)) {
-                        relevance = 2; // Starts with
-                    } else if (nameLower.includes(queryLower)) {
-                        relevance = 1; // Contains
-                    }
-                    // Boost relevance if it has nutrition data
-                    if (result.nutrition && (result.nutrition.calories > 0 || result.nutrition.protein > 0)) {
-                        relevance += 0.5;
-                    }
-                    return { result, relevance };
-                })
-                .sort((a, b) => b.relevance - a.relevance)[0];
-            
-            if (bestOFFResult && bestOFFResult.relevance > 0) {
-                // Double-check that the result has valid nutrition data
-                const result = bestOFFResult.result;
-                if (result && result.nutrition) {
-                    const hasValidNutrition = 
-                        (result.nutrition.calories && result.nutrition.calories > 0) || 
-                        (result.nutrition.protein && result.nutrition.protein > 0) || 
-                        (result.nutrition.carbs && result.nutrition.carbs > 0) || 
-                        (result.nutrition.fat && result.nutrition.fat > 0);
-                    
-                    if (hasValidNutrition) {
-                        results.push({
-                            ...result,
-                            category: result.category || 'ingredient',
-                            pricePerGram: result.pricePerGram || null,
-                            pricePer100g: result.pricePer100g || null,
-                            totalPrice: result.totalPrice || null,
-                            totalWeight: result.totalWeight || null
-                        });
-                    } else {
-                        console.log('Skipping Open Food Facts result without valid nutrition in mealplan:', result.name);
-                    }
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Error searching Open Food Facts API:', error);
-        // Continue with other sources if Open Food Facts fails
-    }
-    
-    // Sort results: my ingredients first (already added first), then API results by relevance and shortest name
+    // Sort results by relevance and shortest name
     results.sort((a, b) => {
-        // My ingredients first (source === 'custom')
-        if (a.source === 'custom' && b.source !== 'custom') return -1;
-        if (a.source !== 'custom' && b.source === 'custom') return 1;
+        const aNameLower = a.name.toLowerCase();
+        const bNameLower = b.name.toLowerCase();
         
-        // For API results, sort by relevance (exact match > starts with > contains) then by shortest name
-        if (a.source !== 'custom' && b.source !== 'custom') {
-            const aNameLower = a.name.toLowerCase();
-            const bNameLower = b.name.toLowerCase();
-            
-            // Calculate relevance scores
-            let aRelevance = 0;
-            let bRelevance = 0;
-            
-            if (aNameLower === queryLower) aRelevance = 3;
-            else if (aNameLower.startsWith(queryLower)) aRelevance = 2;
-            else if (aNameLower.includes(queryLower)) aRelevance = 1;
-            
-            if (bNameLower === queryLower) bRelevance = 3;
-            else if (bNameLower.startsWith(queryLower)) bRelevance = 2;
-            else if (bNameLower.includes(queryLower)) bRelevance = 1;
-            
-            // Sort by relevance first
-            if (aRelevance !== bRelevance) {
-                return bRelevance - aRelevance;
-            }
-            
-            // Then by shortest name
-            if (a.name.length !== b.name.length) {
-                return a.name.length - b.name.length;
-            }
-            
-            // Finally alphabetically
-            return a.name.localeCompare(b.name);
+        // Calculate relevance scores
+        let aRelevance = 0;
+        let bRelevance = 0;
+        
+        if (aNameLower === queryLower) aRelevance = 3;
+        else if (aNameLower.startsWith(queryLower)) aRelevance = 2;
+        else if (aNameLower.includes(queryLower)) aRelevance = 1;
+        
+        if (bNameLower === queryLower) bRelevance = 3;
+        else if (bNameLower.startsWith(queryLower)) bRelevance = 2;
+        else if (bNameLower.includes(queryLower)) bRelevance = 1;
+        
+        // Sort by relevance first
+        if (aRelevance !== bRelevance) {
+            return bRelevance - aRelevance;
         }
         
-        // Alphabetically for my ingredients
+        // Then by shortest name
+        if (a.name.length !== b.name.length) {
+            return a.name.length - b.name.length;
+        }
+        
+        // Finally alphabetically
         return a.name.localeCompare(b.name);
     });
     
@@ -569,7 +462,7 @@ async function updateUnifiedList() {
         });
     }
     
-    // Search custom ingredients and USDA API
+    // Search custom ingredients only
     try {
         const ingredientResults = await searchAllIngredients(searchTerm);
         for (const ingredient of ingredientResults) {
@@ -578,21 +471,10 @@ async function updateUnifiedList() {
             
             // Only add if category matches or is 'all'
             if (category === 'all' || ingredientCategory === category) {
-                // Determine icon and label based on source
-                let icon = '🥩';
-                let label = 'My Ingredient';
-                let id;
-                if (ingredient.source === 'usda') {
-                    icon = '🌾';
-                    label = 'USDA Database';
-                    id = `usda-${ingredient.fdcId}`;
-                } else if (ingredient.source === 'openfoodfacts') {
-                    icon = '🏷️';
-                    label = 'Open Food Facts';
-                    id = `off-${ingredient.fdcId || ingredient.id}`;
-                } else {
-                    id = `custom-${ingredient.id}`;
-                }
+                // All ingredients are custom now
+                const icon = '🥩';
+                const label = 'My Ingredient';
+                const id = `custom-${ingredient.id}`;
                 
                 results.push({
                     type: 'ingredient',
@@ -628,7 +510,7 @@ async function updateUnifiedList() {
     results.forEach(item => {
         const div = document.createElement('div');
         div.className = 'unified-option';
-        const brandInfo = item.brandOwner && item.source === 'usda' ? `<p class="brand-info">${item.brandOwner}</p>` : '';
+        const brandInfo = '';
         
         // Format price information for ingredients
         let priceInfo = '';
@@ -1557,7 +1439,7 @@ async function calculateDayNutrition(date) {
                             }
                         }
                     } else {
-                        // USDA ingredient - use stored nutrition if available
+                        // Custom ingredient - use stored nutrition if available
                         ingredientNutrition = itemData.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
                         // Calculate cost for ingredient
                         if (itemData.pricePerGram) {

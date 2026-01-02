@@ -569,7 +569,7 @@ async function handleRecipeSubmit(e) {
                 name: ingredientData.name,
                 amount: amount,
                 nutrition: ingredientData.nutrition,
-                source: ingredientData.source || 'usda', // Default to usda for backward compatibility
+                source: 'custom',
                 storeSection: ingredientData.storeSection || '',
                 emoji: ingredientData.emoji || '',
                 pricePerGram: ingredientData.pricePerGram || null,
@@ -1097,7 +1097,7 @@ function initializeApp() {
                         searchResultsElement.innerHTML = '<div class="no-results">Please enter at least 2 characters to search</div>';
                         return;
                     }
-                    searchResultsElement.innerHTML = '<div class="loading">Searching custom ingredients, USDA database, and Open Food Facts...</div>';
+                    searchResultsElement.innerHTML = '<div class="loading">Searching my ingredients...</div>';
                     try {
                         console.log('=== STARTING SEARCH ===');
                         console.log('Query:', query);
@@ -1106,8 +1106,6 @@ function initializeApp() {
                         console.log('Total results:', results.length);
                         console.log('Results breakdown:', {
                             custom: results.filter(r => r.source === 'custom').length,
-                            usda: results.filter(r => r.source === 'usda').length,
-                            openfoodfacts: results.filter(r => r.source === 'openfoodfacts').length,
                             total: results.length
                         });
                         await displaySearchResults(results);
@@ -1136,7 +1134,7 @@ function initializeApp() {
                 if (searchResultsElement && query.length >= 2) {
                     clearTimeout(modalSearchTimeout);
                     modalSearchTimeout = setTimeout(async () => {
-                        searchResultsElement.innerHTML = '<div class="loading">Searching custom ingredients, USDA database, and Open Food Facts...</div>';
+                        searchResultsElement.innerHTML = '<div class="loading">Searching my ingredients...</div>';
                         try {
                             console.log('=== STARTING TYPED SEARCH ===');
                             console.log('Query:', query);
@@ -1730,7 +1728,7 @@ function openIngredientSearch(ingredientInput) {
     if (nameInput) {
         // Always make the field editable when clicked/focused
         nameInput.readOnly = false;
-        nameInput.placeholder = 'Type to search my ingredients, USDA database, or Open Food Facts...';
+        nameInput.placeholder = 'Type to search my ingredients...';
         
         // Remove existing event listeners by cloning (clean way to remove all listeners)
         const oldValue = nameInput.value;
@@ -1873,15 +1871,8 @@ function showInlineSearchResults(input, results) {
     results.forEach(result => {
         const item = document.createElement('div');
         item.className = 'search-result-item';
-        let sourceLabel = 'My Ingredient';
-        let sourceIcon = '🏠';
-        if (result.source === 'usda') {
-            sourceLabel = 'USDA Database';
-            sourceIcon = '🌾';
-        } else if (result.source === 'openfoodfacts') {
-            sourceLabel = 'Open Food Facts';
-            sourceIcon = '🏷️';
-        }
+        const sourceLabel = 'My Ingredient';
+        const sourceIcon = '🏠';
         
         // Format price information
         let priceInfo = '';
@@ -1950,15 +1941,8 @@ function selectIngredient(ingredient) {
     const amountInput = currentIngredientInput.querySelector('.ingredient-amount');
     
     if (nameInput && amountInput) {
-        // Generate unique ID based on source
-        let storageId;
-        if (ingredient.source === 'usda') {
-            storageId = `usda-${ingredient.fdcId}`;
-        } else if (ingredient.source === 'openfoodfacts') {
-            storageId = `off-${ingredient.fdcId || ingredient.id}`;
-        } else {
-            storageId = `custom-${ingredient.id || Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        }
+        // Generate unique ID for custom ingredient
+        const storageId = `custom-${ingredient.id || Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
         nameInput.dataset.fdcId = storageId;
         nameInput.dataset.storeSection = ingredient.storeSection || '';
@@ -2130,8 +2114,9 @@ function selectIngredient(ingredient) {
             });
         }
         
-        // Automatically save API ingredients to "my ingredients" when selected
-        if (ingredient.source === 'usda' || ingredient.source === 'openfoodfacts') {
+        // Note: All ingredients are now custom, so this block is no longer needed
+        // Keeping structure for potential future use
+        if (false) {
             try {
                 // Helper function to get my ingredients with migration support
                 function getMyIngredients() {
@@ -2472,13 +2457,8 @@ async function displaySearchResults(results) {
         const div = document.createElement('div');
         div.className = 'search-result-item';
         
-        // Create visual indicator for ingredient source
-        let sourceConfig = { icon: '🏠', label: 'Custom Ingredient' };
-        if (ingredient.source === 'usda') {
-            sourceConfig = { icon: '🌾', label: 'USDA Database' };
-        } else if (ingredient.source === 'openfoodfacts') {
-            sourceConfig = { icon: '🏷️', label: 'Open Food Facts' };
-        }
+        // All ingredients are custom now
+        const sourceConfig = { icon: '🏠', label: 'Custom Ingredient' };
         
         const [mainName, ...details] = ingredient.name.split(',');
         const iconHtml = ingredient.icon ? renderIcon(ingredient.icon, { className: 'ingredient-icon', size: '20px' }) : '';
@@ -2511,7 +2491,7 @@ async function displaySearchResults(results) {
                     return;
                 }
                 
-                // Handle ingredient (custom, USDA, or Open Food Facts)
+                // Handle ingredient (custom only)
                 // Ensure nutrition is properly structured
                 const nutrition = ingredient.nutrition || {
                     calories: 0,
@@ -2608,8 +2588,9 @@ async function displaySearchResults(results) {
                     amount: ingredientData.amount
                 });
                 
-                // Automatically save API ingredients to "my ingredients" when selected
-                if (ingredient.source === 'usda' || ingredient.source === 'openfoodfacts') {
+                // Note: All ingredients are now custom, so this block is no longer needed
+                // Keeping structure for potential future use
+                if (false) {
                     try {
                         // Helper function to get my ingredients with migration support
                         function getMyIngredients() {
@@ -2693,15 +2674,8 @@ async function displaySearchResults(results) {
                     }
                 }
                 
-                // Store in selectedIngredients with appropriate ID
-                let storageId;
-                if (ingredient.source === 'usda') {
-                    storageId = `usda-${ingredient.fdcId}`;
-                } else if (ingredient.source === 'openfoodfacts') {
-                    storageId = `off-${ingredient.fdcId || ingredient.id}`;
-                } else {
-                    storageId = `custom-${ingredient.id}`;
-                }
+                // Store in selectedIngredients with custom ID
+                const storageId = `custom-${ingredient.id}`;
                 selectedIngredients.set(storageId, ingredientData);
                 
                 // Update the input field
@@ -2770,7 +2744,7 @@ async function displaySearchResults(results) {
                 ➕ Add New Ingredient
             </span>
         </div>
-        <p style="color: var(--color-text-muted); font-size: 0.9em;">Create a new custom ingredient or search APIs</p>
+        <p style="color: var(--color-text-muted); font-size: 0.9em;">Create a new custom ingredient</p>
     `;
     
     addNewDiv.addEventListener('click', () => {
@@ -2834,7 +2808,7 @@ function addIngredientInput() {
                 ingredient = selectedIngredients.get(fdcId);
             } else {
                 // Try alternative lookup strategies for different fdcId formats
-                // Check if it's a prefixed ID (usda-, off-, custom-)
+                // Check if it's a prefixed ID (custom-)
                 for (const [key, value] of selectedIngredients.entries()) {
                     if (key === fdcId || key.endsWith(fdcId) || fdcId.endsWith(key)) {
                         ingredient = value;
