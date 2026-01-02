@@ -2257,9 +2257,14 @@ async function searchAllIngredients(query) {
     const queryLower = query.toLowerCase().trim();
     const allMyIngredients = getMyIngredients();
     
+    console.log('=== SEARCH DEBUG ===');
+    console.log('Query:', query);
+    console.log('Total ingredients loaded:', allMyIngredients.length);
+    
     // Filter out ingredients without valid nutrition data
     const customIngredients = allMyIngredients.filter(ingredient => {
         if (!ingredient.nutrition) {
+            console.log('Filtering out ingredient without nutrition object:', ingredient.name);
             return false;
         }
         const nutrition = ingredient.nutrition;
@@ -2274,6 +2279,8 @@ async function searchAllIngredients(query) {
         }
         return hasValidNutrition;
     });
+    
+    console.log('Ingredients with valid nutrition:', customIngredients.length);
     
     // Helper function to calculate relevance score (defined before use)
     function calculateRelevance(text, query) {
@@ -2373,16 +2380,36 @@ async function searchAllIngredients(query) {
     }
     
     // Sort custom ingredients by relevance using improved algorithm
-    const customMatches = customIngredients
-        .filter(ingredient => {
-            const nameLower = ingredient.name.toLowerCase();
-            return nameLower.includes(queryLower);
-        })
+    const nameMatches = customIngredients.filter(ingredient => {
+        const nameLower = ingredient.name.toLowerCase();
+        const matches = nameLower.includes(queryLower);
+        if (matches) {
+            console.log('Found name match:', ingredient.name);
+        }
+        return matches;
+    });
+    
+    console.log('Ingredients matching name:', nameMatches.length);
+    
+    const customMatches = nameMatches
         .map(ingredient => {
-            const relevance = calculateRelevance(ingredient.name, query);
+            let relevance = calculateRelevance(ingredient.name, query);
+            // Ensure any ingredient that matches the name filter gets at least a minimum relevance
+            // This prevents valid matches from being filtered out due to penalties in the relevance calculation
+            if (relevance === 0 && ingredient.name.toLowerCase().includes(queryLower)) {
+                relevance = 1; // Minimum relevance for name matches
+                console.log('Setting minimum relevance for name match:', ingredient.name);
+            }
             return { ingredient, relevance };
         })
-        .filter(item => item.relevance > 0) // Only include relevant matches
+        .filter(item => {
+            if (item.relevance > 0) {
+                console.log('Ingredient with relevance > 0:', item.ingredient.name, 'relevance:', item.relevance);
+            } else {
+                console.log('Filtering out ingredient with relevance 0:', item.ingredient.name);
+            }
+            return item.relevance > 0; // Only include relevant matches
+        })
         .sort((a, b) => {
             // Sort by relevance first
             if (b.relevance !== a.relevance) {
@@ -2398,6 +2425,8 @@ async function searchAllIngredients(query) {
             return a.ingredient.name.length - b.ingredient.name.length;
         })
         .map(item => item.ingredient);
+    
+    console.log('Final custom matches:', customMatches.length);
     
     // Add custom ingredients to results
     customMatches.forEach(ingredient => {
@@ -2426,7 +2455,7 @@ async function searchAllIngredients(query) {
             servingSize: ingredient.servingSize,
             brandOwner: 'Custom Ingredient',
             storeSection: ingredient.storeSection || '',
-            emoji: emoji,
+            emoji: ingredient.emoji || '',
             pricePerGram: ingredient.pricePerGram || null,
             pricePer100g: pricePer100g
         });
