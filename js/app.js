@@ -2522,6 +2522,9 @@ async function displaySearchResults(results) {
                     return;
                 }
                 
+                // Get emoji from ingredient (if available)
+                const emoji = (ingredient.emoji || '').trim();
+                
                 // Handle ingredient (custom only)
                 // Ensure nutrition is properly structured
                 const nutrition = ingredient.nutrition || {
@@ -2598,9 +2601,19 @@ async function displaySearchResults(results) {
                     fat: nutritionPerGram.fat
                 };
                 
+                // Get amount from input, default to 100g if empty or 0
+                const amountInput = currentIngredientInput.querySelector('.ingredient-amount');
+                let amount = parseFloat(amountInput?.value) || 0;
+                if (!amount || amount === 0) {
+                    amount = 100;
+                    if (amountInput) {
+                        amountInput.value = '100';
+                    }
+                }
+                
                 const ingredientData = {
                     name: ingredient.name,
-                    amount: parseFloat(currentIngredientInput.querySelector('.ingredient-amount').value) || 0,
+                    amount: amount,
                     nutrition: staticNutritionPerGram, // STATIC per-gram values - never change
                     source: ingredient.source || 'custom',
                     id: ingredient.id || ingredient.fdcId,
