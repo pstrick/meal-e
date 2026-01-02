@@ -53,14 +53,6 @@ To enable ingredient search from the USDA FoodData Central database:
 
 The USDA API provides access to thousands of ingredients with detailed nutrition information.
 
-## Ingredient Import Tool
-
-- Open `ingredients.html` and choose **Import From URL** to launch the scraper.
-- Paste the link to a recipe or product page that exposes structured data (Recipe or Product schema) and the tool will pull available ingredients and nutrition.
-- Review the fetched details, then choose **Prefill Ingredient Form** to copy the data into the custom ingredient form before saving.
-- Some sites block cross-origin requests; if fetching fails, try a different URL or manually enter the ingredient details instead.
-- Wegmans.com requires routing through a CORS-friendly proxy (or server-side fetch) before results will appear in the scraper.
-
 ## Contributing
 
 This is a personal learning project, but suggestions and feedback are welcome!
