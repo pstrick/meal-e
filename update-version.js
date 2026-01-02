@@ -41,7 +41,7 @@ export const version = {
     month: ${currentMonth},
     build: ${currentBuild},
     toString: function() {
-        return \`\${this.year}.\${this.month}.\${this.build}\`;
+        return \`\${this.year}.\${String(this.month).padStart(2, '0')}.\${this.build}\`;
     }
 };
 `;
