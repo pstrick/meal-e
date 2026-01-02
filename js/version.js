@@ -2,8 +2,8 @@
 export const version = {
     year: 2026,
     month: 01,
-    build: 2,
+    build: 3,
     toString: function() {
-        return `${this.year}.${this.month}.${this.build}`;
+        return `${this.year}.${String(this.month).padStart(2, '0')}.${this.build}`;
     }
 };
