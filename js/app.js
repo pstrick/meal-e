@@ -1941,6 +1941,9 @@ function selectIngredient(ingredient) {
     const amountInput = currentIngredientInput.querySelector('.ingredient-amount');
     
     if (nameInput && amountInput) {
+        // Get emoji from ingredient (if available)
+        const emoji = (ingredient.emoji || '').trim();
+        
         // Generate unique ID for custom ingredient
         const storageId = `custom-${ingredient.id || Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
