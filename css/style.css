@@ -2052,7 +2052,8 @@ tbody tr:hover {
 }
 
 .ingredients-table .ingredient-emoji,
-.ingredients-table .ingredient-icon {
+.ingredients-table .ingredient-icon,
+.ingredients-table .ingredient-image {
     font-size: 1.25rem;
     margin-right: var(--space-1);
     display: inline-block;
