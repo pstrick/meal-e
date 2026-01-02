@@ -1414,29 +1414,46 @@ function saveMealPlan() {
 }
 
 async function loadMealPlan() {
+    console.log('[MEALPLAN] ===== Loading meal plan =====');
     try {
         // Check if we're on the meal plan page
         const mealPlanGrid = document.querySelector('.meal-plan-grid');
+        console.log('[MEALPLAN] Meal plan grid element found:', !!mealPlanGrid);
         if (!mealPlanGrid) {
-            console.log('Not on meal plan page, skipping meal plan load');
+            console.log('[MEALPLAN] ⚠️ Not on meal plan page, skipping meal plan load');
             return;
         }
 
         // Load meal plan from localStorage
+        console.log('[MEALPLAN] Checking localStorage for meal plan...');
         const savedMealPlan = localStorage.getItem('mealPlan');
+        console.log('[MEALPLAN] Meal plan in localStorage:', !!savedMealPlan);
+        
         if (savedMealPlan) {
-            mealPlan = JSON.parse(savedMealPlan);
-            console.log('Meal plan loaded from localStorage:', mealPlan);
+            try {
+                mealPlan = JSON.parse(savedMealPlan);
+                const mealPlanDates = Object.keys(mealPlan);
+                console.log('[MEALPLAN] ✅ Meal plan loaded from localStorage');
+                console.log('[MEALPLAN] Meal plan dates count:', mealPlanDates.length);
+                console.log('[MEALPLAN] Meal plan dates (first 5):', mealPlanDates.slice(0, 5));
+            } catch (parseError) {
+                console.error('[MEALPLAN] ❌ Error parsing meal plan:', parseError);
+                mealPlan = {};
+            }
         } else {
             // Initialize empty meal plan if none exists
             mealPlan = {};
-            console.log('No saved meal plan found, initializing empty plan');
+            console.log('[MEALPLAN] ⚠️ No saved meal plan found, initializing empty plan');
         }
 
         // Update the display
+        console.log('[MEALPLAN] Updating meal plan display...');
         await updateMealPlanDisplay();
+        console.log('[MEALPLAN] ✅ Meal plan display updated');
+        console.log('[MEALPLAN] ===== Meal plan load complete =====');
     } catch (error) {
-        console.error('Error loading meal plan:', error);
+        console.error('[MEALPLAN] ❌ Error loading meal plan:', error);
+        console.error('[MEALPLAN] Error stack:', error.stack);
         // Initialize empty meal plan on error
         mealPlan = {};
     }
@@ -1684,43 +1701,65 @@ document.querySelectorAll('.meal-slot').forEach(slot => {
 
 // Initialize meal planner
 export function initializeMealPlanner() {
-    console.log('Initializing meal planner...');
+    console.log('[MEALPLAN] ===== Initializing meal planner =====');
+    console.log('[MEALPLAN] Current page:', window.location.pathname);
+    console.log('[MEALPLAN] Timestamp:', new Date().toISOString());
     
     // Load recipes first
     const loadRecipes = async () => {
+        console.log('[MEALPLAN] Starting recipe load process...');
         try {
             // Try to load recipes from localStorage first
+            console.log('[MEALPLAN] Checking localStorage for recipes...');
             const savedRecipes = localStorage.getItem('recipes');
+            console.log('[MEALPLAN] Recipes in localStorage:', !!savedRecipes);
+            
             if (savedRecipes) {
-                window.recipes = JSON.parse(savedRecipes);
-                console.log('Recipes loaded from localStorage:', window.recipes);
-                await continueInitialization();
-                return;
+                try {
+                    const parsed = JSON.parse(savedRecipes);
+                    window.recipes = parsed;
+                    console.log('[MEALPLAN] ✅ Recipes loaded from localStorage:', window.recipes?.length || 0, 'recipes');
+                    console.log('[MEALPLAN] Recipe names (first 5):', window.recipes?.slice(0, 5).map(r => r.name || r.id));
+                    await continueInitialization();
+                    return;
+                } catch (parseError) {
+                    console.error('[MEALPLAN] ❌ Error parsing recipes from localStorage:', parseError);
+                    console.error('[MEALPLAN] Raw data (first 200 chars):', savedRecipes?.substring(0, 200));
+                }
+            } else {
+                console.log('[MEALPLAN] ⚠️ No recipes found in localStorage');
             }
 
             // If no saved recipes, try to load from module
+            console.log('[MEALPLAN] Attempting to load recipes from module...');
             try {
                 const recipesModule = await import('../js/recipes.js');
                 window.recipes = recipesModule.recipes;
-                console.log('Recipes loaded from module:', window.recipes);
+                console.log('[MEALPLAN] ✅ Recipes loaded from module:', window.recipes?.length || 0, 'recipes');
                 
                 // Save to localStorage for future use
                 localStorage.setItem('recipes', JSON.stringify(window.recipes));
+                console.log('[MEALPLAN] Recipes saved to localStorage');
                 
                 // Continue initialization after recipes are loaded
                 await continueInitialization();
             } catch (moduleError) {
-                console.error('Error loading recipes module:', moduleError);
+                console.error('[MEALPLAN] ❌ Error loading recipes module:', moduleError);
+                console.error('[MEALPLAN] Module error name:', moduleError.name);
+                console.error('[MEALPLAN] Module error message:', moduleError.message);
                 // Initialize with empty recipes array
                 window.recipes = [];
                 localStorage.setItem('recipes', JSON.stringify(window.recipes));
+                console.log('[MEALPLAN] Initialized with empty recipes array');
                 await continueInitialization();
             }
         } catch (error) {
-            console.error('Error in loadRecipes:', error);
+            console.error('[MEALPLAN] ❌ Fatal error in loadRecipes:', error);
+            console.error('[MEALPLAN] Error stack:', error.stack);
             // Initialize with empty recipes array
             window.recipes = [];
             localStorage.setItem('recipes', JSON.stringify(window.recipes));
+            console.log('[MEALPLAN] Fallback: Initialized with empty recipes array');
             await continueInitialization();
         }
     };
@@ -1731,12 +1770,17 @@ export function initializeMealPlanner() {
 
 // Continue initialization after recipes are loaded
 async function continueInitialization() {
+    console.log('[MEALPLAN] ===== Continuing initialization =====');
+    console.log('[MEALPLAN] Recipes available:', window.recipes?.length || 0);
+    
     try {
+        console.log('[MEALPLAN] Loading week offset...');
         currentWeekOffset = loadWeekOffset();
         baseStartOfWeekTimestamp = getBaseStartOfWeekTimestamp();
-        console.log('Loaded currentWeekOffset:', currentWeekOffset, 'and set baseStartOfWeekTimestamp');
+        console.log('[MEALPLAN] ✅ Loaded currentWeekOffset:', currentWeekOffset, 'and set baseStartOfWeekTimestamp');
         
         // Initialize DOM elements
+        console.log('[MEALPLAN] Initializing DOM elements...');
         mealPlanForm = document.getElementById('meal-plan-form');
         mealPlanModal = document.getElementById('meal-plan-modal');
         cancelMeal = document.getElementById('cancel-meal');
@@ -1744,7 +1788,7 @@ async function continueInitialization() {
         prevWeekBtn = document.getElementById('prev-week');
         nextWeekBtn = document.getElementById('next-week');
         
-        console.log('DOM elements initialized:', {
+        console.log('[MEALPLAN] DOM elements status:', {
             mealPlanForm: !!mealPlanForm,
             mealPlanModal: !!mealPlanModal,
             weekDisplay: !!weekDisplay,
@@ -1752,8 +1796,15 @@ async function continueInitialization() {
             nextWeekBtn: !!nextWeekBtn
         });
         
+        if (!weekDisplay) {
+            console.error('[MEALPLAN] ❌ weekDisplay element not found! Cannot continue.');
+            return;
+        }
+        
         // Update week display to show current week (this will also load meal plan)
-        updateWeekDisplay();
+        console.log('[MEALPLAN] Updating week display (this will load meal plan)...');
+        await updateWeekDisplay();
+        console.log('[MEALPLAN] ✅ Week display updated');
         
         // Initialize week navigation
         initializeWeekNavigation();
@@ -1833,9 +1884,13 @@ async function continueInitialization() {
             mealPlanForm.addEventListener('submit', handleMealPlanSubmit);
         }
         
-        console.log('Meal planner initialized successfully');
+        console.log('[MEALPLAN] ✅ Meal planner initialized successfully');
+        console.log('[MEALPLAN] ===== Initialization complete =====');
     } catch (error) {
-        console.error('Error continuing initialization:', error);
+        console.error('[MEALPLAN] ❌ Error continuing initialization:', error);
+        console.error('[MEALPLAN] Error name:', error.name);
+        console.error('[MEALPLAN] Error message:', error.message);
+        console.error('[MEALPLAN] Error stack:', error.stack);
     }
 }
 

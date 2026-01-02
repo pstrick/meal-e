@@ -1,10 +1,23 @@
+console.log('[APP] Starting app.js module load...');
+console.log('[APP] Current URL:', window.location.href);
+console.log('[APP] Document ready state:', document.readyState);
+
 import config from './config.js';
+console.log('[APP] Config loaded:', config);
+
 import { version } from './version.js';
+console.log('[APP] Version loaded:', version.toString());
+
 import './mealplan.js';
 import { initializeMealPlanner } from './mealplan.js';
+console.log('[APP] Meal planner module loaded');
+
 import { settings, normalizeThemeSettings } from './settings.js';
+console.log('[APP] Settings module loaded');
+
 import { showAlert } from './alert.js';
 import { renderIcon } from './icon-utils.js';
+console.log('[APP] All modules imported successfully');
 
 // DOM Elements
 const navLinks = document.querySelectorAll('nav a');
@@ -625,47 +638,65 @@ async function handleRecipeSubmit(e) {
 // Local Storage Management
 function loadFromLocalStorage() {
     try {
-        console.log('Loading data from localStorage...');
+        console.log('[STORAGE] ===== Starting localStorage load =====');
+        console.log('[STORAGE] localStorage available:', typeof Storage !== 'undefined');
+        console.log('[STORAGE] localStorage quota check:', navigator.storage?.estimate ? 'available' : 'not available');
+        
+        // Check localStorage keys
+        const allKeys = Object.keys(localStorage);
+        console.log('[STORAGE] All localStorage keys:', allKeys);
+        console.log('[STORAGE] Total keys in localStorage:', allKeys.length);
         
         const savedRecipes = localStorage.getItem('recipes');
+        console.log('[STORAGE] Recipes key exists:', !!savedRecipes);
         if (savedRecipes) {
             try {
-                recipes = JSON.parse(savedRecipes);
+                const parsed = JSON.parse(savedRecipes);
+                recipes = parsed;
                 // Update global recipes
                 window.recipes = recipes;
-                console.log('Loaded recipes:', recipes.length);
+                console.log('[STORAGE] ✅ Loaded recipes successfully:', recipes.length, 'recipes');
+                console.log('[STORAGE] Recipe IDs:', recipes.map(r => r.id || r.name).slice(0, 5));
             } catch (error) {
-                console.error('Error parsing saved recipes:', error);
+                console.error('[STORAGE] ❌ Error parsing saved recipes:', error);
+                console.error('[STORAGE] Raw recipes data (first 200 chars):', savedRecipes?.substring(0, 200));
             }
         } else {
-            console.log('No saved recipes found');
+            console.log('[STORAGE] ⚠️ No saved recipes found in localStorage');
         }
 
         const savedMealPlan = localStorage.getItem('mealPlan');
+        console.log('[STORAGE] MealPlan key exists:', !!savedMealPlan);
         if (savedMealPlan) {
             try {
                 mealPlan = JSON.parse(savedMealPlan);
-                console.log('Loaded meal plan');
+                const mealPlanKeys = Object.keys(mealPlan);
+                console.log('[STORAGE] ✅ Loaded meal plan successfully');
+                console.log('[STORAGE] Meal plan dates:', mealPlanKeys.slice(0, 5));
             } catch (error) {
-                console.error('Error parsing saved meal plan:', error);
+                console.error('[STORAGE] ❌ Error parsing saved meal plan:', error);
             }
         } else {
-            console.log('No saved meal plan found');
+            console.log('[STORAGE] ⚠️ No saved meal plan found in localStorage');
         }
 
         const savedNutrition = localStorage.getItem('meale-nutrition');
+        console.log('[STORAGE] Nutrition key exists:', !!savedNutrition);
         if (savedNutrition) {
             try {
                 nutritionData = JSON.parse(savedNutrition);
-                console.log('Loaded nutrition data');
+                console.log('[STORAGE] ✅ Loaded nutrition data successfully:', nutritionData);
             } catch (error) {
-                console.error('Error parsing saved nutrition data:', error);
+                console.error('[STORAGE] ❌ Error parsing saved nutrition data:', error);
             }
         } else {
-            console.log('No saved nutrition data found');
+            console.log('[STORAGE] ⚠️ No saved nutrition data found in localStorage');
         }
+        
+        console.log('[STORAGE] ===== localStorage load complete =====');
     } catch (error) {
-        console.error('Error loading from localStorage:', error);
+        console.error('[STORAGE] ❌ Fatal error loading from localStorage:', error);
+        console.error('[STORAGE] Error stack:', error.stack);
     }
 }
 
@@ -878,13 +909,25 @@ function deleteCustomIngredient(id) {
 
 // Initialize app
 function initializeApp() {
+    console.log('[INIT] ===== App initialization started =====');
+    console.log('[INIT] Document ready state:', document.readyState);
+    console.log('[INIT] Current page:', window.location.pathname);
+    console.log('[INIT] Timestamp:', new Date().toISOString());
+    
     try {
+        console.log('[INIT] Applying theme preload...');
         applyThemePreload();
+        console.log('[INIT] Theme preload applied');
+        
         // Load recipes and meal plan from localStorage first
+        console.log('[INIT] Loading data from localStorage...');
         loadFromLocalStorage();
+        console.log('[INIT] Data loaded from localStorage');
 
         // Initialize settings first
+        console.log('[INIT] Initializing settings...');
         initializeSettings();
+        console.log('[INIT] Settings initialized');
 
         // Get all potential elements we might need to initialize
         const elements = {
@@ -907,21 +950,37 @@ function initializeApp() {
         };
 
         // Initialize recipe list if we're on the recipes page
+        console.log('[INIT] Checking for recipe list element...');
+        console.log('[INIT] Recipe list element found:', !!elements.recipeList);
+        console.log('[INIT] Category filter found:', !!document.getElementById('category-filter'));
         if (elements.recipeList && document.getElementById('category-filter')) {
             try {
-            updateRecipeList();
+                console.log('[INIT] Updating recipe list...');
+                console.log('[INIT] Current recipes count:', recipes.length);
+                updateRecipeList();
+                console.log('[INIT] ✅ Recipe list updated');
             } catch (error) {
-                console.error('Error updating recipe list:', error);
+                console.error('[INIT] ❌ Error updating recipe list:', error);
+                console.error('[INIT] Error stack:', error.stack);
             }
+        } else {
+            console.log('[INIT] ⚠️ Not on recipes page or elements missing');
         }
 
         // Initialize meal planner if available
+        console.log('[INIT] Checking for meal planner...');
+        console.log('[INIT] initializeMealPlanner function available:', typeof initializeMealPlanner === 'function');
         if (typeof initializeMealPlanner === 'function') {
             try {
-            initializeMealPlanner();
+                console.log('[INIT] Initializing meal planner...');
+                initializeMealPlanner();
+                console.log('[INIT] ✅ Meal planner initialization started');
             } catch (error) {
-                console.error('Error initializing meal planner:', error);
+                console.error('[INIT] ❌ Error initializing meal planner:', error);
+                console.error('[INIT] Error stack:', error.stack);
             }
+        } else {
+            console.log('[INIT] ⚠️ Meal planner function not available');
         }
 
         // Initialize recipe form if available
@@ -1120,9 +1179,13 @@ function initializeApp() {
             cancelRecipeBtn.addEventListener('click', closeModalHandler);
         }
 
-        console.log('App initialized successfully');
+        console.log('[INIT] ✅ App initialized successfully');
+        console.log('[INIT] ===== App initialization complete =====');
     } catch (error) {
-        console.error('Error initializing app:', error);
+        console.error('[INIT] ❌ Fatal error initializing app:', error);
+        console.error('[INIT] Error name:', error.name);
+        console.error('[INIT] Error message:', error.message);
+        console.error('[INIT] Error stack:', error.stack);
     }
 
     window.addEventListener('load', () => {
@@ -1137,7 +1200,19 @@ function initializeApp() {
 }
 
 // Initialize app when DOM is loaded
-document.addEventListener('DOMContentLoaded', initializeApp);
+console.log('[APP] Setting up DOMContentLoaded listener...');
+console.log('[APP] Current document ready state:', document.readyState);
+
+if (document.readyState === 'loading') {
+    console.log('[APP] DOM still loading, waiting for DOMContentLoaded...');
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('[APP] DOMContentLoaded fired, calling initializeApp');
+        initializeApp();
+    });
+} else {
+    console.log('[APP] DOM already loaded, calling initializeApp immediately');
+    initializeApp();
+}
 
 // Print recipe function
 function printRecipe(id) {
