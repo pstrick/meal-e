@@ -324,7 +324,7 @@ function renderIngredientsList(filteredIngredients = null) {
         if (ingredients.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="no-items">No ingredients found</td>
+                    <td colspan="7" class="no-items">No ingredients found</td>
                 </tr>`;
             return;
         }
@@ -332,13 +332,11 @@ function renderIngredientsList(filteredIngredients = null) {
         ingredients.forEach(ingredient => {
             const row = document.createElement('tr');
             const imageSource = ingredient.image || ingredient.icon; // Support both for backward compatibility
-            // Display image if available - make it more visible
+            // Display image in its own column
             const imageMarkup = imageSource 
                 ? `<img src="${imageSource}" class="ingredient-image" alt="${ingredient.name}" title="${ingredient.name}">` 
-                : '';
-            const nameHTML = imageMarkup
-                ? `${imageMarkup}<span class="ingredient-name-text">${ingredient.name}</span>`
-                : `<span class="ingredient-name-text">${ingredient.name}</span>`;
+                : '<span class="no-image">—</span>';
+            const nameHTML = `<span class="ingredient-name-text">${ingredient.name}</span>`;
             
             // Handle price and weight display - API ingredients might not have these
             const servingSize = ingredient.servingSize || 100;
@@ -367,6 +365,7 @@ function renderIngredientsList(filteredIngredients = null) {
             }
             
             row.innerHTML = `
+                <td class="ingredient-image-cell">${imageMarkup}</td>
                 <td class="ingredient-name-cell">${nameHTML} ${sourceBadge}</td>
                 <td>${ingredient.storeSection || 'Uncategorized'}</td>
                 <td>${priceDisplay}</td>
