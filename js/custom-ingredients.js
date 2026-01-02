@@ -332,8 +332,10 @@ function renderIngredientsList(filteredIngredients = null) {
         ingredients.forEach(ingredient => {
             const row = document.createElement('tr');
             const imageSource = ingredient.image || ingredient.icon; // Support both for backward compatibility
-            // Display image if available, otherwise show nothing
-            const imageMarkup = imageSource ? `<img src="${imageSource}" class="ingredient-image" style="width: 24px; height: 24px; object-fit: cover; border-radius: 4px; margin-right: 8px;" alt="">` : '';
+            // Display image if available - make it more visible
+            const imageMarkup = imageSource 
+                ? `<img src="${imageSource}" class="ingredient-image" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px; margin-right: 12px; vertical-align: middle; border: 1px solid var(--color-border);" alt="${ingredient.name}" title="${ingredient.name}">` 
+                : '';
             const nameHTML = imageMarkup
                 ? `${imageMarkup}<span class="ingredient-name-text">${ingredient.name}</span>`
                 : `<span class="ingredient-name-text">${ingredient.name}</span>`;
