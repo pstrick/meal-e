@@ -2403,7 +2403,8 @@ async function searchAllIngredients(query) {
     customMatches.forEach(ingredient => {
         // Convert nutrition from total serving size to per-gram values
         const servingSize = ingredient.servingSize || 100; // Default to 100g if not specified
-        const iconHtml = ingredient.icon ? renderIcon(ingredient.icon, { className: 'ingredient-icon', size: '20px' }) : '';
+        const imageSource = ingredient.image || ingredient.icon || ''; // Support both for backward compatibility
+        const iconHtml = imageSource ? `<img src="${imageSource}" class="ingredient-icon" style="width: 20px; height: 20px; object-fit: cover; border-radius: 4px;" alt="">` : '';
         
         // Calculate pricePer100g from pricePerGram if available
         let pricePer100g = null;
@@ -2461,7 +2462,8 @@ async function displaySearchResults(results) {
         const sourceConfig = { icon: '🏠', label: 'Custom Ingredient' };
         
         const [mainName, ...details] = ingredient.name.split(',');
-        const iconHtml = ingredient.icon ? renderIcon(ingredient.icon, { className: 'ingredient-icon', size: '20px' }) : '';
+        const imageSource = ingredient.image || ingredient.icon || ''; // Support both for backward compatibility
+        const iconHtml = imageSource ? `<img src="${imageSource}" class="ingredient-icon" style="width: 20px; height: 20px; object-fit: cover; border-radius: 4px;" alt="">` : '';
         
         // Format price information
         let priceInfo = '';
