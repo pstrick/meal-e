@@ -186,6 +186,9 @@ function updateRecurringItemsDisplay() {
                     <p><strong>Duration:</strong> ${endDateText}</p>
                 </div>
                 <div class="recurring-item-actions">
+                    <button class="btn btn-primary btn-sm" onclick="editRecurringItem(${item.id})">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
                     <button class="btn btn-danger btn-sm" onclick="deleteRecurringItem(${item.id})">
                         <i class="fas fa-trash"></i> Delete
                     </button>
@@ -202,6 +205,124 @@ function clearDeletedInstances() {
     }
 }
 
+let currentEditingItemId = null;
+
+function openEditRecurringItemModal(itemId) {
+    const recurringItems = loadRecurringItems();
+    const item = recurringItems.find(i => i.id === itemId);
+    
+    if (!item) {
+        showAlert('Recurring item not found.', { type: 'error' });
+        return;
+    }
+    
+    currentEditingItemId = itemId;
+    
+    // Populate form fields
+    document.getElementById('edit-recurring-name').value = item.name;
+    document.getElementById('edit-recurring-meal-type').value = item.mealType;
+    document.getElementById('edit-recurring-amount').value = item.amount;
+    document.getElementById('edit-recurring-end-date').value = item.endDate || '';
+    
+    // Clear and set day checkboxes
+    const dayCheckboxes = document.querySelectorAll('input[name="edit-recurring-days"]');
+    dayCheckboxes.forEach(checkbox => {
+        checkbox.checked = item.days.includes(parseInt(checkbox.value));
+    });
+    
+    // Show modal
+    const modal = document.getElementById('edit-recurring-item-modal');
+    modal.classList.add('active');
+}
+
+function closeEditRecurringItemModal() {
+    const modal = document.getElementById('edit-recurring-item-modal');
+    modal.classList.remove('active');
+    currentEditingItemId = null;
+    
+    // Reset form
+    document.getElementById('edit-recurring-item-form').reset();
+}
+
+function saveEditedRecurringItem(e) {
+    e.preventDefault();
+    
+    if (currentEditingItemId === null) {
+        showAlert('No item selected for editing.', { type: 'error' });
+        return;
+    }
+    
+    const recurringItems = loadRecurringItems();
+    const itemIndex = recurringItems.findIndex(i => i.id === currentEditingItemId);
+    
+    if (itemIndex === -1) {
+        showAlert('Recurring item not found.', { type: 'error' });
+        closeEditRecurringItemModal();
+        return;
+    }
+    
+    // Get form values
+    const name = document.getElementById('edit-recurring-name').value.trim();
+    const mealType = document.getElementById('edit-recurring-meal-type').value;
+    const amount = parseInt(document.getElementById('edit-recurring-amount').value);
+    const selectedDays = Array.from(document.querySelectorAll('input[name="edit-recurring-days"]:checked'))
+        .map(checkbox => parseInt(checkbox.value));
+    const endDate = document.getElementById('edit-recurring-end-date').value || null;
+    
+    // Validation
+    if (!name) {
+        showAlert('Please enter an item name.', { type: 'error' });
+        return;
+    }
+    
+    if (selectedDays.length === 0) {
+        showAlert('Please select at least one day of the week.', { type: 'error' });
+        return;
+    }
+    
+    if (!amount || amount < 1) {
+        showAlert('Please enter a valid amount.', { type: 'error' });
+        return;
+    }
+    
+    // Update the item
+    const updatedItem = {
+        ...recurringItems[itemIndex],
+        name: name,
+        mealType: mealType,
+        amount: amount,
+        days: selectedDays,
+        endDate: endDate
+    };
+    
+    recurringItems[itemIndex] = updatedItem;
+    
+    // Save to localStorage
+    localStorage.setItem('meale-recurring-items', JSON.stringify(recurringItems));
+    
+    // Update display
+    updateRecurringItemsDisplay();
+    
+    // Close modal
+    closeEditRecurringItemModal();
+    
+    // Show success message
+    showAlert('Recurring item updated successfully.', { type: 'success' });
+    
+    // Refresh meal plan if available
+    if (window.location.pathname.includes('mealplan.html')) {
+        try {
+            import('./mealplan.js').then(({ refreshMealPlanOnSettingsChange }) => {
+                refreshMealPlanOnSettingsChange();
+            }).catch(() => {
+                console.log('Meal plan refresh not available');
+            });
+        } catch (error) {
+            console.log('Meal plan refresh not available:', error);
+        }
+    }
+}
+
 // Make functions globally available
 window.deleteRecurringItem = function(id) {
     if (confirm('Are you sure you want to delete this recurring item? This will remove it from all days.')) {
@@ -209,7 +330,24 @@ window.deleteRecurringItem = function(id) {
         recurringItems = recurringItems.filter(item => item.id !== id);
         localStorage.setItem('meale-recurring-items', JSON.stringify(recurringItems));
         updateRecurringItemsDisplay();
+        
+        // Refresh meal plan if available
+        if (window.location.pathname.includes('mealplan.html')) {
+            try {
+                import('./mealplan.js').then(({ refreshMealPlanOnSettingsChange }) => {
+                    refreshMealPlanOnSettingsChange();
+                }).catch(() => {
+                    console.log('Meal plan refresh not available');
+                });
+            } catch (error) {
+                console.log('Meal plan refresh not available:', error);
+            }
+        }
     }
+};
+
+window.editRecurringItem = function(id) {
+    openEditRecurringItemModal(id);
 };
 
 // Add event listeners
@@ -225,6 +363,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearDeletedBtn = document.getElementById('clear-deleted-instances');
     if (clearDeletedBtn) {
         clearDeletedBtn.addEventListener('click', clearDeletedInstances);
+    }
+    
+    // Edit recurring item modal handlers
+    const editModal = document.getElementById('edit-recurring-item-modal');
+    const editForm = document.getElementById('edit-recurring-item-form');
+    const cancelEditBtn = document.getElementById('cancel-edit-recurring');
+    
+    if (editForm) {
+        editForm.addEventListener('submit', saveEditedRecurringItem);
+    }
+    
+    if (cancelEditBtn) {
+        cancelEditBtn.addEventListener('click', closeEditRecurringItemModal);
+    }
+    
+    // Close modal when clicking the X button
+    if (editModal) {
+        const closeBtn = editModal.querySelector('.close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeEditRecurringItemModal);
+        }
+        
+        // Close modal when clicking outside
+        editModal.addEventListener('click', (e) => {
+            if (e.target === editModal) {
+                closeEditRecurringItemModal();
+            }
+        });
     }
 });
 

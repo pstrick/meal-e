@@ -117,6 +117,59 @@
                 <small>This will restore all manually deleted recurring item instances</small>
             </div>
 
+            <!-- Edit Recurring Item Modal -->
+            <div id="edit-recurring-item-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h2>Edit Recurring Item</h2>
+                    <form id="edit-recurring-item-form">
+                        <div class="form-group">
+                            <label for="edit-recurring-name">Item Name</label>
+                            <input type="text" id="edit-recurring-name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-recurring-meal-type">Meal Type</label>
+                            <select id="edit-recurring-meal-type" required>
+                                <option value="breakfast">Breakfast</option>
+                                <option value="lunch">Lunch</option>
+                                <option value="dinner">Dinner</option>
+                                <option value="snacks">Snacks</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-recurring-amount">Amount (g)</label>
+                            <input type="number" id="edit-recurring-amount" min="1" step="1" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Days of Week</label>
+                            <div class="days-checkboxes">
+                                <label><input type="checkbox" name="edit-recurring-days" value="0"> Sunday</label>
+                                <label><input type="checkbox" name="edit-recurring-days" value="1"> Monday</label>
+                                <label><input type="checkbox" name="edit-recurring-days" value="2"> Tuesday</label>
+                                <label><input type="checkbox" name="edit-recurring-days" value="3"> Wednesday</label>
+                                <label><input type="checkbox" name="edit-recurring-days" value="4"> Thursday</label>
+                                <label><input type="checkbox" name="edit-recurring-days" value="5"> Friday</label>
+                                <label><input type="checkbox" name="edit-recurring-days" value="6"> Saturday</label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-recurring-end-date">End Date (optional)</label>
+                            <input type="date" id="edit-recurring-end-date">
+                            <small>Leave blank to recur indefinitely</small>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancel-edit-recurring">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <div class="card">
                 <h2>Nutrition Goals</h2>
                 <div class="goals-grid">
