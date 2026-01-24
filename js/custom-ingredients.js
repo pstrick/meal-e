@@ -395,7 +395,7 @@ function updateStoreSectionFilterOptions() {
     }
 }
 
-// Update sort icons in table header
+// Update sort icons and aria-sort in table header
 function updateSortIcons() {
     if (!ingredientsList) return;
     ingredientsList.querySelectorAll('th.sortable').forEach(th => {
@@ -405,10 +405,12 @@ function updateSortIcons() {
         if (key !== sortColumn) {
             icon.textContent = '';
             icon.className = 'sort-icon';
+            th.removeAttribute('aria-sort');
             return;
         }
         icon.className = 'sort-icon sort-active';
-        icon.textContent = sortDirection === 'asc' ? ' \u25B2' : ' \u25BC';
+        icon.textContent = sortDirection === 'asc' ? '\u25B2' : '\u25BC';
+        th.setAttribute('aria-sort', sortDirection === 'asc' ? 'ascending' : 'descending');
     });
 }
 
