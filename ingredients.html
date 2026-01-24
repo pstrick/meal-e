@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Ingredients - Meal-E</title>
+    <title>Ingredients - Meal-E</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>">
     <script>
         (function () {
@@ -63,9 +63,9 @@
                 <a href="mealplan.html" class="logo">Meal-E</a>
                 <div class="nav-links">
                     <a href="mealplan.html">Meal Plan</a>
-                    <a href="recipes.html">Custom Recipes</a>
-                    <a href="ingredients.html" class="active">My Ingredients</a>
-                    <a href="shopping-lists.html">Shopping Lists</a>
+                    <a href="recipes.html">Recipes</a>
+                    <a href="ingredients.html" class="active">Ingredients</a>
+                    <a href="shopping-lists.html">Lists</a>
                     <a href="settings.html">Settings</a>
                 </div>
             </div>
@@ -74,12 +74,12 @@
 
     <main>
         <div class="container">
-            <h1>My Ingredients</h1>
+            <h1>Ingredients</h1>
             
             <!-- My Ingredients List -->
             <div class="card">
                 <div class="card-header">
-                    <h2>My Ingredients</h2>
+                    <h2>Ingredients</h2>
                     <div class="card-header-actions">
                         <button id="download-csv-template-btn" class="btn btn-secondary">
                             <i class="fas fa-download"></i> Download CSV Template
@@ -92,18 +92,26 @@
                         </button>
                     </div>
                 </div>
-                <div class="search-bar">
-                    <input type="text" id="ingredient-search" placeholder="Search my ingredients...">
+                <div class="ingredients-filters">
+                    <div class="search-bar">
+                        <input type="text" id="ingredient-search" placeholder="Search my ingredients...">
+                    </div>
+                    <div class="filter-group">
+                        <label for="ingredient-store-section-filter">Store section</label>
+                        <select id="ingredient-store-section-filter">
+                            <option value="">All sections</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="table-container">
                     <table id="custom-ingredients-list" class="ingredients-table">
                         <thead>
                             <tr>
                                 <th>Image</th>
-                                <th>Name</th>
-                                <th>Store Section</th>
-                                <th>Price</th>
-                                <th>Calories</th>
+                                <th class="sortable" data-sort="name">Name <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort="storeSection">Store Section <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort="price">Price <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort="calories">Calories <span class="sort-icon"></span></th>
                                 <th>Macros</th>
                                 <th>Actions</th>
                             </tr>
@@ -145,9 +153,15 @@
                     </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="store-section">Store Section</label>
-                    <input type="text" id="store-section" placeholder="e.g., Produce, Dairy">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="store">Store</label>
+                        <input type="text" id="store" placeholder="e.g., Whole Foods, Costco">
+                    </div>
+                    <div class="form-group">
+                        <label for="store-section">Store Section</label>
+                        <input type="text" id="store-section" placeholder="e.g., Produce, Dairy">
+                    </div>
                 </div>
                 
                 <div class="form-row">

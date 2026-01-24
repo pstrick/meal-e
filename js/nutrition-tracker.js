@@ -538,7 +538,7 @@ function displaySearchResults(results) {
         closeAddFoodModal();
         
         // Redirect to ingredients page to add new ingredient
-        if (confirm('To add a new ingredient, you\'ll be taken to the My Ingredients page. Continue?')) {
+        if (confirm('To add a new ingredient, you\'ll be taken to the Ingredients page. Continue?')) {
             window.location.href = 'ingredients.html';
         }
     });
