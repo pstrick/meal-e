@@ -57,6 +57,10 @@ let selectedIngredients = new Map(); // Maps ingredient IDs to their nutrition d
 // Track the current recipe being edited
 let currentEditRecipeId = null;
 
+// Recipe table sort state (recipes page)
+let recipeSortColumn = 'name';
+let recipeSortDirection = 'asc';
+
 const DARK_THEME_VARS = {
     '--color-bg': '#0f172a',
     '--color-bg-muted': '#1e293b',
@@ -410,87 +414,137 @@ function updateServingSizeDefault() {
     updateTotalNutrition();
 }
 
-// Modified Recipe Card Creation
-function createRecipeCard(recipe) {
-    const card = document.createElement('div');
-    card.className = 'recipe-card';
-    
-    const ingredients = recipe.ingredients
-        .map(ing => {
-            const emoji = (ing.emoji || '').trim();
-            return `${emoji ? `${emoji} ` : ''}${ing.name} (${ing.amount}g)`;
-        })
-        .join(', ');
+// Recipe table: filtered list (search + category)
+function getFilteredRecipes() {
+    const searchEl = document.getElementById('recipe-search');
+    const categoryEl = document.getElementById('category-filter');
+    const searchTerm = (searchEl && searchEl.value) ? searchEl.value.toLowerCase().trim() : '';
+    const selectedCategory = (categoryEl && categoryEl.value) ? categoryEl.value : 'all';
 
-    const totalWeight = recipe.ingredients.reduce((sum, ing) => sum + ing.amount, 0);
-    const computedServings = recipe.servingSize ? Math.round((totalWeight / recipe.servingSize) * 10) / 10 : 1;
-    const numberOfServings = Number.isFinite(computedServings) && computedServings > 0 ? computedServings : 1;
-    const instructionsPreview = recipe.steps ? recipe.steps.trim().replace(/\s+/g, ' ') : '';
-    const instructionsSnippet = instructionsPreview.length > 160 ? `${instructionsPreview.substring(0, 160)}...` : instructionsPreview;
+    return recipes.filter(recipe => {
+        const matchesCategory = selectedCategory === 'all' || (recipe.category === selectedCategory);
+        if (!matchesCategory) return false;
+        if (!searchTerm) return true;
+        const nameMatch = (recipe.name || '').toLowerCase().includes(searchTerm);
+        const ingMatch = Array.isArray(recipe.ingredients) &&
+            recipe.ingredients.some(ing => (ing.name || '').toLowerCase().includes(searchTerm));
+        const stepsMatch = (typeof recipe.steps === 'string' && recipe.steps.toLowerCase().includes(searchTerm));
+        return nameMatch || ingMatch || stepsMatch;
+    });
+}
 
-    card.innerHTML = `
-        <div class="recipe-card-content">
-            <div class="recipe-card-header">
-                <div class="recipe-title-group">
-                    <span class="recipe-category">${recipe.category}</span>
-                    <h3>${recipe.name}</h3>
-                </div>
-                <div class="recipe-meta">
-                    <span class="recipe-servings">Serving Size: ${recipe.servingSize}g</span>
-                    <span class="recipe-serving-count">Makes ${numberOfServings} servings</span>
-                </div>
+// Recipe table: sorted list
+function getSortedRecipes(list) {
+    const arr = [...list];
+    arr.sort((a, b) => {
+        let va; let vb;
+        switch (recipeSortColumn) {
+            case 'name':
+                va = (a.name || '').toLowerCase();
+                vb = (b.name || '').toLowerCase();
+                return recipeSortDirection === 'asc'
+                    ? (va < vb ? -1 : va > vb ? 1 : 0)
+                    : (vb < va ? -1 : vb > va ? 1 : 0);
+            case 'category': {
+                va = (a.category || '').toLowerCase();
+                vb = (b.category || '').toLowerCase();
+                return recipeSortDirection === 'asc'
+                    ? va.localeCompare(vb)
+                    : vb.localeCompare(va);
+            }
+            case 'servingSize':
+                va = Number(a.servingSize) || 0;
+                vb = Number(b.servingSize) || 0;
+                return recipeSortDirection === 'asc' ? va - vb : vb - va;
+            case 'calories': {
+                const na = a.nutrition || {};
+                const nb = b.nutrition || {};
+                va = Number(na.calories) || 0;
+                vb = Number(nb.calories) || 0;
+                return recipeSortDirection === 'asc' ? va - vb : vb - va;
+            }
+            default:
+                return 0;
+        }
+    });
+    return arr;
+}
+
+// Update sort icons in recipes table header
+function updateRecipeSortIcons() {
+    const table = document.getElementById('recipes-table');
+    if (!table) return;
+    table.querySelectorAll('th.sortable').forEach(th => {
+        const key = th.dataset.sort;
+        const icon = th.querySelector('.sort-icon');
+        if (!icon) return;
+        if (key !== recipeSortColumn) {
+            icon.textContent = '';
+            icon.className = 'sort-icon';
+            return;
+        }
+        icon.className = 'sort-icon sort-active';
+        icon.textContent = recipeSortDirection === 'asc' ? ' \u25B2' : ' \u25BC';
+    });
+}
+
+// Sortable header click (recipes table)
+function onRecipeSortHeaderClick(event) {
+    const th = event.target.closest('th.sortable');
+    if (!th || !th.dataset.sort) return;
+    const key = th.dataset.sort;
+    if (recipeSortColumn === key) {
+        recipeSortDirection = recipeSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        recipeSortColumn = key;
+        recipeSortDirection = 'asc';
+    }
+    updateRecipeList();
+}
+
+// Create a table row for a recipe
+function createRecipeRow(recipe) {
+    const row = document.createElement('tr');
+    const nutrition = recipe.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    const calories = Math.round(Number(nutrition.calories) || 0);
+    const protein = (Number(nutrition.protein) || 0).toFixed(1);
+    const carbs = (Number(nutrition.carbs) || 0).toFixed(1);
+    const fat = (Number(nutrition.fat) || 0).toFixed(1);
+    const servingSize = Number(recipe.servingSize) || 0;
+    const category = (recipe.category || '').trim() || '—';
+    const name = (recipe.name || '').trim() || 'Untitled';
+    const id = recipe.id;
+
+    row.innerHTML = `
+        <td class="recipe-name-cell"><span class="recipe-name-text">${name}</span></td>
+        <td>${category}</td>
+        <td>${servingSize} <small>g</small></td>
+        <td>${calories}</td>
+        <td>
+            <div class="macro-info">
+                <span>P: ${protein}g</span>
+                <span>C: ${carbs}g</span>
+                <span>F: ${fat}g</span>
             </div>
-            
-            <div class="recipe-card-body">
-                <div class="recipe-nutrition">
-                    <div class="nutrition-item">
-                        <span class="nutrition-value">${recipe.nutrition.calories}</span>
-                        <span class="nutrition-label">Calories</span>
-                    </div>
-                    <div class="nutrition-item">
-                        <span class="nutrition-value">${recipe.nutrition.protein}g</span>
-                        <span class="nutrition-label">Protein</span>
-                    </div>
-                    <div class="nutrition-item">
-                        <span class="nutrition-value">${recipe.nutrition.carbs}g</span>
-                        <span class="nutrition-label">Carbs</span>
-                    </div>
-                    <div class="nutrition-item">
-                        <span class="nutrition-value">${recipe.nutrition.fat}g</span>
-                        <span class="nutrition-label">Fat</span>
-                    </div>
-                </div>
-                <div class="recipe-summary">
-                    <div class="recipe-ingredients">
-                        <strong>Ingredients</strong>
-                        <p class="recipe-text">${ingredients}</p>
-                    </div>
-                    ${instructionsPreview ? `
-                        <div class="recipe-steps">
-                            <strong>Instructions</strong>
-                            <p class="recipe-text">${instructionsSnippet}</p>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-            
-            <div class="recipe-actions">
-                <button class="btn btn-edit" onclick="editRecipe(${recipe.id})">
-                    <i class="fas fa-edit"></i> Edit
+        </td>
+        <td>
+            <div class="action-buttons">
+                <button class="btn btn-edit" onclick="editRecipe(${id})" title="Edit">
+                    <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-duplicate" onclick="duplicateRecipe(${recipe.id})">
-                    <i class="fas fa-copy"></i> Duplicate
+                <button class="btn btn-duplicate" onclick="duplicateRecipe(${id})" title="Duplicate">
+                    <i class="fas fa-copy"></i>
                 </button>
-                <button class="btn btn-print" onclick="printRecipe(${recipe.id})">
-                    <i class="fas fa-print"></i> Print
+                <button class="btn btn-print" onclick="printRecipe(${id})" title="Print">
+                    <i class="fas fa-print"></i>
                 </button>
-                <button class="btn btn-delete" onclick="deleteRecipe(${recipe.id})">
-                    <i class="fas fa-trash"></i> Delete
+                <button class="btn btn-delete" onclick="deleteRecipe(${id})" title="Delete">
+                    <i class="fas fa-trash"></i>
                 </button>
             </div>
-        </div>
+        </td>
     `;
-    return card;
+    return row;
 }
 
 // Update the recipe form submit handler to use the global edit ID
@@ -1174,6 +1228,14 @@ function initializeApp() {
         const recipeSearch = document.getElementById('recipe-search');
         if (recipeSearch) {
             recipeSearch.addEventListener('input', updateRecipeList);
+        }
+
+        // Initialize recipe table sortable headers
+        const recipesTable = document.getElementById('recipes-table');
+        if (recipesTable) {
+            recipesTable.querySelectorAll('th.sortable').forEach(th => {
+                th.addEventListener('click', onRecipeSortHeaderClick);
+            });
         }
 
         // Initialize cancel recipe button
@@ -3630,30 +3692,24 @@ function duplicateRecipe(id) {
 }
 
 function updateRecipeList() {
-    if (!recipeList) {
-        console.log('Recipe list element not found, skipping update');
+    const tbody = document.getElementById('recipe-list');
+    if (!tbody) {
+        console.log('Recipe list (tbody) not found, skipping update');
         return;
     }
 
-    recipeList.innerHTML = '';
-    const selectedCategory = categoryFilter ? categoryFilter.value : 'all';
-    const searchTerm = document.getElementById('recipe-search') ? document.getElementById('recipe-search').value.toLowerCase().trim() : '';
-    
-    let filteredRecipes = selectedCategory === 'all' 
-        ? recipes 
-        : recipes.filter(recipe => recipe.category === selectedCategory);
+    const filtered = getFilteredRecipes();
+    const sorted = getSortedRecipes(filtered);
+    updateRecipeSortIcons();
 
-    // Apply search filter if search term is provided
-    if (searchTerm) {
-        filteredRecipes = filteredRecipes.filter(recipe => {
-            return recipe.name.toLowerCase().includes(searchTerm) ||
-                   recipe.ingredients.some(ing => ing.name.toLowerCase().includes(searchTerm)) ||
-                   (recipe.steps && recipe.steps.toLowerCase().includes(searchTerm));
-        });
+    tbody.innerHTML = '';
+    if (sorted.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="no-items">No recipes found</td></tr>';
+        return;
     }
 
-    filteredRecipes.forEach(recipe => {
-        recipeList.appendChild(createRecipeCard(recipe));
+    sorted.forEach(recipe => {
+        tbody.appendChild(createRecipeRow(recipe));
     });
 }
 

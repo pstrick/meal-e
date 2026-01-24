@@ -128,6 +128,7 @@ async function searchAllIngredients(query) {
     
     const customIngredients = validMyIngredients.map(ingredient => ({
         ...ingredient,
+        store: ingredient.store || '',
         storeSection: ingredient.storeSection || '',
         emoji: (ingredient.emoji || '').trim(),
         pricePerGram: typeof ingredient.pricePerGram === 'number' ? ingredient.pricePerGram : null,
@@ -181,6 +182,7 @@ async function searchAllIngredients(query) {
             },
             servingSize: ingredient.servingSize,
             brandOwner: 'My Ingredient',
+            store: ingredient.store || '',
             storeSection: ingredient.storeSection || '',
             pricePerGram: ingredient.pricePerGram || null,
             pricePer100g: pricePer100g,
@@ -510,6 +512,7 @@ async function updateUnifiedList() {
                     source: ingredient.source,
                     fdcId: ingredient.fdcId,
                     emoji: ingredient.emoji || '',
+                    store: ingredient.store || '',
                     storeSection: ingredient.storeSection || '',
                     brandOwner: ingredient.brandOwner || '',
                     pricePerGram: ingredient.pricePerGram || null,
@@ -1112,6 +1115,7 @@ function loadRecurringItems() {
         if (saved) {
             recurringItems = JSON.parse(saved).map(item => ({
                 ...item,
+                store: item.store || '',
                 storeSection: item.storeSection || '',
                 emoji: item.emoji || ''
             }));
@@ -1189,6 +1193,7 @@ function applyRecurringItems() {
                 name: recurringItem.name,
                 nutrition: recurringItem.nutrition,
                 servingSize: recurringItem.servingSize,
+                store: recurringItem.store || '',
                 storeSection: recurringItem.storeSection || '',
                 emoji: recurringItem.emoji || '',
                 cost: recurringItem.cost || 0,
@@ -1801,6 +1806,7 @@ async function continueInitialization() {
         initializePrintButton();
         initializeShoppingListButton();
         initializeCopyPreviousWeekButton();
+        initializeMealPlanActionsKebab();
         
         // Initialize recurring items
         initializeRecurringItems();
@@ -1934,6 +1940,7 @@ async function handleMealPlanSubmit(e) {
                 itemId: `custommeal-${Date.now()}`,
                 nutrition: { calories, protein, carbs, fat },
                 servingSize: 1,
+                store: '',
                 storeSection: '',
                 emoji: '',
                 endDate: endDate || null,
@@ -1958,6 +1965,7 @@ async function handleMealPlanSubmit(e) {
                 nutrition: { calories, protein, carbs, fat },
                 servingSize: 1,
                 cost: cost,
+                store: '',
                 storeSection: '',
                 emoji: ''
             });
@@ -1994,6 +2002,7 @@ async function handleMealPlanSubmit(e) {
             itemId: selectedItem.id,
             nutrition: selectedItem.nutrition,
             servingSize: selectedItem.servingSize,
+            store: selectedItem.store || '',
             storeSection: selectedItem.storeSection || '',
             emoji: selectedItem.emoji || '',
             endDate: endDate || null,
@@ -2019,6 +2028,7 @@ async function handleMealPlanSubmit(e) {
             name: selectedItem.name,
             nutrition: selectedItem.nutrition,
             servingSize: selectedItem.servingSize,
+            store: selectedItem.store || '',
             storeSection: selectedItem.storeSection || '',
             emoji: selectedItem.emoji || '',
             source: selectedItem.source || 'custom',
@@ -2089,6 +2099,7 @@ async function addAddMealButton(slot) {
                     name: itemData.name || 'Ingredient', // We'll need to store name
                     nutrition: itemData.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 },
                     emoji: emoji,
+                    store: itemData.store || '',
                     storeSection: itemData.storeSection || ''
                 };
             }
@@ -2421,6 +2432,41 @@ function initializeCopyPreviousWeekButton() {
     }
 }
 
+function closeMealPlanActionsKebab() {
+    const wrap = document.querySelector('.kebab-dropdown-wrap');
+    const kebab = document.getElementById('meal-plan-actions-kebab');
+    if (wrap) wrap.classList.remove('is-open');
+    if (kebab) kebab.setAttribute('aria-expanded', 'false');
+}
+
+function initializeMealPlanActionsKebab() {
+    const kebab = document.getElementById('meal-plan-actions-kebab');
+    const wrap = document.querySelector('.kebab-dropdown-wrap');
+    if (!kebab || !wrap) return;
+
+    kebab.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = wrap.classList.toggle('is-open');
+        kebab.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!wrap.classList.contains('is-open')) return;
+        const target = e.target;
+        if (wrap.contains(target)) {
+            if (target.closest('.kebab-item')) closeMealPlanActionsKebab();
+            return;
+        }
+        closeMealPlanActionsKebab();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && wrap.classList.contains('is-open')) {
+            closeMealPlanActionsKebab();
+        }
+    });
+}
+
 // Copy previous week's meal plan to current week
 async function copyPreviousWeekMealPlan() {
     try {
@@ -2515,6 +2561,7 @@ function buildShoppingListData() {
         const currentWeekMeals = []; // Track meals from current week
         const customIngredients = getMyIngredients().map(ing => ({
             ...ing,
+            store: ing.store || '',
             storeSection: ing.storeSection || '',
             emoji: sanitizeEmoji(ing.emoji)
         }));

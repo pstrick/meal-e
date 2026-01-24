@@ -344,6 +344,11 @@ function getSortedIngredients(ingredients) {
                 va = (a.name || '').toLowerCase();
                 vb = (b.name || '').toLowerCase();
                 return sortDirection === 'asc' ? (va < vb ? -1 : va > vb ? 1 : 0) : (vb < va ? -1 : vb > va ? 1 : 0);
+            case 'store': {
+                const sa = (a.store || '').trim();
+                const sb = (b.store || '').trim();
+                return sortDirection === 'asc' ? sa.localeCompare(sb) : sb.localeCompare(sa);
+            }
             case 'storeSection': {
                 const sa = (a.storeSection || '').trim() || 'Uncategorized';
                 const sb = (b.storeSection || '').trim() || 'Uncategorized';
@@ -420,7 +425,7 @@ function renderIngredientsList() {
         if (ingredients.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="no-items">No ingredients found</td>
+                    <td colspan="8" class="no-items">No ingredients found</td>
                 </tr>`;
             return;
         }
@@ -458,6 +463,7 @@ function renderIngredientsList() {
             row.innerHTML = `
                 <td class="ingredient-image-cell">${imageMarkup}</td>
                 <td class="ingredient-name-cell">${nameHTML} ${sourceBadge}</td>
+                <td>${ingredient.store || '—'}</td>
                 <td>${ingredient.storeSection || 'Uncategorized'}</td>
                 <td>${priceDisplay}</td>
                 <td>${caloriesPerServing} <small>(${servingSize}g)</small></td>
