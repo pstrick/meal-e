@@ -3718,6 +3718,6 @@ window.recipes = recipes;
 window.addRecipe = addRecipe;
 window.editRecipe = editRecipe;
 window.duplicateRecipe = duplicateRecipe;
-window.deleteRecipe = deleteRecipe; 
 window.deleteRecipe = deleteRecipe;
+window.printRecipe = printRecipe;
 window.openRecipeModal = openModal; 
