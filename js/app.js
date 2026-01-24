@@ -531,9 +531,9 @@ function createRecipeRow(recipe) {
         <td>${calories}</td>
         <td>
             <div class="macro-info">
-                <span>P: ${protein}g</span>
-                <span>C: ${carbs}g</span>
                 <span>F: ${fat}g</span>
+                <span>C: ${carbs}g</span>
+                <span>P: ${protein}g</span>
             </div>
         </td>
         <td>

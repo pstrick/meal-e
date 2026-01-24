@@ -2101,7 +2101,14 @@ tbody tr:hover {
     padding: 1rem 1.25rem;
 }
 
+.recipes-table .recipe-name-cell {
+    display: table-cell;
+    vertical-align: middle;
+}
+
 .recipes-table .recipe-name-cell .recipe-name-text {
+    display: inline-block;
+    margin-right: var(--space-2);
     font-weight: 500;
     color: var(--color-text);
 }
