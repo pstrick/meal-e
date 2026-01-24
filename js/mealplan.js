@@ -1839,6 +1839,10 @@ async function continueInitialization() {
             mealPlanForm.addEventListener('submit', handleMealPlanSubmit);
         }
         
+        // Listen for recipe created from Add to Meal Plan flow (create new recipe option)
+        window.addEventListener('recipe-created', handleRecipeCreatedFromMealPlan);
+        window.addEventListener('recipe-modal-closed', handleRecipeModalClosed);
+        
         console.log('[MEALPLAN] ✅ Meal planner initialized successfully');
         console.log('[MEALPLAN] ===== Initialization complete =====');
     } catch (error) {
