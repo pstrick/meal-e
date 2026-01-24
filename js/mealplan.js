@@ -412,7 +412,31 @@ async function updateUnifiedList() {
     // Clear the current list
     unifiedList.innerHTML = '';
     
-    // Add Custom Meal option at the top (always visible, not filtered)
+    // Add Create new recipe option at the top (always visible, not filtered)
+    const createRecipeOption = document.createElement('div');
+    createRecipeOption.className = 'unified-option create-recipe-option';
+    createRecipeOption.innerHTML = `
+        <div class="item-header">
+            <span class="item-icon">📝</span>
+            <span class="item-type">New Recipe</span>
+            <h4>Create a new recipe</h4>
+        </div>
+        <p style="color: #666; font-size: 0.9em;">Add a custom recipe with ingredients, then add it to this meal slot</p>
+    `;
+    createRecipeOption.addEventListener('click', () => {
+        if (!selectedSlot) return;
+        window.pendingMealPlanSlot = {
+            day: selectedSlot.dataset.day,
+            meal: selectedSlot.dataset.meal
+        };
+        closeMealPlanModal();
+        if (typeof window.openRecipeModal === 'function') {
+            window.openRecipeModal();
+        }
+    });
+    unifiedList.appendChild(createRecipeOption);
+    
+    // Add Custom Meal option (always visible, not filtered)
     const customMealOption = document.createElement('div');
     customMealOption.className = 'unified-option custom-meal-option';
     customMealOption.innerHTML = `
@@ -524,6 +548,19 @@ async function updateUnifiedList() {
             }
         }
         
+        // Per serving: ingredient = per-gram * servingSize; recipe = already per serving
+        const cal = item.type === 'meal'
+            ? Math.round(item.nutrition.calories || 0)
+            : Math.round((item.nutrition.calories || 0) * (item.servingSize || 100));
+        const pro = item.type === 'meal'
+            ? Math.round((item.nutrition.protein || 0) * 10) / 10
+            : Math.round((item.nutrition.protein || 0) * (item.servingSize || 100) * 10) / 10;
+        const carb = item.type === 'meal'
+            ? Math.round((item.nutrition.carbs || 0) * 10) / 10
+            : Math.round((item.nutrition.carbs || 0) * (item.servingSize || 100) * 10) / 10;
+        const f = item.type === 'meal'
+            ? Math.round((item.nutrition.fat || 0) * 10) / 10
+            : Math.round((item.nutrition.fat || 0) * (item.servingSize || 100) * 10) / 10;
         div.innerHTML = `
             <div class="item-header">
                 <span class="item-icon">${item.icon}</span>
@@ -535,10 +572,10 @@ async function updateUnifiedList() {
             ${brandInfo}
             ${priceInfo}
             <div class="item-nutrition">
-                <span>Cal: ${Math.round(item.nutrition.calories * (item.servingSize || 100))}</span>
-                <span>P: ${Math.round(item.nutrition.protein * (item.servingSize || 100))}g</span>
-                <span>C: ${Math.round(item.nutrition.carbs * (item.servingSize || 100))}g</span>
-                <span>F: ${Math.round(item.nutrition.fat * (item.servingSize || 100))}g</span>
+                <span>Cal: ${cal}</span>
+                <span>P: ${pro}g</span>
+                <span>C: ${carb}g</span>
+                <span>F: ${f}g</span>
             </div>
         `;
         
@@ -745,6 +782,34 @@ function selectCustomMealItem() {
     };
 }
 
+/**
+ * Compute nutrition per 100g for display. "Per 100g" label is used in add/edit modals.
+ * - ingredient: nutrition is per-gram → per 100g = nutrition * 100
+ * - meal (recipe): nutrition is per serving, servingSize = g per serving → per 100g = (nutrition / servingSize) * 100
+ */
+function getPer100gNutrition(item) {
+    const n = item.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    const servingSize = item.servingSize || 100;
+    if (item.type === 'ingredient') {
+        return {
+            calories: Math.round((n.calories || 0) * 100),
+            protein: Math.round(((n.protein || 0) * 100) * 10) / 10,
+            carbs: Math.round(((n.carbs || 0) * 100) * 10) / 10,
+            fat: Math.round(((n.fat || 0) * 100) * 10) / 10
+        };
+    }
+    if (item.type === 'meal') {
+        const denom = servingSize > 0 ? servingSize : 100;
+        return {
+            calories: Math.round(((n.calories || 0) / denom) * 100),
+            protein: Math.round((((n.protein || 0) / denom) * 100) * 10) / 10,
+            carbs: Math.round((((n.carbs || 0) / denom) * 100) * 10) / 10,
+            fat: Math.round((((n.fat || 0) / denom) * 100) * 10) / 10
+        };
+    }
+    return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+}
+
 function selectItem(item) {
     console.log('Selecting item:', item);
     const sanitizedEmoji = (item.emoji || '').trim();
@@ -785,13 +850,12 @@ function selectItem(item) {
         amountInput.value = item.servingSize;
     }
     
-    // Handle nutrition display - ensure we have nutrition data
-    const nutrition = item.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
-    const servingSize = item.servingSize || 100;
-    selectedItemDiv.querySelector('.calories').textContent = Math.round(nutrition.calories * servingSize);
-    selectedItemDiv.querySelector('.protein').textContent = Math.round(nutrition.protein * servingSize);
-    selectedItemDiv.querySelector('.carbs').textContent = Math.round(nutrition.carbs * servingSize);
-    selectedItemDiv.querySelector('.fat').textContent = Math.round(nutrition.fat * servingSize);
+    // Display nutrition per 100g (ingredient = per-gram; meal = per serving)
+    const per100g = getPer100gNutrition(item);
+    selectedItemDiv.querySelector('.calories').textContent = per100g.calories;
+    selectedItemDiv.querySelector('.protein').textContent = per100g.protein;
+    selectedItemDiv.querySelector('.carbs').textContent = per100g.carbs;
+    selectedItemDiv.querySelector('.fat').textContent = per100g.fat;
     
     // Show recurring options now that item is selected
     const recurringOptions = selectedItemDiv.querySelector('.recurring-options');
@@ -907,15 +971,23 @@ function openEditMealItemModal(item, amount, itemIndex, slot) {
         itemNameEl.textContent = displayName;
     }
     
-    // Calculate and display nutrition (matching the format from selectItem function)
-    const nutrition = item.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
-    const servingSize = item.servingSize || 100;
-    
-    // Display nutrition - matching selectItem which multiplies by servingSize
-    if (caloriesEl) caloriesEl.textContent = Math.round(nutrition.calories * servingSize);
-    if (proteinEl) proteinEl.textContent = Math.round(nutrition.protein * servingSize);
-    if (carbsEl) carbsEl.textContent = Math.round(nutrition.carbs * servingSize);
-    if (fatEl) fatEl.textContent = Math.round(nutrition.fat * servingSize);
+    // Display nutrition per 100g (or per serving for custom meals)
+    const labelSpan = editModal.querySelector('.item-nutrition span:first-child');
+    if (item.type === 'custommeal') {
+        if (labelSpan) labelSpan.textContent = 'Per serving: ';
+        const n = item.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 };
+        if (caloriesEl) caloriesEl.textContent = Math.round(n.calories || 0);
+        if (proteinEl) proteinEl.textContent = Math.round((n.protein || 0) * 10) / 10;
+        if (carbsEl) carbsEl.textContent = Math.round((n.carbs || 0) * 10) / 10;
+        if (fatEl) fatEl.textContent = Math.round((n.fat || 0) * 10) / 10;
+    } else {
+        if (labelSpan) labelSpan.textContent = 'Per 100g: ';
+        const per100g = getPer100gNutrition(item);
+        if (caloriesEl) caloriesEl.textContent = per100g.calories;
+        if (proteinEl) proteinEl.textContent = per100g.protein;
+        if (carbsEl) carbsEl.textContent = per100g.carbs;
+        if (fatEl) fatEl.textContent = per100g.fat;
+    }
     
     if (amountInput) {
         amountInput.value = itemData.amount || amount || 100;
@@ -1699,6 +1771,7 @@ async function continueInitialization() {
         initializePrintOptionsModal();
         initializePrintButton();
         initializeShoppingListButton();
+        initializeCopyPreviousWeekButton();
         
         // Initialize recurring items
         initializeRecurringItems();
@@ -2301,6 +2374,82 @@ function initializeShoppingListButton() {
                 openShoppingListSelectionModal(shoppingListData);
             }
         });
+    }
+}
+
+// Initialize copy previous week button
+function initializeCopyPreviousWeekButton() {
+    const copyButton = document.getElementById('copy-previous-week');
+    
+    if (copyButton) {
+        copyButton.addEventListener('click', async () => {
+            await copyPreviousWeekMealPlan();
+        });
+    }
+}
+
+// Copy previous week's meal plan to current week
+async function copyPreviousWeekMealPlan() {
+    try {
+        // Get previous week's dates (currentWeekOffset - 1)
+        const previousWeek = getWeekDates(currentWeekOffset - 1);
+        
+        // Get current week's dates
+        const currentWeek = getWeekDates(currentWeekOffset);
+        
+        // Meal types to copy
+        const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
+        
+        let copiedCount = 0;
+        
+        // Copy each day and meal type from previous week to current week
+        for (let i = 0; i < 7; i++) {
+            const previousDate = previousWeek.dates[i];
+            const currentDate = currentWeek.dates[i];
+            
+            for (const mealType of mealTypes) {
+                const previousMealKey = getMealKey(previousDate, mealType);
+                const currentMealKey = getMealKey(currentDate, mealType);
+                
+                // Get items from previous week
+                const previousItems = mealPlan[previousMealKey];
+                
+                if (previousItems && Array.isArray(previousItems) && previousItems.length > 0) {
+                    // Deep clone the items to avoid reference issues
+                    const clonedItems = previousItems.map(item => {
+                        // Create a deep copy of the item
+                        const cloned = JSON.parse(JSON.stringify(item));
+                        // Remove any recurring-specific flags that shouldn't be copied
+                        if (cloned.isRecurring) {
+                            cloned.isRecurring = false;
+                            delete cloned.recurringId;
+                        }
+                        return cloned;
+                    });
+                    
+                    // Replace current week's meal plan with previous week's items
+                    mealPlan[currentMealKey] = clonedItems;
+                    copiedCount += clonedItems.length;
+                }
+                // If previous week has no items for this slot, leave current week's items unchanged
+            }
+        }
+        
+        // Save the updated meal plan
+        saveMealPlan();
+        
+        // Update the display
+        await updateMealPlanDisplay();
+        
+        // Show success message
+        if (copiedCount > 0) {
+            showAlert(`Successfully copied ${copiedCount} meal item${copiedCount !== 1 ? 's' : ''} from the previous week.`, { type: 'success' });
+        } else {
+            showAlert('No meal items found in the previous week to copy.', { type: 'info' });
+        }
+    } catch (error) {
+        console.error('Error copying previous week meal plan:', error);
+        showAlert('An error occurred while copying the previous week\'s meal plan.', { type: 'error' });
     }
 }
 

@@ -90,6 +90,9 @@
                 <button id="generate-shopping-list" class="btn btn-secondary">
                     <i class="fas fa-shopping-cart"></i> Add to Shopping List
                 </button>
+                <button id="copy-previous-week" class="btn btn-secondary">
+                    <i class="fas fa-copy"></i> Copy Previous Week
+                </button>
             </div>
 
 
@@ -270,6 +273,76 @@
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" id="cancel-print-options">Cancel</button>
                     <button type="submit" class="btn btn-primary">Print</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Recipe Modal (for creating new recipes from Add to Meal Plan) -->
+    <div id="recipe-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Custom Recipe</h2>
+            <form id="recipe-form">
+                <div class="form-group">
+                    <label for="recipe-name">Recipe Name</label>
+                    <input type="text" id="recipe-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="recipe-category">Category</label>
+                    <select id="recipe-category" required>
+                        <option value="breakfast">Breakfast</option>
+                        <option value="lunch">Lunch</option>
+                        <option value="dinner">Dinner</option>
+                        <option value="snacks">Snacks</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="recipe-serving-size">Serving Size (g)</label>
+                    <input type="number" id="recipe-serving-size" step="1" min="0" required>
+                </div>
+                <div id="ingredients-list">
+                    <!-- Ingredient inputs will be added here -->
+                </div>
+                <button type="button" id="add-ingredient-btn" class="btn btn-secondary">
+                    <i class="fas fa-plus"></i> Add Ingredient
+                </button>
+                <div id="recipe-totals" class="recipe-totals-section">
+                    <h3>Recipe Totals (Per Serving)</h3>
+                    <div class="nutrition-totals">
+                        <div class="nutrition-item">
+                            <span class="nutrition-label">Calories</span>
+                            <span class="nutrition-value" id="recipe-total-calories">0</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-label">Protein</span>
+                            <span class="nutrition-value" id="recipe-total-protein">0g</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-label">Carbs</span>
+                            <span class="nutrition-value" id="recipe-total-carbs">0g</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-label">Fat</span>
+                            <span class="nutrition-value" id="recipe-total-fat">0g</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-label">Total Cost</span>
+                            <span class="nutrition-value" id="recipe-total-cost">$0.00</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-label">Cost Per Serving</span>
+                            <span class="nutrition-value" id="recipe-cost-per-serving">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="recipe-steps">Recipe Instructions</label>
+                    <textarea id="recipe-steps" rows="6" placeholder="Enter step-by-step cooking instructions..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-recipe">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Recipe</button>
                 </div>
             </form>
         </div>
