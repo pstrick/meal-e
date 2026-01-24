@@ -936,6 +936,35 @@ function closeMealPlanModal() {
 // Make closeMealPlanModal available globally
 window.closeMealPlanModal = closeMealPlanModal;
 
+async function handleRecipeCreatedFromMealPlan(e) {
+    const { recipe } = e.detail || {};
+    const pending = window.pendingMealPlanSlot;
+    if (!pending || !recipe) return;
+    const mealKey = getMealKey(pending.day, pending.meal);
+    if (!mealPlan[mealKey]) mealPlan[mealKey] = [];
+    const amount = recipe.servingSize || 100;
+    mealPlan[mealKey].push({
+        type: 'meal',
+        id: recipe.id,
+        name: recipe.name,
+        amount,
+        nutrition: recipe.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 },
+        servingSize: recipe.servingSize,
+        storeSection: '',
+        emoji: '',
+        source: 'custom',
+        fdcId: null,
+        cost: 0
+    });
+    saveMealPlan();
+    await updateMealPlanDisplay();
+    window.pendingMealPlanSlot = null;
+}
+
+function handleRecipeModalClosed() {
+    window.pendingMealPlanSlot = null;
+}
+
 // Edit meal item modal functions
 function openEditMealItemModal(item, amount, itemIndex, slot) {
     editingItem = item;

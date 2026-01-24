@@ -174,6 +174,7 @@ function closeModalHandler() {
         servingSizeInput.removeAttribute('data-listener-added');
     }
     servingSizeListenerSetup = false;
+    window.dispatchEvent(new CustomEvent('recipe-modal-closed'));
 }
 
 // USDA API Functions
@@ -570,6 +571,7 @@ async function handleRecipeSubmit(e) {
                 amount: amount,
                 nutrition: ingredientData.nutrition,
                 source: 'custom',
+                store: ingredientData.store || '',
                 storeSection: ingredientData.storeSection || '',
                 emoji: ingredientData.emoji || '',
                 pricePerGram: ingredientData.pricePerGram || null,
@@ -626,6 +628,9 @@ async function handleRecipeSubmit(e) {
         }
         updateRecipeList();
         saveToLocalStorage();
+        if (!currentEditRecipeId) {
+            window.dispatchEvent(new CustomEvent('recipe-created', { detail: { recipe: newRecipe } }));
+        }
         closeModalHandler();
         selectedIngredients.clear();
         currentEditRecipeId = null;
@@ -1576,6 +1581,7 @@ function editRecipe(id) {
         // Ensure fdcId is present, fallback to a unique id if missing
         let fdcId = ing.fdcId ? ing.fdcId.toString() : `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         nameInput.dataset.fdcId = fdcId;
+        nameInput.dataset.store = ing.store || '';
         nameInput.dataset.storeSection = ing.storeSection || '';
         nameInput.dataset.emoji = emoji;
         const ingredientData = {
@@ -1583,6 +1589,7 @@ function editRecipe(id) {
             amount: parseFloat(ing.amount),
             nutrition: ing.nutrition,
             source: ing.source || 'usda', // Default to usda for backward compatibility
+            store: ing.store || '',
             storeSection: ing.storeSection || '',
             emoji: emoji,
             pricePerGram: ing.pricePerGram || null,
@@ -1733,11 +1740,13 @@ function openIngredientSearch(ingredientInput) {
         // Remove existing event listeners by cloning (clean way to remove all listeners)
         const oldValue = nameInput.value;
         const oldFdcId = nameInput.dataset.fdcId;
+        const oldStore = nameInput.dataset.store;
         const oldStoreSection = nameInput.dataset.storeSection;
         const oldEmoji = nameInput.dataset.emoji;
         const newNameInput = nameInput.cloneNode(true);
         newNameInput.value = oldValue;
         if (oldFdcId) newNameInput.dataset.fdcId = oldFdcId;
+        if (oldStore !== undefined) newNameInput.dataset.store = oldStore || '';
         if (oldStoreSection) newNameInput.dataset.storeSection = oldStoreSection;
         if (oldEmoji) newNameInput.dataset.emoji = oldEmoji;
         // Ensure tabindex is set for accessibility
@@ -1948,6 +1957,7 @@ function selectIngredient(ingredient) {
         const storageId = `custom-${ingredient.id || Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
         nameInput.dataset.fdcId = storageId;
+        nameInput.dataset.store = ingredient.store || '';
         nameInput.dataset.storeSection = ingredient.storeSection || '';
         // Stop storing emoji on the input; just use the ingredient name
         nameInput.dataset.emoji = '';
@@ -1962,6 +1972,7 @@ function selectIngredient(ingredient) {
         const newNameInput = nameInput.cloneNode(true);
         // Preserve all data attributes
         newNameInput.dataset.fdcId = storageId;
+        newNameInput.dataset.store = ingredient.store || '';
         newNameInput.dataset.storeSection = ingredient.storeSection || '';
         newNameInput.dataset.emoji = emoji;
         newNameInput.setAttribute('tabindex', '0');
@@ -2090,6 +2101,7 @@ function selectIngredient(ingredient) {
             source: ingredient.source || 'custom',
             id: ingredient.id || ingredient.fdcId,
             fdcId: ingredient.fdcId || storageId,
+            store: ingredient.store || '',
             storeSection: ingredient.storeSection || '',
             emoji: emoji,
             pricePerGram: ingredient.pricePerGram || null,
@@ -2457,6 +2469,7 @@ async function searchAllIngredients(query) {
             },
             servingSize: ingredient.servingSize,
             brandOwner: 'Custom Ingredient',
+            store: ingredient.store || '',
             storeSection: ingredient.storeSection || '',
             emoji: ingredient.emoji || '',
             pricePerGram: ingredient.pricePerGram || null,
@@ -2621,6 +2634,7 @@ async function displaySearchResults(results) {
                     source: ingredient.source || 'custom',
                     id: ingredient.id || ingredient.fdcId,
                     fdcId: ingredient.fdcId || `custom-${ingredient.id}`,
+                    store: ingredient.store || '',
                     storeSection: ingredient.storeSection || '',
                     emoji: emoji,
                     pricePerGram: ingredient.pricePerGram || null,
@@ -2732,6 +2746,7 @@ async function displaySearchResults(results) {
                     nameField.value = displayName;
                     // CRITICAL: Set fdcId to match storageId used in selectedIngredients
                     nameField.dataset.fdcId = storageId;
+                    nameField.dataset.store = ingredient.store || '';
                     nameField.dataset.storeSection = ingredient.storeSection || '';
                     nameField.dataset.emoji = emoji;
                     nameField.readOnly = true;
@@ -2748,6 +2763,7 @@ async function displaySearchResults(results) {
                     const newNameField = nameField.cloneNode(true);
                     // CRITICAL: Preserve fdcId - use storageId directly, not from nameField (which might be stale)
                     newNameField.dataset.fdcId = storageId;
+                    newNameField.dataset.store = ingredient.store || '';
                     newNameField.dataset.storeSection = ingredient.storeSection || '';
                     newNameField.dataset.emoji = emoji;
                     newNameField.setAttribute('tabindex', '0');
@@ -3481,6 +3497,7 @@ function duplicateRecipe(id) {
         // Generate unique ID for the duplicated ingredient
         const fdcId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         nameInput.dataset.fdcId = fdcId;
+        nameInput.dataset.store = ing.store || '';
         nameInput.dataset.storeSection = ing.storeSection || '';
         nameInput.dataset.emoji = emoji;
         
@@ -3489,6 +3506,7 @@ function duplicateRecipe(id) {
             amount: parseFloat(ing.amount),
             nutrition: ing.nutrition,
             source: ing.source || 'custom',
+            store: ing.store || '',
             storeSection: ing.storeSection || '',
             emoji: emoji
         };
@@ -3645,4 +3663,5 @@ window.addRecipe = addRecipe;
 window.editRecipe = editRecipe;
 window.duplicateRecipe = duplicateRecipe;
 window.deleteRecipe = deleteRecipe; 
-window.deleteRecipe = deleteRecipe; 
+window.deleteRecipe = deleteRecipe;
+window.openRecipeModal = openModal; 
