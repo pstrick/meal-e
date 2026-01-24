@@ -1151,6 +1151,61 @@ tbody tr:hover {
     flex: 0 0 auto;
 }
 
+.kebab-dropdown-wrap {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.kebab-dropdown-wrap .btn-icon {
+    width: auto;
+    padding-inline: 0.75rem;
+}
+
+.kebab-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 0.35rem;
+    min-width: 12rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    padding: 0.35rem;
+    z-index: 100;
+    display: none;
+}
+
+.kebab-dropdown-wrap.is-open .kebab-dropdown {
+    display: block;
+}
+
+.kebab-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 0.95rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.kebab-item:hover {
+    background: var(--color-surface-alt);
+}
+
+.kebab-item i {
+    width: 1.1em;
+    opacity: 0.85;
+}
+
 .date-navigation h2 {
     font-size: clamp(1.1rem, 2vw + 1rem, 1.4rem);
     font-weight: 700;
@@ -1879,6 +1934,78 @@ tbody tr:hover {
 
 /* Ingredients ------------------------------------------------------------ */
 
+.ingredients-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.ingredients-filters .search-bar {
+    flex: 1;
+    min-width: 200px;
+    margin-bottom: 0;
+}
+
+.ingredients-filters .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.ingredients-filters .filter-group label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+}
+
+.ingredients-filters .filter-group select {
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 1rem;
+    min-width: 160px;
+}
+
+.lists-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.lists-filters .search-bar {
+    flex: 1;
+    min-width: 200px;
+    margin-bottom: 0;
+}
+
+.lists-filters .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.lists-filters .filter-group label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+}
+
+.lists-filters .filter-group select {
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 1rem;
+    min-width: 160px;
+}
+
 .ingredients-table .btn {
     --btn-shadow: none;
 }
@@ -1886,6 +2013,27 @@ tbody tr:hover {
 .ingredients-table th,
 .ingredients-table td {
     padding: 1rem 1.25rem;
+}
+
+.ingredients-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    transition: background-color var(--transition-fast);
+}
+
+.ingredients-table th.sortable:hover {
+    background: var(--color-bg-muted);
+}
+
+.ingredients-table .sort-icon {
+    opacity: 0.35;
+    font-size: 0.65em;
+    margin-left: 0.2em;
+}
+
+.ingredients-table .sort-icon.sort-active {
+    opacity: 1;
 }
 
 .ingredients-table .action-buttons {

@@ -76,6 +76,12 @@ const ingredientModal = document.getElementById('ingredient-modal');
 const cancelIngredientBtn = document.getElementById('cancel-ingredient');
 const closeModalBtn = ingredientModal.querySelector('.close');
 
+// Filter/sort state
+let searchTerm = '';
+let filterStoreSection = '';
+let sortColumn = 'name';
+let sortDirection = 'asc';
+
 // CSV Upload/Download DOM Elements
 const downloadCsvTemplateBtn = document.getElementById('download-csv-template-btn');
 const uploadCsvBtn = document.getElementById('upload-csv-btn');
@@ -88,6 +94,7 @@ const csvUploadResults = document.getElementById('csv-upload-results');
 const csvUploadSummary = document.getElementById('csv-upload-summary');
 const csvCloseBtn = uploadCsvModal ? uploadCsvModal.querySelector('.csv-close') : null;
 const cancelCsvUploadBtn = document.getElementById('cancel-csv-upload');
+const storeSectionFilterEl = document.getElementById('ingredient-store-section-filter');
 
 // Migrate old localStorage key to new key
 function migrateIngredientsStorage() {
@@ -123,6 +130,7 @@ function loadCustomIngredients() {
                 const imageValue = ingredient.image || ingredient.icon || '';
                 return {
                 ...ingredient,
+                store: ingredient.store || '',
                 storeSection: ingredient.storeSection || '',
                     emoji: '',
                     image: imageValue
@@ -132,6 +140,7 @@ function loadCustomIngredients() {
         } else {
             console.log('No my ingredients found');
         }
+        updateStoreSectionFilterOptions();
         renderIngredientsList();
     } catch (error) {
         console.error('Error loading my ingredients:', error);
@@ -164,6 +173,7 @@ function openIngredientModal(ingredient = null) {
     modalTitle.textContent = ingredient ? 'Edit Ingredient' : 'Add New Ingredient';
     
     // Fill form if editing
+    const storeInput = document.getElementById('store');
     const storeSectionInput = document.getElementById('store-section');
 
     if (ingredient) {
@@ -176,17 +186,15 @@ function openIngredientModal(ingredient = null) {
         document.getElementById('fat').value = nutrition.fat || 0;
         document.getElementById('carbs').value = nutrition.carbs || 0;
         document.getElementById('protein').value = nutrition.protein || 0;
-        if (storeSectionInput) {
-            storeSectionInput.value = ingredient.storeSection || '';
-        }
+        if (storeInput) storeInput.value = ingredient.store || '';
+        if (storeSectionInput) storeSectionInput.value = ingredient.storeSection || '';
         // Load image if available
         const imageValue = typeof ingredient.image === 'string' ? ingredient.image.trim() : '';
         selectedImageDataUrl = imageValue;
         updateImagePreview(imageValue);
     } else {
-        if (storeSectionInput) {
-            storeSectionInput.value = '';
-        }
+        if (storeInput) storeInput.value = '';
+        if (storeSectionInput) storeSectionInput.value = '';
         selectedImageDataUrl = '';
         updateImagePreview('');
     }
@@ -213,6 +221,7 @@ async function saveCustomIngredient(event) {
         event.preventDefault();
         console.log('Saving custom ingredient...');
         
+        const storeInput = document.getElementById('store');
         const storeSectionInput = document.getElementById('store-section');
         
         const ingredient = {
@@ -228,6 +237,7 @@ async function saveCustomIngredient(event) {
                 protein: parseFloat(document.getElementById('protein').value)
             },
             isCustom: true,
+            store: storeInput ? storeInput.value.trim() : '',
             storeSection: storeSectionInput ? storeSectionInput.value.trim() : '',
             emoji: '',
             image: selectedImageDataUrl || '' // Store uploaded image as data URL
@@ -248,11 +258,11 @@ async function saveCustomIngredient(event) {
         }
         
         saveCustomIngredients();
-        
-        // Only render ingredients list if we're on the ingredients page
-        const ingredientsList = document.getElementById('custom-ingredients-list');
-        if (ingredientsList) {
-        renderIngredientsList();
+
+        const listEl = document.getElementById('custom-ingredients-list');
+        if (listEl) {
+            updateStoreSectionFilterOptions();
+            renderIngredientsList();
         }
         
         closeIngredientModal();
@@ -307,20 +317,106 @@ function deleteCustomIngredient(id) {
         console.log('Deleting custom ingredient:', id);
         customIngredients = customIngredients.filter(ing => ing.id !== id);
         saveCustomIngredients();
+        updateStoreSectionFilterOptions();
         renderIngredientsList();
     } catch (error) {
         console.error('Error deleting custom ingredient:', error);
     }
 }
 
-// Render ingredients list
-function renderIngredientsList(filteredIngredients = null) {
+// Get filtered ingredients (search + store section)
+function getFilteredIngredients() {
+    return customIngredients.filter(ingredient => {
+        const matchesSearch = !searchTerm || ingredient.name.toLowerCase().includes(searchTerm);
+        const section = (ingredient.storeSection || '').trim() || 'Uncategorized';
+        const matchesSection = !filterStoreSection || section === filterStoreSection;
+        return matchesSearch && matchesSection;
+    });
+}
+
+// Get sorted copy of ingredients
+function getSortedIngredients(ingredients) {
+    const arr = [...ingredients];
+    arr.sort((a, b) => {
+        let va; let vb;
+        switch (sortColumn) {
+            case 'name':
+                va = (a.name || '').toLowerCase();
+                vb = (b.name || '').toLowerCase();
+                return sortDirection === 'asc' ? (va < vb ? -1 : va > vb ? 1 : 0) : (vb < va ? -1 : vb > va ? 1 : 0);
+            case 'storeSection': {
+                const sa = (a.storeSection || '').trim() || 'Uncategorized';
+                const sb = (b.storeSection || '').trim() || 'Uncategorized';
+                return sortDirection === 'asc' ? sa.localeCompare(sb) : sb.localeCompare(sa);
+            }
+            case 'price': {
+                va = (a.totalPrice != null && a.totalWeight != null) ? a.totalPrice / (a.totalWeight || 1) : (a.pricePerGram ?? 0);
+                vb = (b.totalPrice != null && b.totalWeight != null) ? b.totalPrice / (b.totalWeight || 1) : (b.pricePerGram ?? 0);
+                return sortDirection === 'asc' ? va - vb : vb - va;
+            }
+            case 'calories': {
+                va = (a.nutrition && a.nutrition.calories != null) ? a.nutrition.calories : 0;
+                vb = (b.nutrition && b.nutrition.calories != null) ? b.nutrition.calories : 0;
+                return sortDirection === 'asc' ? va - vb : vb - va;
+            }
+            default:
+                return 0;
+        }
+    });
+    return arr;
+}
+
+function escapeHtmlAttr(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Populate store section filter dropdown from current ingredients
+function updateStoreSectionFilterOptions() {
+    if (!storeSectionFilterEl) return;
+    const sections = new Set();
+    customIngredients.forEach(ing => {
+        const s = (ing.storeSection || '').trim() || 'Uncategorized';
+        sections.add(s);
+    });
+    const sorted = [...sections].sort((a, b) => a.localeCompare(b));
+    const current = storeSectionFilterEl.value;
+    storeSectionFilterEl.innerHTML = '<option value="">All sections</option>' +
+        sorted.map(s => `<option value="${escapeHtmlAttr(s)}">${escapeHtmlAttr(s)}</option>`).join('');
+    if (sorted.includes(current)) {
+        storeSectionFilterEl.value = current;
+    } else {
+        filterStoreSection = '';
+        storeSectionFilterEl.value = '';
+    }
+}
+
+// Update sort icons in table header
+function updateSortIcons() {
+    if (!ingredientsList) return;
+    ingredientsList.querySelectorAll('th.sortable').forEach(th => {
+        const key = th.dataset.sort;
+        const icon = th.querySelector('.sort-icon');
+        if (!icon) return;
+        if (key !== sortColumn) {
+            icon.textContent = '';
+            icon.className = 'sort-icon';
+            return;
+        }
+        icon.className = 'sort-icon sort-active';
+        icon.textContent = sortDirection === 'asc' ? ' \u25B2' : ' \u25BC';
+    });
+}
+
+// Render ingredients list (uses filter + sort state)
+function renderIngredientsList() {
     try {
-        console.log('Rendering ingredients list...');
-        const ingredients = filteredIngredients || customIngredients;
+        const filtered = getFilteredIngredients();
+        const ingredients = getSortedIngredients(filtered);
         const tbody = ingredientsList.querySelector('tbody');
         tbody.innerHTML = '';
-        
+
+        updateSortIcons();
+
         if (ingredients.length === 0) {
             tbody.innerHTML = `
                 <tr>
@@ -328,42 +424,37 @@ function renderIngredientsList(filteredIngredients = null) {
                 </tr>`;
             return;
         }
-        
+
         ingredients.forEach(ingredient => {
             const row = document.createElement('tr');
-            const imageSource = ingredient.image || ingredient.icon; // Support both for backward compatibility
-            // Display image in its own column
-            const imageMarkup = imageSource 
-                ? `<img src="${imageSource}" class="ingredient-image" alt="${ingredient.name}" title="${ingredient.name}">` 
+            const imageSource = ingredient.image || ingredient.icon;
+            const imageMarkup = imageSource
+                ? `<img src="${imageSource}" class="ingredient-image" alt="${ingredient.name}" title="${ingredient.name}">`
                 : '<span class="no-image">—</span>';
             const nameHTML = `<span class="ingredient-name-text">${ingredient.name}</span>`;
-            
-            // Handle price and weight display - API ingredients might not have these
+
             const servingSize = ingredient.servingSize || 100;
             let priceDisplay = 'N/A';
-            if (ingredient.totalPrice !== null && ingredient.totalPrice !== undefined && 
+            if (ingredient.totalPrice !== null && ingredient.totalPrice !== undefined &&
                 ingredient.totalWeight !== null && ingredient.totalWeight !== undefined) {
                 priceDisplay = `$${ingredient.totalPrice.toFixed(2)} (${ingredient.totalWeight}g)`;
             } else if (ingredient.pricePerGram !== null && ingredient.pricePerGram !== undefined) {
-                // Calculate estimated price for 100g if we have price per gram
                 const estimatedPrice = ingredient.pricePerGram * 100;
                 priceDisplay = `~$${estimatedPrice.toFixed(2)}/100g`;
             }
-            
-            // Nutrition is stored per serving size, so display it correctly
+
             const nutrition = ingredient.nutrition || { calories: 0, fat: 0, carbs: 0, protein: 0 };
             const caloriesPerServing = Math.round(nutrition.calories || 0);
             const fatPerServing = (nutrition.fat || 0).toFixed(1);
             const carbsPerServing = (nutrition.carbs || 0).toFixed(1);
             const proteinPerServing = (nutrition.protein || 0).toFixed(1);
-            
-            // Add source indicator for API-sourced ingredients
+
             let sourceBadge = '';
             if (ingredient.source === 'usda' || ingredient.source === 'openfoodfacts') {
                 const sourceLabel = ingredient.source === 'usda' ? 'USDA' : 'OFF';
                 sourceBadge = `<span class="source-badge" title="Imported from ${sourceLabel}">${sourceLabel}</span>`;
             }
-            
+
             row.innerHTML = `
                 <td class="ingredient-image-cell">${imageMarkup}</td>
                 <td class="ingredient-name-cell">${nameHTML} ${sourceBadge}</td>
@@ -404,19 +495,29 @@ function editCustomIngredient(id) {
 }
 
 // Search ingredients
-function searchIngredients(event) {
-    try {
-        const searchTerm = event.target.value.toLowerCase();
-        console.log('Searching ingredients:', searchTerm);
-        
-        const filteredIngredients = customIngredients.filter(ingredient =>
-            ingredient.name.toLowerCase().includes(searchTerm)
-        );
-        
-        renderIngredientsList(filteredIngredients);
-    } catch (error) {
-        console.error('Error searching ingredients:', error);
+function onSearchInput(event) {
+    searchTerm = (event.target.value || '').toLowerCase();
+    renderIngredientsList();
+}
+
+// Store section filter change
+function onStoreSectionFilterChange(event) {
+    filterStoreSection = (event.target.value || '').trim();
+    renderIngredientsList();
+}
+
+// Sort by column
+function onSortHeaderClick(event) {
+    const th = event.target.closest('th.sortable');
+    if (!th || !th.dataset.sort) return;
+    const key = th.dataset.sort;
+    if (sortColumn === key) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortColumn = key;
+        sortDirection = 'asc';
     }
+    renderIngredientsList();
 }
 
 // CSV Upload/Download Functionality
@@ -426,6 +527,7 @@ function downloadCsvTemplate() {
     const headers = [
         'name',
         'emoji',
+        'store',
         'storeSection',
         'totalPrice',
         'totalWeight',
@@ -439,6 +541,7 @@ function downloadCsvTemplate() {
     const exampleRow = [
         'Chicken Breast',
         '🍗',
+        'Whole Foods',
         'Meat',
         '8.99',
         '500',
@@ -454,7 +557,7 @@ function downloadCsvTemplate() {
         exampleRow.join(','),
         '# Example: Add your ingredients below',
         '# All numeric values should be numbers (no units)',
-        '# emoji and storeSection are optional'
+        '# emoji, store, and storeSection are optional'
     ].join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -536,6 +639,7 @@ if (uploadCsvBtn && uploadCsvModal && uploadCsvForm) {
                             id: Date.now() + i,
                             name: name,
                             emoji: getValue('emoji', '').trim(),
+                            store: getValue('store', '').trim(),
                             storeSection: getValue('storesection', '').trim(),
                             totalPrice: parseFloat(getValue('totalprice', '0')) || null,
                             totalWeight: parseFloat(getValue('totalweight', '0')) || null,
@@ -659,6 +763,7 @@ if (uploadCsvBtn && uploadCsvModal && uploadCsvForm) {
             
             if (imported > 0) {
                 saveCustomIngredients();
+                updateStoreSectionFilterOptions();
                 renderIngredientsList();
             }
             
@@ -717,8 +822,15 @@ if (form) {
     });
 }
 if (searchInput) {
-    searchInput.addEventListener('input', searchIngredients);
+    searchInput.addEventListener('input', onSearchInput);
 }
+if (storeSectionFilterEl) {
+    storeSectionFilterEl.addEventListener('change', onStoreSectionFilterChange);
+}
+const sortableHeaders = ingredientsList ? ingredientsList.querySelectorAll('th.sortable') : [];
+sortableHeaders.forEach(th => {
+    th.addEventListener('click', onSortHeaderClick);
+});
 if (addIngredientBtn) {
     addIngredientBtn.addEventListener('click', () => openIngredientModal());
 }
