@@ -426,15 +426,17 @@ async function updateUnifiedList() {
         <p style="color: #666; font-size: 0.9em;">Add a custom recipe with ingredients, then add it to this meal slot</p>
     `;
     createRecipeOption.addEventListener('click', () => {
-        if (!selectedSlot) return;
-        window.pendingMealPlanSlot = {
-            day: selectedSlot.dataset.day,
-            meal: selectedSlot.dataset.meal
-        };
+        if (!selectedSlot || !selectedSlot.dataset?.day || !selectedSlot.dataset?.meal) return;
+        const day = selectedSlot.dataset.day;
+        const meal = selectedSlot.dataset.meal;
+        window.pendingMealPlanSlot = { day, meal };
         closeMealPlanModal();
-        if (typeof window.openRecipeModal === 'function') {
-            window.openRecipeModal();
-        }
+        // Defer so meal plan modal fully closes (display/transition) before opening recipe modal
+        setTimeout(() => {
+            if (typeof window.openRecipeModal === 'function') {
+                window.openRecipeModal();
+            }
+        }, 0);
     });
     unifiedList.appendChild(createRecipeOption);
     
@@ -943,6 +945,10 @@ async function handleRecipeCreatedFromMealPlan(e) {
     const { recipe } = e.detail || {};
     const pending = window.pendingMealPlanSlot;
     if (!pending || !recipe) return;
+    if (!document.querySelector('.meal-plan-grid')) {
+        window.pendingMealPlanSlot = null;
+        return;
+    }
     const mealKey = getMealKey(pending.day, pending.meal);
     if (!mealPlan[mealKey]) mealPlan[mealKey] = [];
     const amount = recipe.servingSize || 100;
@@ -953,6 +959,7 @@ async function handleRecipeCreatedFromMealPlan(e) {
         amount,
         nutrition: recipe.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 },
         servingSize: recipe.servingSize,
+        store: '',
         storeSection: '',
         emoji: '',
         source: 'custom',
@@ -967,6 +974,11 @@ async function handleRecipeCreatedFromMealPlan(e) {
 function handleRecipeModalClosed() {
     window.pendingMealPlanSlot = null;
 }
+
+// Register recipe-created / recipe-modal-closed at module load so they're ready
+// before async init completes (avoids race where user creates recipe before listeners attach).
+window.addEventListener('recipe-created', handleRecipeCreatedFromMealPlan);
+window.addEventListener('recipe-modal-closed', handleRecipeModalClosed);
 
 // Edit meal item modal functions
 function openEditMealItemModal(item, amount, itemIndex, slot) {
@@ -1873,10 +1885,6 @@ async function continueInitialization() {
         if (mealPlanForm) {
             mealPlanForm.addEventListener('submit', handleMealPlanSubmit);
         }
-        
-        // Listen for recipe created from Add to Meal Plan flow (create new recipe option)
-        window.addEventListener('recipe-created', handleRecipeCreatedFromMealPlan);
-        window.addEventListener('recipe-modal-closed', handleRecipeModalClosed);
         
         console.log('[MEALPLAN] ✅ Meal planner initialized successfully');
         console.log('[MEALPLAN] ===== Initialization complete =====');
