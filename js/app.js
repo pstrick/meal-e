@@ -502,6 +502,15 @@ function onRecipeSortHeaderClick(event) {
     updateRecipeList();
 }
 
+function escapeRecipeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // Create a table row for a recipe
 function createRecipeRow(recipe) {
     const row = document.createElement('tr');
@@ -511,8 +520,8 @@ function createRecipeRow(recipe) {
     const carbs = (Number(nutrition.carbs) || 0).toFixed(1);
     const fat = (Number(nutrition.fat) || 0).toFixed(1);
     const servingSize = Number(recipe.servingSize) || 0;
-    const category = (recipe.category || '').trim() || '—';
-    const name = (recipe.name || '').trim() || 'Untitled';
+    const category = escapeRecipeHtml((recipe.category || '').trim() || '—');
+    const name = escapeRecipeHtml((recipe.name || '').trim() || 'Untitled');
     const id = recipe.id;
 
     row.innerHTML = `

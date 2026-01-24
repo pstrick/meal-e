@@ -75,28 +75,48 @@
     <main>
         <div class="container">
             <h1>Recipes</h1>
-            
-            <div class="recipe-controls">
-                <button id="add-recipe-btn" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Add Recipe
-                </button>
-                <div class="search-group">
-                    <input type="text" id="recipe-search" placeholder="Search recipes..." class="search-input">
-                </div>
-                <div class="filter-group">
-                    <label for="category-filter">Category:</label>
-                    <select id="category-filter">
-                        <option value="all">All Categories</option>
-                        <option value="breakfast">Breakfast</option>
-                        <option value="lunch">Lunch</option>
-                        <option value="dinner">Dinner</option>
-                        <option value="snacks">Snacks</option>
-                    </select>
-                </div>
-            </div>
 
-            <div id="recipe-list" class="recipe-grid">
-                <!-- Recipes will be populated here -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Recipes</h2>
+                    <div class="card-header-actions">
+                        <button id="add-recipe-btn" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add Recipe
+                        </button>
+                    </div>
+                </div>
+                <div class="recipes-filters">
+                    <div class="search-bar">
+                        <input type="text" id="recipe-search" placeholder="Search recipes..." class="search-input">
+                    </div>
+                    <div class="filter-group">
+                        <label for="category-filter">Category</label>
+                        <select id="category-filter">
+                            <option value="all">All categories</option>
+                            <option value="breakfast">Breakfast</option>
+                            <option value="lunch">Lunch</option>
+                            <option value="dinner">Dinner</option>
+                            <option value="snacks">Snacks</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="recipes-table" class="recipes-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-sort="name">Name <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort="category">Category <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort="servingSize">Serving Size <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort="calories">Calories <span class="sort-icon"></span></th>
+                                <th>Macros</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recipe-list">
+                            <!-- Recipe rows populated here -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </main>
@@ -105,7 +125,7 @@
     <div id="recipe-modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-                            <h2>Add Custom Recipe</h2>
+            <h2>Add Custom Recipe</h2>
             <form id="recipe-form">
                 <div class="form-group">
                     <label for="recipe-name">Recipe Name</label>

@@ -2006,6 +2006,106 @@ tbody tr:hover {
     min-width: 160px;
 }
 
+/* Recipes table (matches ingredients layout) */
+.recipes-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.recipes-filters .search-bar {
+    flex: 1;
+    min-width: 200px;
+    margin-bottom: 0;
+}
+
+.recipes-filters .search-bar input {
+    padding: 0.65rem 0.85rem;
+}
+
+.recipes-filters .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.recipes-filters .filter-group label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+}
+
+.recipes-filters .filter-group select {
+    padding: 0.65rem 0.85rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 1rem;
+    min-width: 160px;
+}
+
+.recipes-table .btn {
+    --btn-shadow: none;
+}
+
+.recipes-table th,
+.recipes-table td {
+    padding: 1rem 1.25rem;
+}
+
+.recipes-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    transition: background-color var(--transition-fast);
+}
+
+.recipes-table th.sortable:hover {
+    background: var(--color-bg-muted);
+}
+
+.recipes-table .sort-icon {
+    opacity: 0.35;
+    font-size: 0.65em;
+    margin-left: 0.2em;
+}
+
+.recipes-table .sort-icon.sort-active {
+    opacity: 1;
+}
+
+.recipes-table .action-buttons {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.recipes-table .macro-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.recipes-table .macro-info span {
+    white-space: nowrap;
+}
+
+.recipes-table td:last-child {
+    min-width: 140px;
+}
+
+.recipes-table .no-items {
+    padding: 1rem 1.25rem;
+}
+
+.recipes-table .recipe-name-cell .recipe-name-text {
+    font-weight: 500;
+    color: var(--color-text);
+}
+
 .ingredients-table .btn {
     --btn-shadow: none;
 }
