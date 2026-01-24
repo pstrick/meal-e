@@ -1883,6 +1883,35 @@ tbody tr:hover {
     --btn-shadow: none;
 }
 
+.ingredients-table th,
+.ingredients-table td {
+    padding: 1rem 1.25rem;
+}
+
+.ingredients-table .action-buttons {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.ingredients-table .macro-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.ingredients-table .macro-info span {
+    white-space: nowrap;
+}
+
+.ingredients-table td:last-child {
+    min-width: 100px;
+}
+
+.ingredients-table .no-items {
+    padding: 1rem 1.25rem;
+}
+
 .ingredient-item {
     display: flex;
     flex-direction: column;
@@ -2077,7 +2106,7 @@ tbody tr:hover {
 .ingredient-image-cell {
     text-align: center;
     width: 60px;
-    padding: 0.85rem 1rem;
+    padding: 1rem 1.25rem;
     vertical-align: middle;
     display: table-cell;
 }
@@ -2088,10 +2117,18 @@ tbody tr:hover {
 }
 
 .ingredient-name-cell {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    flex-wrap: wrap;
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.ingredient-name-cell .ingredient-name-text {
+    display: inline-block;
+    margin-right: var(--space-2);
+}
+
+.ingredient-name-cell .source-badge {
+    margin-left: 0;
+    vertical-align: middle;
 }
 
 .source-badge {
