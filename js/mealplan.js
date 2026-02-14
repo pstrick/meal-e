@@ -1264,8 +1264,7 @@ function createMealItem(item, amount, itemIndex, slot) {
     // Handle custom meal items
     if (item.type === 'custommeal') {
         const displayName = item.name;
-        // Reduced from 140 to 60 characters for smaller display
-        const truncatedName = displayName.length > 60 ? `${displayName.substring(0, 57).trimEnd()}...` : displayName;
+        const truncatedName = displayName.length > 100 ? `${displayName.substring(0, 97).trimEnd()}...` : displayName;
         
         div.innerHTML = `
             <div class="meal-item-header">
@@ -1297,9 +1296,8 @@ function createMealItem(item, amount, itemIndex, slot) {
         return div;
     }
     
-    // Truncate item name to keep cards compact - reduced from 140 to 60 characters
     const displayName = item.emoji ? `${item.emoji} ${item.name}` : item.name;
-    const truncatedName = displayName.length > 60 ? `${displayName.substring(0, 57).trimEnd()}...` : displayName;
+    const truncatedName = displayName.length > 100 ? `${displayName.substring(0, 97).trimEnd()}...` : displayName;
     
     // Calculate nutrition for this item
     let itemNutrition = { calories: 0, protein: 0, carbs: 0, fat: 0 };
@@ -3551,7 +3549,7 @@ function printMealPlan(selectedRecipeIds = []) {
                 .meal-item-name {
                     font-weight: 600;
                     margin: 0;
-                    font-size: 8.4pt;
+                    font-size: 7.6pt;
                     word-break: break-word;
                     flex: 1;
                 }
