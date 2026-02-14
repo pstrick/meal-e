@@ -1420,7 +1420,11 @@ tbody tr:hover {
 }
 
 .meal-item-amount {
-    color: var(--color-text);
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .empty-slot {

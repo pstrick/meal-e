@@ -1270,6 +1270,7 @@ function createMealItem(item, amount, itemIndex, slot) {
         div.innerHTML = `
             <div class="meal-item-header">
                 <span class="meal-item-name" title="${displayName}">${truncatedName}</span>
+                <span class="meal-item-amount">${Math.round(amount)}g</span>
                 <button class="remove-meal" title="Remove Item">&times;</button>
             </div>
         `;
@@ -1357,10 +1358,11 @@ function createMealItem(item, amount, itemIndex, slot) {
     
     console.log('Final item nutrition:', itemNutrition);
     
-    // Simplified display - removed type label and amount, only show name
+    // Display name with portion amount in grams
     div.innerHTML = `
         <div class="meal-item-header">
             <span class="meal-item-name" title="${displayName}">${truncatedName}</span>
+            <span class="meal-item-amount">${Math.round(amount)}g</span>
             <button class="remove-meal" title="Remove Item">&times;</button>
         </div>
     `;
@@ -3540,11 +3542,30 @@ function printMealPlan(selectedRecipeIds = []) {
                     margin-bottom: 0;
                 }
                 
+                .meal-item-header {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 4px;
+                }
+                
                 .meal-item-name {
                     font-weight: 600;
-                    margin: 0 0 2px 0;
+                    margin: 0;
                     font-size: 8.4pt;
                     word-break: break-word;
+                    flex: 1;
+                }
+                
+                .meal-item-amount {
+                    font-size: 7.4pt;
+                    font-weight: 600;
+                    color: #6b7280;
+                    white-space: nowrap;
+                    flex-shrink: 0;
+                }
+                
+                .remove-meal {
+                    display: none;
                 }
                 
                 .meal-item-details {
