@@ -976,7 +976,7 @@ function printShoppingList() {
                 .print-section-subtitle { margin: 0 0 10px 0; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
                 .shopping-item { display: flex; align-items: center; gap: 10px; border: 1px solid #ddd; border-radius: 6px; padding: 8px; margin-bottom: 8px; }
                 .checkbox { width: 18px; height: 18px; border: 2px solid #555; border-radius: 4px; flex: 0 0 auto; }
-                .print-item-image { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; }
+                .print-item-image { width: 64px; height: 64px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; }
                 .print-item-image-empty { background: #f3f3f3; }
                 .item-info { flex: 1; }
                 .item-main { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
