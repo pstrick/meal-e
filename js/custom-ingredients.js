@@ -233,11 +233,34 @@ function extractWegmansTotalPrice(product) {
     if (Number.isFinite(deliveryAmount) && deliveryAmount >= 0) {
         return deliveryAmount;
     }
-    const inStoreAmount = Number.parseFloat(String(product?.price_instore?.amount));
+    const inStoreAmount = Number.parseFloat(String(product?.price_instore?.amount ?? product?.price_inStore?.amount));
     if (Number.isFinite(inStoreAmount) && inStoreAmount >= 0) {
         return inStoreAmount;
     }
     return null;
+}
+
+function extractWegmansStoreSection(product) {
+    const categoryNames = Array.isArray(product?.category)
+        ? product.category.map(entry => String(entry?.name || '').trim()).filter(Boolean)
+        : [];
+    const categoryLabel = categoryNames.length > 0 ? categoryNames[categoryNames.length - 1] : '';
+
+    const aisleLocation = String(product?.planogram?.aisle || product?.aisle?.locationName || '').trim();
+    const planogramSection = String(product?.planogram?.section || '').trim();
+    const shelf = String(product?.planogram?.shelf || '').trim();
+
+    const locationParts = [];
+    if (aisleLocation) locationParts.push(`Aisle ${aisleLocation}`);
+    if (planogramSection) locationParts.push(`Section ${planogramSection}`);
+    if (shelf) locationParts.push(`Shelf ${shelf}`);
+
+    if (categoryLabel && locationParts.length > 0) {
+        return `${categoryLabel} (${locationParts.join(', ')})`;
+    }
+    if (categoryLabel) return categoryLabel;
+    if (locationParts.length > 0) return locationParts.join(', ');
+    return '';
 }
 
 function applyWegmansProductToForm(product, sourceUrl) {
@@ -249,6 +272,8 @@ function applyWegmansProductToForm(product, sourceUrl) {
     const servingSize = extractWegmansServingSizeGrams(product?.nutrition);
     const nutrition = extractWegmansNutrition(product?.nutrition);
     const storeInput = document.getElementById('store');
+    const storeSectionInput = document.getElementById('store-section');
+    const storeSection = extractWegmansStoreSection(product);
 
     if (name) document.getElementById('ingredient-name').value = name;
     if (Number.isFinite(totalPrice)) document.getElementById('total-price').value = totalPrice.toFixed(2);
@@ -261,6 +286,9 @@ function applyWegmansProductToForm(product, sourceUrl) {
 
     if (storeInput && !storeInput.value.trim()) {
         storeInput.value = 'Wegmans';
+    }
+    if (storeSectionInput && (!storeSectionInput.value.trim() || storeSectionInput.value.trim() === 'Uncategorized') && storeSection) {
+        storeSectionInput.value = storeSection;
     }
     if (ingredientSourceUrlInput) {
         ingredientSourceUrlInput.value = sourceUrl;
