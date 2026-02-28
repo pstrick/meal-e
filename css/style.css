@@ -2503,26 +2503,172 @@ tbody tr:hover {
 .shopping-items-layout {
     display: grid;
     gap: var(--space-3);
-    grid-template-columns: minmax(220px, 320px) 1fr;
+    grid-template-columns: 1fr;
 }
 
 .items-section {
     display: flex;
-        flex-direction: column;
+    flex-direction: column;
     gap: var(--space-3);
-    }
-    
-    .items-controls {
+}
+
+.items-controls {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-        flex-wrap: wrap;
+    flex-wrap: wrap;
 }
 
 .shopping-items-list {
-        display: flex;
-        flex-direction: column;
+    display: flex;
+    flex-direction: column;
     gap: var(--space-3);
+}
+
+.list-actions-menu-wrapper {
+    position: relative;
+}
+
+.list-actions-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.4rem);
+    min-width: 220px;
+    z-index: 1200;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+.list-actions-menu-item {
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    text-align: left;
+    padding: 0.7rem 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.list-actions-menu-item:hover {
+    background: var(--color-surface-alt);
+}
+
+.quick-add-row {
+    display: grid;
+    grid-template-columns: 2.2fr 0.7fr 1fr 1fr auto auto;
+    gap: var(--space-2);
+    align-items: end;
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-alt);
+}
+
+.quick-add-main {
+    position: relative;
+}
+
+.quick-add-main label,
+.quick-add-field label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.quick-add-field input,
+.quick-add-main input {
+    width: 100%;
+}
+
+.quick-add-notes {
+    min-width: 180px;
+}
+
+.quick-add-meta {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    line-height: 1.45;
+    min-width: 145px;
+}
+
+.quick-add-actions {
+    min-width: 100px;
+}
+
+.ingredient-search-dropdown .search-result-item.active {
+    background: var(--color-bg-muted);
+}
+
+.shopping-section {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-2);
+    background: var(--color-surface);
+}
+
+.shopping-section.drag-over {
+    border-color: var(--color-brand);
+}
+
+.shopping-section-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-2);
+}
+
+.shopping-section-title {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.section-drag-handle {
+    color: var(--color-text-muted);
+    cursor: move;
+}
+
+.shopping-section-count {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+}
+
+.shopping-items-table th,
+.shopping-items-table td {
+    white-space: nowrap;
+}
+
+.shopping-item-image-cell {
+    width: 56px;
+}
+
+.shopping-item-thumb {
+    width: 38px;
+    height: 38px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid var(--color-border);
+}
+
+.item-inline-input {
+    min-width: 90px;
+    width: 100%;
+    padding: 0.42rem 0.5rem;
+}
+
+.form-help-text {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin-top: var(--space-2);
 }
 
 /* Nutrition Tracker ------------------------------------------------------ */
@@ -2736,6 +2882,17 @@ tbody tr:hover {
 
     .shopping-items-layout {
         grid-template-columns: 1fr;
+    }
+
+    .quick-add-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .quick-add-main,
+    .quick-add-notes,
+    .quick-add-meta,
+    .quick-add-actions {
+        grid-column: 1 / -1;
     }
 
     .modal-content {

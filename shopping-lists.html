@@ -75,15 +75,45 @@
     <main>
         <div class="container">
             <h1>Lists</h1>
-            
-            <div class="shopping-controls">
-                <button id="add-list-btn" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Create New List
-                </button>
-            </div>
 
-            <div id="shopping-lists-container">
-                <!-- Shopping lists will be populated here -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>Lists</h2>
+                    <div class="card-header-actions">
+                        <button id="add-list-btn" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create New List
+                        </button>
+                    </div>
+                </div>
+                <div class="lists-filters">
+                    <div class="search-bar">
+                        <input type="text" id="list-search" placeholder="Search lists...">
+                    </div>
+                    <div class="filter-group">
+                        <label for="list-status-filter">Status</label>
+                        <select id="list-status-filter">
+                            <option value="">All lists</option>
+                            <option value="with_items">With items</option>
+                            <option value="empty">Empty</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="lists-table" class="ingredients-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-sort="name">Name <span class="sort-icon"></span></th>
+                                <th>Description</th>
+                                <th class="sortable" data-sort="items">Items <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort="created">Created <span class="sort-icon"></span></th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Lists will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </main>
@@ -128,45 +158,62 @@
                     <span>Back to lists</span>
                 </button>
                 <h2 id="items-modal-title">Edit Shopping List</h2>
-                <div class="header-actions">
-                    <button id="save-list-details-btn" type="button" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save Changes
+                <div class="header-actions list-actions-menu-wrapper">
+                    <button id="list-actions-menu-btn" type="button" class="btn btn-secondary btn-icon" aria-label="List actions" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v"></i>
                     </button>
+                    <div id="list-actions-menu" class="list-actions-menu" hidden>
+                        <button id="list-action-edit-details" type="button" class="list-actions-menu-item">
+                            <i class="fas fa-pen"></i>
+                            Edit list details
+                        </button>
+                        <button id="list-action-print" type="button" class="list-actions-menu-item">
+                            <i class="fas fa-print"></i>
+                            Print list
+                        </button>
+                    </div>
                 </div>
             </div>
             
             <div class="shopping-items-modal-body">
                 <div class="shopping-items-layout">
-                    <!-- List Details Section -->
-                    <div class="list-details-section">
-                        <h3>List Details</h3>
-                        <div class="form-group">
-                            <label for="manage-list-name">List Name</label>
-                            <input type="text" id="manage-list-name" required placeholder="Enter list name...">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="manage-list-description">Description (Optional)</label>
-                            <textarea id="manage-list-description" rows="2" placeholder="Enter description..."></textarea>
-                        </div>
-                    </div>
-                    
                     <!-- Items Section -->
                     <div class="items-section">
                         <div class="items-section-header">
                             <h3>Shopping Items</h3>
-                            <div class="items-controls">
-                                <button id="add-item-btn" class="btn btn-secondary">
-                                    <i class="fas fa-plus"></i> Add Item
-                                </button>
-                                <button id="print-list-btn" class="btn btn-primary">
-                                    <i class="fas fa-print"></i> Print List
+                        </div>
+
+                        <div class="quick-add-row">
+                            <div class="quick-add-main">
+                                <label for="quick-add-ingredient-search">Add Item</label>
+                                <input type="text" id="quick-add-ingredient-search" placeholder="Search my ingredients..." autocomplete="off">
+                                <div id="quick-add-search-results" class="ingredient-search-dropdown" hidden></div>
+                            </div>
+                            <div class="quick-add-field">
+                                <label for="quick-add-quantity">Qty</label>
+                                <input type="number" id="quick-add-quantity" min="0.1" step="0.1" value="1">
+                            </div>
+                            <div class="quick-add-field">
+                                <label for="quick-add-section">Section</label>
+                                <input type="text" id="quick-add-section" placeholder="Store section">
+                            </div>
+                            <div class="quick-add-field quick-add-notes">
+                                <label for="quick-add-notes">Notes</label>
+                                <input type="text" id="quick-add-notes" placeholder="Optional notes">
+                            </div>
+                            <div class="quick-add-meta">
+                                <div id="quick-add-package-size">Package: --</div>
+                                <div id="quick-add-package-price">Price: --</div>
+                            </div>
+                            <div class="quick-add-actions">
+                                <button id="quick-add-item-btn" class="btn btn-primary" type="button" disabled>
+                                    <i class="fas fa-plus"></i> Add
                                 </button>
                             </div>
                         </div>
                         
-                        <div id="shopping-items-list">
-                            <!-- Shopping items will be populated here -->
+                        <div id="shopping-items-list" class="shopping-items-list">
+                            <!-- Grouped section tables render here -->
                         </div>
                     </div>
                 </div>
@@ -174,77 +221,20 @@
         </div>
     </div>
 
-    <!-- Add Item Modal -->
-    <div id="add-item-modal" class="modal">
+    <!-- Edit List Details Modal -->
+    <div id="list-details-modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h2>Add Item to Shopping List</h2>
-            <form id="add-item-form">
-                <div class="form-group">
-                    <label for="item-name">Item Name</label>
-                    <input type="text" id="item-name" required placeholder="Enter item name...">
-                </div>
-                
-                <div class="form-group">
-                    <label for="item-amount">Amount</label>
-                    <input type="number" id="item-amount" step="0.1" min="0" placeholder="Optional">
-                </div>
-                
-                <div class="form-group">
-                    <label for="item-unit">Unit</label>
-                    <select id="item-unit" required>
-                        <option value="g">grams (g)</option>
-                        <option value="kg">kilograms (kg)</option>
-                        <option value="oz">ounces (oz)</option>
-                        <option value="lb">pounds (lb)</option>
-                        <option value="ml">milliliters (ml)</option>
-                        <option value="l">liters (l)</option>
-                        <option value="cup">cups</option>
-                        <option value="tbsp">tablespoons (tbsp)</option>
-                        <option value="tsp">teaspoons (tsp)</option>
-                        <option value="piece">pieces</option>
-                        <option value="bunch">bunches</option>
-                        <option value="pack">packs</option>
-                        <option value="can">cans</option>
-                        <option value="jar">jars</option>
-                        <option value="bag">bags</option>
-                        <option value="box">boxes</option>
-                        <option value="other">other</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="item-emoji">Emoji (Optional)</label>
-                    <input type="text" id="item-emoji" placeholder="e.g., 🥒" maxlength="4">
-                </div>
-                
-                <div class="form-group">
-                    <label for="item-store-section">Category</label>
-                    <input type="text" id="item-store-section" list="store-section-options" placeholder="e.g. Produce">
-                    <datalist id="store-section-options">
-                        <option value="Produce"></option>
-                        <option value="Dairy"></option>
-                        <option value="Bakery"></option>
-                        <option value="Meat & Seafood"></option>
-                        <option value="Frozen"></option>
-                        <option value="Pantry"></option>
-                        <option value="Snacks"></option>
-                        <option value="Beverages"></option>
-                        <option value="Household"></option>
-                        <option value="Personal Care"></option>
-                    </datalist>
-                </div>
-                
-                <div class="form-group">
-                    <label for="item-notes">Notes (Optional)</label>
-                    <textarea id="item-notes" rows="2" placeholder="Add any notes..."></textarea>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancel-item">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Item</button>
-                </div>
-            </form>
+            <h2>Edit List Details</h2>
+            <div class="form-group">
+                <label for="manage-list-name">List Name</label>
+                <input type="text" id="manage-list-name" required placeholder="Enter list name...">
+            </div>
+            <div class="form-group">
+                <label for="manage-list-description">Description (Optional)</label>
+                <textarea id="manage-list-description" rows="3" placeholder="Enter description..."></textarea>
+            </div>
+            <p class="form-help-text">Changes save automatically.</p>
         </div>
     </div>
 

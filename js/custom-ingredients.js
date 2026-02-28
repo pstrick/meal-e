@@ -9,6 +9,7 @@ if (versionEl) versionEl.textContent = version;
 let customIngredients = [];
 let editingIngredientId = null;
 let selectedImageDataUrl = '';
+let shoppingListReturnContext = null;
 
 // Image upload handling
 function updateImagePreview(imageDataUrl) {
@@ -277,6 +278,14 @@ async function saveCustomIngredient(event) {
         
         // Dispatch custom event that recipes page can listen to
         window.dispatchEvent(new CustomEvent('ingredientSaved', { detail: { ingredient } }));
+
+        // Return to shopping lists flow when ingredient creation was launched from list quick-add.
+        if (shoppingListReturnContext && shoppingListReturnContext.openListId) {
+            const openListId = encodeURIComponent(shoppingListReturnContext.openListId);
+            const ingredientQuery = encodeURIComponent(ingredient.name || shoppingListReturnContext.ingredientQuery || '');
+            window.location.href = `shopping-lists.html?openListId=${openListId}&ingredientQuery=${ingredientQuery}`;
+            return;
+        }
         
         // If we were editing a recipe, return to it
         if (window.returnToRecipeAfterIngredient) {
@@ -885,6 +894,12 @@ applyDarkMode();
 // honor that by opening the existing modal on this page.
 try {
     const params = new URLSearchParams(window.location.search);
+    if (params.get('returnTo') === 'shopping-lists') {
+        shoppingListReturnContext = {
+            openListId: params.get('openListId') || '',
+            ingredientQuery: params.get('ingredientQuery') || ''
+        };
+    }
     if (params.get('openIngredientModal') === '1') {
         openIngredientModal();
     }
