@@ -72,6 +72,10 @@ const searchInput = document.getElementById('ingredient-search');
 const imageInput = document.getElementById('ingredient-image');
 const imageUploadBtn = document.getElementById('ingredient-image-upload-btn');
 const imageRemoveBtn = document.getElementById('ingredient-image-remove-btn');
+const ingredientSourceUrlInput = document.getElementById('ingredient-source-url');
+const fetchWegmansUrlBtn = document.getElementById('fetch-wegmans-url-btn');
+const wegmansFetchProgress = document.getElementById('wegmans-fetch-progress');
+const wegmansFetchError = document.getElementById('wegmans-fetch-error');
 const addIngredientBtn = document.getElementById('add-ingredient-btn');
 const ingredientModal = document.getElementById('ingredient-modal');
 const cancelIngredientBtn = document.getElementById('cancel-ingredient');
@@ -96,6 +100,216 @@ const csvUploadSummary = document.getElementById('csv-upload-summary');
 const csvCloseBtn = uploadCsvModal ? uploadCsvModal.querySelector('.csv-close') : null;
 const cancelCsvUploadBtn = document.getElementById('cancel-csv-upload');
 const storeSectionFilterEl = document.getElementById('ingredient-store-section-filter');
+
+function getDefaultWegmansStoreNumber() {
+    const fallback = 24;
+    const storeNumberFromGlobal = Number.parseInt(String(window.settings?.defaultWegmansStoreNumber ?? ''), 10);
+    if (Number.isInteger(storeNumberFromGlobal) && storeNumberFromGlobal > 0) {
+        return storeNumberFromGlobal;
+    }
+
+    try {
+        const rawSettings = localStorage.getItem('meale-settings');
+        if (!rawSettings) {
+            return fallback;
+        }
+        const parsedSettings = JSON.parse(rawSettings);
+        const parsedStoreNumber = Number.parseInt(String(parsedSettings?.defaultWegmansStoreNumber ?? ''), 10);
+        return Number.isInteger(parsedStoreNumber) && parsedStoreNumber > 0 ? parsedStoreNumber : fallback;
+    } catch (error) {
+        console.warn('Unable to load default Wegmans store number from settings:', error);
+        return fallback;
+    }
+}
+
+function showWegmansFetchError(message) {
+    if (!wegmansFetchError) return;
+    wegmansFetchError.textContent = message;
+    wegmansFetchError.hidden = false;
+}
+
+function clearWegmansFetchMessages() {
+    if (wegmansFetchError) {
+        wegmansFetchError.textContent = '';
+        wegmansFetchError.hidden = true;
+    }
+    if (wegmansFetchProgress) {
+        wegmansFetchProgress.hidden = true;
+    }
+}
+
+function setWegmansFetchLoading(isLoading) {
+    if (wegmansFetchProgress) {
+        wegmansFetchProgress.hidden = !isLoading;
+    }
+    if (fetchWegmansUrlBtn) {
+        fetchWegmansUrlBtn.disabled = isLoading;
+    }
+}
+
+function getWegmansProductIdFromUrl(rawUrl) {
+    try {
+        const parsedUrl = new URL(rawUrl);
+        if (!parsedUrl.hostname.toLowerCase().includes('wegmans.com')) {
+            return null;
+        }
+        const pathSegments = parsedUrl.pathname.split('/').filter(Boolean);
+        const productIndex = pathSegments.findIndex(segment => segment === 'product');
+        if (productIndex === -1 || !pathSegments[productIndex + 1]) {
+            return null;
+        }
+        const slug = pathSegments[productIndex + 1];
+        const candidateId = slug.split('-')[0];
+        return /^\d+$/.test(candidateId) ? candidateId : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function convertWeightToGrams(value, rawUnit) {
+    const amount = Number.parseFloat(String(value));
+    if (!Number.isFinite(amount) || amount <= 0) return null;
+    const unit = String(rawUnit || '').trim().toLowerCase();
+    if (!unit || unit === 'g' || unit === 'gram' || unit === 'grams') return amount;
+    if (unit === 'kg' || unit === 'kilogram' || unit === 'kilograms') return amount * 1000;
+    if (unit === 'oz' || unit === 'ounce' || unit === 'ounces') return amount * 28.3495;
+    if (unit === 'lb' || unit === 'lbs' || unit === 'pound' || unit === 'pounds') return amount * 453.592;
+    return null;
+}
+
+function parseWeightStringToGrams(rawWeightString) {
+    const text = String(rawWeightString || '').trim().toLowerCase();
+    if (!text) return null;
+    const match = text.match(/(\d+(?:\.\d+)?)\s*(kg|kilograms?|g|grams?|oz|ounces?|lb|lbs|pounds?)/i);
+    if (!match) return null;
+    return convertWeightToGrams(match[1], match[2]);
+}
+
+function extractWegmansNutrition(nutrition) {
+    const defaults = { calories: null, fat: null, carbs: null, protein: null };
+    if (!nutrition || !Array.isArray(nutrition.nutritions)) {
+        return defaults;
+    }
+
+    const itemByName = new Map();
+    nutrition.nutritions.forEach(group => {
+        const generalItems = Array.isArray(group?.general) ? group.general : [];
+        generalItems.forEach(item => {
+            const normalizedName = String(item?.name || '').trim().toLowerCase();
+            if (!normalizedName || itemByName.has(normalizedName)) return;
+            itemByName.set(normalizedName, item?.quantity);
+        });
+    });
+
+    const calories = Number.parseFloat(String(itemByName.get('calories')));
+    const fat = Number.parseFloat(String(itemByName.get('total fat')));
+    const carbs = Number.parseFloat(String(itemByName.get('total carbohydrate')));
+    const protein = Number.parseFloat(String(itemByName.get('protein')));
+
+    return {
+        calories: Number.isFinite(calories) ? calories : null,
+        fat: Number.isFinite(fat) ? fat : null,
+        carbs: Number.isFinite(carbs) ? carbs : null,
+        protein: Number.isFinite(protein) ? protein : null
+    };
+}
+
+function extractWegmansServingSizeGrams(nutrition) {
+    const serving = nutrition?.serving;
+    if (!serving) return null;
+    return convertWeightToGrams(serving.servingSize, serving.servingSizeUom);
+}
+
+function extractWegmansTotalWeightGrams(product) {
+    const fromPackSize = parseWeightStringToGrams(product?.packSize);
+    if (Number.isFinite(fromPackSize) && fromPackSize > 0) {
+        return fromPackSize;
+    }
+    return null;
+}
+
+function extractWegmansTotalPrice(product) {
+    const deliveryAmount = Number.parseFloat(String(product?.price_delivery?.amount));
+    if (Number.isFinite(deliveryAmount) && deliveryAmount >= 0) {
+        return deliveryAmount;
+    }
+    const inStoreAmount = Number.parseFloat(String(product?.price_instore?.amount));
+    if (Number.isFinite(inStoreAmount) && inStoreAmount >= 0) {
+        return inStoreAmount;
+    }
+    return null;
+}
+
+function applyWegmansProductToForm(product, sourceUrl) {
+    const name = String(product?.productName || '').trim();
+    const images = Array.isArray(product?.images) ? product.images : [];
+    const imageUrl = typeof images[0] === 'string' ? images[0].trim() : '';
+    const totalPrice = extractWegmansTotalPrice(product);
+    const totalWeight = extractWegmansTotalWeightGrams(product);
+    const servingSize = extractWegmansServingSizeGrams(product?.nutrition);
+    const nutrition = extractWegmansNutrition(product?.nutrition);
+    const storeInput = document.getElementById('store');
+
+    if (name) document.getElementById('ingredient-name').value = name;
+    if (Number.isFinite(totalPrice)) document.getElementById('total-price').value = totalPrice.toFixed(2);
+    if (Number.isFinite(totalWeight)) document.getElementById('total-weight').value = Math.round(totalWeight);
+    if (Number.isFinite(servingSize)) document.getElementById('serving-size').value = Math.round(servingSize);
+    if (Number.isFinite(nutrition.calories)) document.getElementById('calories').value = Math.round(nutrition.calories);
+    if (Number.isFinite(nutrition.fat)) document.getElementById('fat').value = nutrition.fat;
+    if (Number.isFinite(nutrition.carbs)) document.getElementById('carbs').value = nutrition.carbs;
+    if (Number.isFinite(nutrition.protein)) document.getElementById('protein').value = nutrition.protein;
+
+    if (storeInput && !storeInput.value.trim()) {
+        storeInput.value = 'Wegmans';
+    }
+    if (ingredientSourceUrlInput) {
+        ingredientSourceUrlInput.value = sourceUrl;
+    }
+
+    if (imageUrl) {
+        selectedImageDataUrl = imageUrl;
+        updateImagePreview(imageUrl);
+    }
+}
+
+async function fetchWegmansProductFromUrl() {
+    const sourceUrl = String(ingredientSourceUrlInput?.value || '').trim();
+    if (!sourceUrl) {
+        showWegmansFetchError('Please enter a Wegmans product URL first.');
+        return;
+    }
+
+    const productId = getWegmansProductIdFromUrl(sourceUrl);
+    if (!productId) {
+        showWegmansFetchError('Please provide a valid Wegmans product URL.');
+        return;
+    }
+
+    clearWegmansFetchMessages();
+    setWegmansFetchLoading(true);
+
+    try {
+        const storeNumber = getDefaultWegmansStoreNumber();
+        const response = await fetch(`/api/wegmans-product?productId=${encodeURIComponent(productId)}&storeNumber=${encodeURIComponent(storeNumber)}`);
+        let payload = null;
+        try {
+            payload = await response.json();
+        } catch (error) {
+            payload = null;
+        }
+
+        if (!response.ok || !payload?.success || !payload?.product) {
+            throw new Error(payload?.error || 'Unable to fetch product details from Wegmans.');
+        }
+
+        applyWegmansProductToForm(payload.product, sourceUrl);
+    } catch (error) {
+        console.error('Error fetching Wegmans product details:', error);
+        showWegmansFetchError(error.message || 'Unable to fetch product details from Wegmans.');
+    } finally {
+        setWegmansFetchLoading(false);
+    }
+}
 
 // Migrate old localStorage key to new key
 function migrateIngredientsStorage() {
@@ -189,6 +403,7 @@ function openIngredientModal(ingredient = null) {
         document.getElementById('protein').value = nutrition.protein || 0;
         if (storeInput) storeInput.value = ingredient.store || '';
         if (storeSectionInput) storeSectionInput.value = ingredient.storeSection || '';
+        if (ingredientSourceUrlInput) ingredientSourceUrlInput.value = ingredient.sourceUrl || '';
         // Load image if available
         const imageValue = typeof ingredient.image === 'string' ? ingredient.image.trim() : '';
         selectedImageDataUrl = imageValue;
@@ -196,9 +411,11 @@ function openIngredientModal(ingredient = null) {
     } else {
         if (storeInput) storeInput.value = '';
         if (storeSectionInput) storeSectionInput.value = '';
+        if (ingredientSourceUrlInput) ingredientSourceUrlInput.value = '';
         selectedImageDataUrl = '';
         updateImagePreview('');
     }
+    clearWegmansFetchMessages();
     
     // Show modal
     ingredientModal.classList.add('active');
@@ -211,6 +428,10 @@ function closeIngredientModal() {
     form.reset();
     selectedImageDataUrl = '';
     updateImagePreview('');
+    if (ingredientSourceUrlInput) {
+        ingredientSourceUrlInput.value = '';
+    }
+    clearWegmansFetchMessages();
     if (imageInput) {
         imageInput.value = '';
     }
@@ -224,6 +445,10 @@ async function saveCustomIngredient(event) {
         
         const storeInput = document.getElementById('store');
         const storeSectionInput = document.getElementById('store-section');
+        const existingIngredient = editingIngredientId
+            ? customIngredients.find(ing => ing.id === editingIngredientId)
+            : null;
+        const sourceUrl = String(ingredientSourceUrlInput?.value || '').trim();
         
         const ingredient = {
             id: editingIngredientId || Date.now().toString(),
@@ -240,6 +465,8 @@ async function saveCustomIngredient(event) {
             isCustom: true,
             store: storeInput ? storeInput.value.trim() : '',
             storeSection: storeSectionInput ? storeSectionInput.value.trim() : '',
+            sourceUrl,
+            source: sourceUrl ? 'wegmans' : (existingIngredient?.source || ''),
             emoji: '',
             image: selectedImageDataUrl || '' // Store uploaded image as data URL
         };
@@ -384,6 +611,18 @@ function escapeHtmlAttr(str) {
     return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function getSafeExternalUrl(rawUrl) {
+    try {
+        const parsed = new URL(rawUrl);
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+            return parsed.href;
+        }
+        return '';
+    } catch (error) {
+        return '';
+    }
+}
+
 // Populate store section filter dropdown from current ingredients
 function updateStoreSectionFilterOptions() {
     if (!storeSectionFilterEl) return;
@@ -447,7 +686,11 @@ function renderIngredientsList() {
             const imageMarkup = imageSource
                 ? `<img src="${imageSource}" class="ingredient-image" alt="${ingredient.name}" title="${ingredient.name}">`
                 : '<span class="no-image">—</span>';
-            const nameHTML = `<span class="ingredient-name-text">${ingredient.name}</span>`;
+            const safeSourceUrl = getSafeExternalUrl(ingredient.sourceUrl || '');
+            const safeIngredientName = escapeHtmlAttr(ingredient.name || '');
+            const nameHTML = safeSourceUrl
+                ? `<a class="ingredient-name-text ingredient-source-link" href="${escapeHtmlAttr(safeSourceUrl)}" target="_blank" rel="noopener noreferrer">${safeIngredientName}</a>`
+                : `<span class="ingredient-name-text">${safeIngredientName}</span>`;
 
             const servingSize = ingredient.servingSize || 100;
             let priceDisplay = 'N/A';
@@ -466,8 +709,8 @@ function renderIngredientsList() {
             const proteinPerServing = (nutrition.protein || 0).toFixed(1);
 
             let sourceBadge = '';
-            if (ingredient.source === 'usda' || ingredient.source === 'openfoodfacts') {
-                const sourceLabel = ingredient.source === 'usda' ? 'USDA' : 'OFF';
+            if (ingredient.source === 'usda' || ingredient.source === 'openfoodfacts' || ingredient.source === 'wegmans') {
+                const sourceLabel = ingredient.source === 'usda' ? 'USDA' : (ingredient.source === 'openfoodfacts' ? 'OFF' : 'Wegmans');
                 sourceBadge = `<span class="source-badge" title="Imported from ${sourceLabel}">${sourceLabel}</span>`;
             }
 
@@ -871,6 +1114,10 @@ if (imageInput) {
 
 if (imageRemoveBtn) {
     imageRemoveBtn.addEventListener('click', removeImage);
+}
+
+if (fetchWegmansUrlBtn) {
+    fetchWegmansUrlBtn.addEventListener('click', fetchWegmansProductFromUrl);
 }
 
 // Close modal when clicking outside

@@ -6,6 +6,7 @@ let settings = {
     mealPlanStartDay: 0,  // Default to Sunday
     theme: 'light',
     darkMode: false,      // Kept for backwards compatibility
+    defaultWegmansStoreNumber: 24,
     nutritionGoals: {
         calories: 2000,
         protein: 150,
@@ -24,6 +25,8 @@ function normalizeThemeSettings(target) {
         }
     }
     target.darkMode = target.theme === 'dark';
+    const parsedStore = Number.parseInt(String(target.defaultWegmansStoreNumber ?? ''), 10);
+    target.defaultWegmansStoreNumber = Number.isInteger(parsedStore) && parsedStore > 0 ? parsedStore : 24;
     return target;
 }
 
@@ -86,6 +89,19 @@ function initializeForm() {
             settings.mealPlanStartDay = startDay;
             saveToLocalStorage();
             console.log('Settings updated:', settings);
+        });
+    }
+
+    const defaultWegmansStoreInput = document.getElementById('default-wegmans-store-number');
+    if (defaultWegmansStoreInput) {
+        defaultWegmansStoreInput.value = String(settings.defaultWegmansStoreNumber || 24);
+        defaultWegmansStoreInput.addEventListener('change', (event) => {
+            const value = Number.parseInt(event.target.value, 10);
+            settings.defaultWegmansStoreNumber = Number.isInteger(value) && value > 0 ? value : 24;
+            if (!Number.isInteger(value) || value <= 0) {
+                event.target.value = String(settings.defaultWegmansStoreNumber);
+            }
+            saveToLocalStorage();
         });
     }
 

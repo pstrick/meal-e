@@ -137,6 +137,26 @@
                     <label for="ingredient-name">Ingredient Name</label>
                     <input type="text" id="ingredient-name" required>
                 </div>
+
+                <div class="form-group">
+                    <label for="ingredient-source-url">Wegmans Product URL</label>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="url" id="ingredient-source-url" placeholder="https://www.wegmans.com/shop/product/...">
+                        </div>
+                        <div class="form-group" style="flex: 0 0 auto; align-self: end;">
+                            <button type="button" class="btn btn-secondary" id="fetch-wegmans-url-btn">
+                                <i class="fas fa-link"></i> Fetch from URL
+                            </button>
+                        </div>
+                    </div>
+                    <small>Paste a Wegmans product URL to auto-fill fields, then edit anything before saving.</small>
+                    <div id="wegmans-fetch-progress" class="scrape-progress" role="status" aria-live="polite" hidden>
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Fetching Wegmans product details…</span>
+                    </div>
+                    <div id="wegmans-fetch-error" class="scrape-error" role="alert" aria-live="assertive" hidden></div>
+                </div>
                 
                 <div class="form-group">
                     <label for="ingredient-image">Image</label>
