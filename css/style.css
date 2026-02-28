@@ -2652,9 +2652,17 @@ tbody tr:hover {
     color: var(--color-text-muted);
 }
 
+.shopping-items-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
 .shopping-items-table th,
 .shopping-items-table td {
+    width: 12.5%;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .shopping-item-image-cell {
