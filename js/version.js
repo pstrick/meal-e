@@ -1,8 +1,8 @@
 // Static version - only updated by git pre-commit hook
 export const version = {
     year: 2026,
-    month: 2,
-    build: 8,
+    month: 3,
+    build: 1,
     toString: function() {
         return `${this.year}.${String(this.month).padStart(2, '0')}.${this.build}`;
     }

@@ -61,6 +61,10 @@ function sanitizeEmoji(value) {
     return chars.slice(0, 2).join('');
 }
 
+function sanitizeImage(value) {
+    return (value || '').trim();
+}
+
 // Initialize meal plan data
 let mealPlan = {};
 
@@ -2571,7 +2575,8 @@ function buildShoppingListData() {
             ...ing,
             store: ing.store || '',
             storeSection: ing.storeSection || '',
-            emoji: sanitizeEmoji(ing.emoji)
+            emoji: sanitizeEmoji(ing.emoji),
+            image: sanitizeImage(ing.image || ing.icon)
         }));
         const resolveStoreSection = (name, section = '') => {
             const trimmed = (section || '').trim();
@@ -2589,6 +2594,15 @@ function buildShoppingListData() {
             const match = customIngredients.find(ing => ing.name.toLowerCase() === name.toLowerCase());
             if (match && match.emoji) {
                 return match.emoji;
+            }
+            return '';
+        };
+        const resolveImage = (name, image = '') => {
+            const trimmed = sanitizeImage(image);
+            if (trimmed) return trimmed;
+            const match = customIngredients.find(ing => ing.name.toLowerCase() === name.toLowerCase());
+            if (match && match.image) {
+                return match.image;
             }
             return '';
         };
@@ -2635,6 +2649,7 @@ function buildShoppingListData() {
                                             const scaledAmount = Math.round(ingredient.amount * scaleFactor);
                                             const storeSection = resolveStoreSection(ingredient.name, ingredient.storeSection);
                                             const emoji = resolveEmoji(ingredient.name, ingredient.emoji);
+                                            const image = resolveImage(ingredient.name, ingredient.image);
                                             const key = `${storeSection.toLowerCase()}|${ingredient.name.toLowerCase()}`;
                                             
                                             if (ingredients.has(key)) {
@@ -2647,6 +2662,9 @@ function buildShoppingListData() {
                                                 if (!existing.emoji && emoji) {
                                                     existing.emoji = emoji;
                                                 }
+                                                if (!existing.image && image) {
+                                                    existing.image = image;
+                                                }
                                             } else {
                                                 ingredients.set(key, {
                                                     name: ingredient.name,
@@ -2654,7 +2672,8 @@ function buildShoppingListData() {
                                                     unit: 'g',
                                                     notes: `From recipe: ${recipe.name}`,
                                                     storeSection: storeSection,
-                                                    emoji: emoji
+                                                    emoji: emoji,
+                                                    image: image
                                                 });
                                             }
                                         }
@@ -2666,12 +2685,16 @@ function buildShoppingListData() {
                                 // For ingredients, add directly
                                 const storeSection = resolveStoreSection(item.name, item.storeSection);
                                 const emoji = resolveEmoji(item.name, item.emoji);
+                                const image = resolveImage(item.name, item.image);
                                 const key = `${storeSection.toLowerCase()}|${item.name.toLowerCase()}`;
                                 if (ingredients.has(key)) {
                                     const existing = ingredients.get(key);
                                     existing.amount += item.amount;
                                     if (!existing.emoji && emoji) {
                                         existing.emoji = emoji;
+                                    }
+                                    if (!existing.image && image) {
+                                        existing.image = image;
                                     }
                                 } else {
                                     ingredients.set(key, {
@@ -2680,7 +2703,8 @@ function buildShoppingListData() {
                                         unit: 'g',
                                         notes: `From meal plan: ${item.name}`,
                                         storeSection: storeSection,
-                                        emoji: emoji
+                                        emoji: emoji,
+                                        image: image
                                     });
                                 }
                             }
@@ -2726,7 +2750,8 @@ function buildShoppingListData() {
                 unit: ing.unit,
                 notes: ing.notes,
                 storeSection: ing.storeSection || DEFAULT_SECTION,
-                emoji: sanitizeEmoji(ing.emoji)
+                emoji: sanitizeEmoji(ing.emoji),
+                image: sanitizeImage(ing.image)
             }))
         };
     } catch (error) {
@@ -2959,6 +2984,7 @@ function mergeItemsIntoList(list, items, timestamp) {
         const normalizedUnit = (item.unit || 'g').trim().toLowerCase();
         const normalizedSection = normalizeStoreSection(item.storeSection);
         const normalizedEmoji = sanitizeEmoji(item.emoji);
+        const normalizedImage = sanitizeImage(item.image);
         
         const existingItem = list.items.find(existing => 
             (existing.name || '').trim().toLowerCase() === normalizedName &&
@@ -2986,13 +3012,17 @@ function mergeItemsIntoList(list, items, timestamp) {
             if (normalizedEmoji && !existingItem.emoji) {
                 existingItem.emoji = normalizedEmoji;
             }
+            if (normalizedImage && !existingItem.image) {
+                existingItem.image = normalizedImage;
+            }
             
             existingItem.updatedAt = timestamp;
         } else {
             list.items.push(createShoppingListItem({
                 ...item,
                 storeSection: normalizedSection,
-                emoji: normalizedEmoji
+                emoji: normalizedEmoji,
+                image: normalizedImage
             }, timestamp));
         }
     });
@@ -3007,6 +3037,7 @@ function createShoppingListItem(item, timestamp) {
         notes: item.notes,
         storeSection: normalizeStoreSection(item.storeSection),
         emoji: sanitizeEmoji(item.emoji),
+        image: sanitizeImage(item.image),
         addedAt: timestamp,
         updatedAt: timestamp
     };
@@ -3028,7 +3059,8 @@ function loadExistingShoppingLists() {
                 ? list.items.map(item => ({
                     ...item,
                     storeSection: normalizeStoreSection(item.storeSection),
-                    emoji: sanitizeEmoji(item.emoji)
+                    emoji: sanitizeEmoji(item.emoji),
+                    image: sanitizeImage(item.image)
                 }))
                 : []
         }));
