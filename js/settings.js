@@ -88,6 +88,7 @@ function initializeForm() {
             const startDay = parseInt(event.target.value);
             settings.mealPlanStartDay = startDay;
             saveToLocalStorage();
+            updateRecurringItemsDisplay();
             console.log('Settings updated:', settings);
         });
     }
@@ -176,6 +177,41 @@ function loadRecurringItems() {
     }
 }
 
+const WEEKDAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function getMealPlanStartDayForDisplay() {
+    const parsedStartDay = Number.parseInt(String(settings.mealPlanStartDay ?? ''), 10);
+    if (Number.isInteger(parsedStartDay) && parsedStartDay >= 0 && parsedStartDay <= 6) {
+        return parsedStartDay;
+    }
+    return 0;
+}
+
+function formatRecurringDaysByWeekStart(days) {
+    const normalizedDays = Array.isArray(days)
+        ? days
+            .map(day => Number.parseInt(String(day), 10))
+            .filter(day => Number.isInteger(day) && day >= 0 && day <= 6)
+        : [];
+
+    if (normalizedDays.length === 0) {
+        return '';
+    }
+
+    const selectedDays = new Set(normalizedDays);
+    const startDay = getMealPlanStartDayForDisplay();
+    const orderedSelectedDayLabels = [];
+
+    for (let offset = 0; offset < 7; offset++) {
+        const dayIndex = (startDay + offset) % 7;
+        if (selectedDays.has(dayIndex)) {
+            orderedSelectedDayLabels.push(WEEKDAY_LABELS[dayIndex]);
+        }
+    }
+
+    return orderedSelectedDayLabels.join(', ');
+}
+
 function updateRecurringItemsDisplay() {
     const recurringItemsList = document.getElementById('recurring-items-list');
     if (!recurringItemsList) return;
@@ -188,8 +224,7 @@ function updateRecurringItemsDisplay() {
     }
     
     recurringItemsList.innerHTML = recurringItems.map(item => {
-        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const selectedDays = item.days.map(dayIndex => days[dayIndex]).join(', ');
+        const selectedDays = formatRecurringDaysByWeekStart(item.days);
         const endDateText = item.endDate ? ` (ends ${new Date(item.endDate).toLocaleDateString()})` : ' (indefinite)';
         
         return `

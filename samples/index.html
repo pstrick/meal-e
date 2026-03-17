@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Food SVG Samples</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f7f7fb;
+      --card: #ffffff;
+      --text: #1f2430;
+      --muted: #596273;
+      --border: #dde2ea;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #11151c;
+        --card: #1a212c;
+        --text: #e9edf3;
+        --muted: #9aa6b8;
+        --border: #2b3646;
+      }
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 32px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 1.6rem;
+    }
+
+    p {
+      margin: 0 0 24px;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h1>Food SVG Samples</h1>
+  <p>Style target: slightly realistic + slightly cartoonish.</p>
+
+  <section class="grid">
+    <article class="card">
+      <h2>Burger</h2>
+      <img src="./burger.svg" alt="Burger SVG sample" />
+    </article>
+    <article class="card">
+      <h2>Nigiri</h2>
+      <img src="./nigiri.svg" alt="Nigiri SVG sample" />
+    </article>
+    <article class="card">
+      <h2>Cupcake</h2>
+      <img src="./cupcake.svg" alt="Cupcake SVG sample" />
+    </article>
+  </section>
+</body>
+</html>

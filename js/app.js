@@ -56,6 +56,8 @@ let selectedIngredients = new Map(); // Maps ingredient IDs to their nutrition d
 
 // Track the current recipe being edited
 let currentEditRecipeId = null;
+const RECIPE_DRAFT_SESSION_KEY = 'meale-return-recipe-draft';
+const RECIPE_DRAFT_MAX_AGE_MS = 30 * 60 * 1000;
 
 // Recipe table sort state (recipes page)
 let recipeSortColumn = 'name';
@@ -179,6 +181,225 @@ function closeModalHandler() {
     }
     servingSizeListenerSetup = false;
     window.dispatchEvent(new CustomEvent('recipe-modal-closed'));
+}
+
+function getRecipeReturnContext() {
+    const pathname = (window.location.pathname || '').toLowerCase();
+    if (pathname.endsWith('/mealplan.html') || pathname.endsWith('mealplan.html')) {
+        return 'mealplan';
+    }
+    return 'recipes';
+}
+
+function buildIngredientCreateUrl(returnTo) {
+    const params = new URLSearchParams();
+    params.set('openIngredientModal', '1');
+    params.set('returnTo', returnTo);
+    return `ingredients.html?${params.toString()}`;
+}
+
+function launchIngredientCreatorFromRecipeFlow(sourceInput = null) {
+    const recipeModalEl = document.getElementById('recipe-modal');
+    const ingredientsContainer = document.getElementById('ingredients-list');
+    const recipeFormEl = document.getElementById('recipe-form');
+    const returnTo = getRecipeReturnContext();
+
+    const fallbackRedirect = () => {
+        window.location.href = buildIngredientCreateUrl(returnTo);
+    };
+
+    if (!recipeModalEl || !ingredientsContainer || !recipeFormEl || !recipeModalEl.classList.contains('active')) {
+        fallbackRedirect();
+        return;
+    }
+
+    try {
+        const ingredientItems = Array.from(ingredientsContainer.querySelectorAll('.ingredient-item'));
+        const sourceItem = sourceInput ? sourceInput.closest('.ingredient-item') : null;
+        const activeElement = document.activeElement;
+        const activeItem = activeElement ? activeElement.closest('.ingredient-item') : null;
+        const targetItem = sourceItem || currentIngredientInput || activeItem || null;
+        let focusedIngredientIndex = ingredientItems.findIndex((item) => item === targetItem);
+        if (focusedIngredientIndex < 0) focusedIngredientIndex = 0;
+
+        const recipeNameInput = document.getElementById('recipe-name');
+        const recipeCategoryInput = document.getElementById('recipe-category');
+        const recipeServingSizeInput = document.getElementById('recipe-serving-size');
+        const recipeStepsInput = document.getElementById('recipe-steps');
+        const ingredientRows = ingredientItems.map((item) => {
+            const nameInput = item.querySelector('.ingredient-name');
+            const amountInput = item.querySelector('.ingredient-amount');
+            const fdcId = nameInput?.dataset?.fdcId || '';
+            const selectedIngredient = fdcId && selectedIngredients.has(fdcId)
+                ? selectedIngredients.get(fdcId)
+                : null;
+            return {
+                name: nameInput?.value || '',
+                amount: amountInput?.value || '',
+                fdcId,
+                store: nameInput?.dataset?.store || '',
+                storeSection: nameInput?.dataset?.storeSection || '',
+                emoji: nameInput?.dataset?.emoji || '',
+                ingredientData: selectedIngredient || null
+            };
+        });
+
+        const focusedQuery = ingredientRows[focusedIngredientIndex]?.name || '';
+        const draft = {
+            version: 1,
+            createdAt: Date.now(),
+            returnTo,
+            currentEditRecipeId,
+            pendingMealPlanSlot: returnTo === 'mealplan' && window.pendingMealPlanSlot
+                ? window.pendingMealPlanSlot
+                : null,
+            form: {
+                name: recipeNameInput?.value || '',
+                category: recipeCategoryInput?.value || '',
+                servingSize: recipeServingSizeInput?.value || '',
+                steps: recipeStepsInput?.value || ''
+            },
+            ingredientRows,
+            focusedIngredientIndex,
+            focusedQuery
+        };
+
+        sessionStorage.setItem(RECIPE_DRAFT_SESSION_KEY, JSON.stringify(draft));
+    } catch (error) {
+        console.error('Failed to capture recipe draft before ingredient creation:', error);
+    }
+
+    fallbackRedirect();
+}
+
+function cleanupRecipeDraftResumeQuery() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('resumeRecipeDraft') && !params.has('newIngredientId')) {
+        return;
+    }
+    params.delete('resumeRecipeDraft');
+    params.delete('newIngredientId');
+    const query = params.toString();
+    const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash || ''}`;
+    window.history.replaceState({}, '', nextUrl);
+}
+
+function resumeRecipeDraftIfNeeded() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('resumeRecipeDraft') !== '1') {
+        return;
+    }
+
+    const recipeModalEl = document.getElementById('recipe-modal');
+    const ingredientsContainer = document.getElementById('ingredients-list');
+    if (!recipeModalEl || !ingredientsContainer) {
+        cleanupRecipeDraftResumeQuery();
+        return;
+    }
+
+    const openFallbackModal = () => {
+        openModal();
+        if (typeof showAlert !== 'undefined') {
+            showAlert('Could not restore your in-progress recipe. Please continue from here.', { type: 'warning' });
+        }
+    };
+
+    try {
+        const rawDraft = sessionStorage.getItem(RECIPE_DRAFT_SESSION_KEY);
+        if (!rawDraft) {
+            openFallbackModal();
+            cleanupRecipeDraftResumeQuery();
+            return;
+        }
+
+        const draft = JSON.parse(rawDraft);
+        const draftAgeMs = Date.now() - Number(draft?.createdAt || 0);
+        if (!draft || draft.version !== 1 || !Number.isFinite(draftAgeMs) || draftAgeMs > RECIPE_DRAFT_MAX_AGE_MS) {
+            sessionStorage.removeItem(RECIPE_DRAFT_SESSION_KEY);
+            openFallbackModal();
+            cleanupRecipeDraftResumeQuery();
+            return;
+        }
+
+        if (draft.returnTo === 'mealplan' && draft.pendingMealPlanSlot) {
+            window.pendingMealPlanSlot = draft.pendingMealPlanSlot;
+        }
+        currentEditRecipeId = draft.currentEditRecipeId || null;
+
+        openModal();
+
+        const recipeNameInput = document.getElementById('recipe-name');
+        const recipeCategoryInput = document.getElementById('recipe-category');
+        const recipeServingSizeInput = document.getElementById('recipe-serving-size');
+        const recipeStepsInput = document.getElementById('recipe-steps');
+
+        if (recipeNameInput) recipeNameInput.value = draft.form?.name || '';
+        if (recipeCategoryInput) recipeCategoryInput.value = draft.form?.category || 'breakfast';
+        if (recipeServingSizeInput) recipeServingSizeInput.value = draft.form?.servingSize || '';
+        if (recipeStepsInput) recipeStepsInput.value = draft.form?.steps || '';
+
+        ingredientsContainer.innerHTML = '';
+        selectedIngredients.clear();
+        const rows = Array.isArray(draft.ingredientRows) && draft.ingredientRows.length > 0
+            ? draft.ingredientRows
+            : [{ name: '', amount: '100' }];
+
+        rows.forEach((row) => {
+            addIngredientInput();
+            const ingredientItem = ingredientsContainer.lastElementChild;
+            if (!ingredientItem) return;
+
+            const nameInput = ingredientItem.querySelector('.ingredient-name');
+            const amountInput = ingredientItem.querySelector('.ingredient-amount');
+            if (!nameInput || !amountInput) return;
+
+            nameInput.value = row?.name || '';
+            amountInput.value = row?.amount || '100';
+
+            const fdcId = row?.fdcId || '';
+            const ingredientData = row?.ingredientData;
+            if (fdcId && ingredientData && ingredientData.nutrition) {
+                nameInput.dataset.fdcId = fdcId;
+                nameInput.dataset.store = row?.store || ingredientData.store || '';
+                nameInput.dataset.storeSection = row?.storeSection || ingredientData.storeSection || '';
+                nameInput.dataset.emoji = row?.emoji || ingredientData.emoji || '';
+                selectedIngredients.set(fdcId, {
+                    ...ingredientData,
+                    amount: parseFloat(amountInput.value) || 0
+                });
+                updateIngredientMacros(ingredientItem, selectedIngredients.get(fdcId));
+            }
+        });
+
+        updateServingSizeDefault();
+        updateTotalNutrition();
+
+        const newIngredientId = params.get('newIngredientId');
+        const targetIndex = Number.isInteger(draft.focusedIngredientIndex)
+            ? draft.focusedIngredientIndex
+            : 0;
+        const targetItem = ingredientsContainer.children[targetIndex] || ingredientsContainer.children[0];
+        if (targetItem && newIngredientId) {
+            openIngredientSearch(targetItem);
+            const refreshedInput = targetItem.querySelector('.ingredient-name');
+            if (refreshedInput) {
+                const query = draft.focusedQuery || refreshedInput.value || '';
+                refreshedInput.value = query;
+                if (query.length >= 2) {
+                    refreshedInput.dispatchEvent(new Event('input', { bubbles: true }));
+                } else {
+                    refreshedInput.focus();
+                }
+            }
+        }
+
+        sessionStorage.removeItem(RECIPE_DRAFT_SESSION_KEY);
+    } catch (error) {
+        console.error('Error restoring recipe draft:', error);
+        openFallbackModal();
+    } finally {
+        cleanupRecipeDraftResumeQuery();
+    }
 }
 
 // USDA API Functions
@@ -1253,6 +1474,8 @@ function initializeApp() {
             cancelRecipeBtn.addEventListener('click', closeModalHandler);
         }
 
+        resumeRecipeDraftIfNeeded();
+
         console.log('[INIT] ✅ App initialized successfully');
         console.log('[INIT] ===== App initialization complete =====');
     } catch (error) {
@@ -1991,9 +2214,9 @@ function showInlineSearchResults(input, results) {
     addNewItem.addEventListener('mousedown', (e) => {
         e.preventDefault();
         removeSearchDropdown();
-        
-        // Redirect to ingredients page and use existing modal there
-        window.location.href = 'ingredients.html?openIngredientModal=1';
+
+        // Redirect to ingredient creation while preserving recipe workflow state.
+        launchIngredientCreatorFromRecipeFlow(input);
     });
     
     dropdown.appendChild(addNewItem);
@@ -2342,15 +2565,21 @@ async function searchAllIngredients(query) {
     // Search my ingredients only (no API calls)
     const queryLower = query.toLowerCase().trim();
     const allMyIngredients = getMyIngredients();
+    // #region agent log
+    fetch('http://127.0.0.1:7925/ingest/e66f7dc7-4803-4948-8dd1-b7319f9ca164',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'79d31e'},body:JSON.stringify({sessionId:'79d31e',runId:'pre-fix',hypothesisId:'H5',location:'js/app.js:2345',message:'Loaded ingredient store for search',data:{queryRaw:query,queryNormalized:queryLower,totalLoaded:allMyIngredients.length,oldKeyCount:JSON.parse(localStorage.getItem('meale-custom-ingredients')||'[]').length,newKeyCount:JSON.parse(localStorage.getItem('meale-my-ingredients')||'[]').length},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     
     console.log('=== SEARCH DEBUG ===');
     console.log('Query:', query);
     console.log('Total ingredients loaded:', allMyIngredients.length);
     
     // Filter out ingredients without valid nutrition data
+    let filteredNoNutritionCount = 0;
+    let filteredZeroNutritionCount = 0;
     const customIngredients = allMyIngredients.filter(ingredient => {
         if (!ingredient.nutrition) {
             console.log('Filtering out ingredient without nutrition object:', ingredient.name);
+            filteredNoNutritionCount++;
             return false;
         }
         const nutrition = ingredient.nutrition;
@@ -2362,9 +2591,13 @@ async function searchAllIngredients(query) {
         
         if (!hasValidNutrition) {
             console.log('Filtering out ingredient from "my ingredients" without valid nutrition:', ingredient.name);
+            filteredZeroNutritionCount++;
         }
         return hasValidNutrition;
     });
+    // #region agent log
+    fetch('http://127.0.0.1:7925/ingest/e66f7dc7-4803-4948-8dd1-b7319f9ca164',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'79d31e'},body:JSON.stringify({sessionId:'79d31e',runId:'pre-fix',hypothesisId:'H1',location:'js/app.js:2368',message:'Nutrition filter stage',data:{queryNormalized:queryLower,totalLoaded:allMyIngredients.length,keptForSearch:customIngredients.length,filteredNoNutritionCount,filteredZeroNutritionCount},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     
     console.log('Ingredients with valid nutrition:', customIngredients.length);
     
@@ -2474,6 +2707,9 @@ async function searchAllIngredients(query) {
         }
         return matches;
     });
+    // #region agent log
+    fetch('http://127.0.0.1:7925/ingest/e66f7dc7-4803-4948-8dd1-b7319f9ca164',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'79d31e'},body:JSON.stringify({sessionId:'79d31e',runId:'pre-fix',hypothesisId:'H2',location:'js/app.js:2478',message:'Name match stage',data:{queryRaw:query,queryNormalized:queryLower,matchesByIncludes:nameMatches.length},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     
     console.log('Ingredients matching name:', nameMatches.length);
     
@@ -2552,6 +2788,9 @@ async function searchAllIngredients(query) {
         total: results.length,
         custom: results.filter(r => r.source === 'custom').length
     });
+    // #region agent log
+    fetch('http://127.0.0.1:7925/ingest/e66f7dc7-4803-4948-8dd1-b7319f9ca164',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'79d31e'},body:JSON.stringify({sessionId:'79d31e',runId:'pre-fix',hypothesisId:'H3',location:'js/app.js:2555',message:'Final ingredient results emitted',data:{queryNormalized:queryLower,customMatchesCount:customMatches.length,resultsCount:results.length},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     
     return results;
 }
@@ -2884,8 +3123,8 @@ async function displaySearchResults(results) {
     addNewDiv.addEventListener('click', () => {
         // Close the search modal/dropdown
         removeSearchDropdown();
-        // Redirect to ingredients page and use existing modal there
-        window.location.href = 'ingredients.html?openIngredientModal=1';
+        // Redirect to ingredient creation while preserving recipe workflow state.
+        launchIngredientCreatorFromRecipeFlow(ingredientSearchInput);
     });
     
     searchResultsElement.appendChild(addNewDiv);

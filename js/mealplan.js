@@ -1,4 +1,5 @@
 import { showAlert } from './alert.js';
+import { loadMeals, calculateMealTotals, expandMealToIngredients, loadIngredients } from './meals.js';
 
 // Helper function to get my ingredients with migration support
 function getMyIngredients() {
@@ -46,6 +47,36 @@ let cancelShoppingListSelectionButton = null;
 let pendingShoppingListData = null;
 
 const DEFAULT_STORE_SECTION = 'Uncategorized';
+
+function normalizePlannerItemType(item) {
+    if (!item || typeof item !== 'object') return item;
+    if (item.type === 'meal' && item.entityType !== 'meal') {
+        return {
+            ...item,
+            type: 'recipe',
+            entityType: 'recipe'
+        };
+    }
+    if (!item.entityType) {
+        if (item.type === 'recipe') return { ...item, entityType: 'recipe' };
+        if (item.type === 'ingredient') return { ...item, entityType: 'ingredient' };
+        if (item.type === 'custommeal') return { ...item, entityType: 'custommeal' };
+        if (item.type === 'meal') return { ...item, entityType: 'meal' };
+    }
+    return item;
+}
+
+function normalizeMealPlanShape(rawMealPlan) {
+    if (!rawMealPlan || typeof rawMealPlan !== 'object') return {};
+    const normalized = {};
+    Object.keys(rawMealPlan).forEach((key) => {
+        const items = Array.isArray(rawMealPlan[key]) ? rawMealPlan[key] : [];
+        normalized[key] = items
+            .map((item) => normalizePlannerItemType(item))
+            .filter(Boolean);
+    });
+    return normalized;
+}
 
 function normalizeStoreSection(section) {
     const trimmed = (section || '').trim();
@@ -111,10 +142,16 @@ async function searchAllIngredients(query) {
     // Prioritize exact matches and starts-with matches
     const queryLower = query.toLowerCase().trim();
     const allMyIngredients = getMyIngredients();
+    // #region agent log
+    fetch('http://127.0.0.1:7925/ingest/e66f7dc7-4803-4948-8dd1-b7319f9ca164',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'79d31e'},body:JSON.stringify({sessionId:'79d31e',runId:'pre-fix',hypothesisId:'H1',location:'js/mealplan.js:114',message:'Mealplan ingredient search loaded ingredients',data:{queryRaw:query,queryNormalized:queryLower,totalLoaded:allMyIngredients.length},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     
     // Filter out ingredients without valid nutrition data
+    let filteredNoNutritionCount = 0;
+    let filteredZeroNutritionCount = 0;
     const validMyIngredients = allMyIngredients.filter(ingredient => {
         if (!ingredient.nutrition) {
+            filteredNoNutritionCount++;
             return false;
         }
         const nutrition = ingredient.nutrition;
@@ -126,9 +163,13 @@ async function searchAllIngredients(query) {
         
         if (!hasValidNutrition) {
             console.log('Filtering out ingredient from "my ingredients" without valid nutrition:', ingredient.name);
+            filteredZeroNutritionCount++;
         }
         return hasValidNutrition;
     });
+    // #region agent log
+    fetch('http://127.0.0.1:7925/ingest/e66f7dc7-4803-4948-8dd1-b7319f9ca164',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'79d31e'},body:JSON.stringify({sessionId:'79d31e',runId:'pre-fix',hypothesisId:'H1',location:'js/mealplan.js:132',message:'Mealplan nutrition filter stage',data:{queryNormalized:queryLower,totalLoaded:allMyIngredients.length,keptForSearch:validMyIngredients.length,filteredNoNutritionCount,filteredZeroNutritionCount},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     
     const customIngredients = validMyIngredients.map(ingredient => ({
         ...ingredient,
@@ -234,7 +275,7 @@ function getBaseStartOfWeekTimestamp() {
     const today = new Date();
     console.log('DEBUG: Today:', today.toISOString());
     console.log('DEBUG: window.settings:', window.settings);
-    const startDay = parseInt(window.settings?.mealPlanStartDay) || 0;
+    const startDay = getMealPlanStartDay();
     console.log('DEBUG: startDay:', startDay);
     const currentDay = today.getDay();
     console.log('DEBUG: currentDay:', currentDay);
@@ -244,6 +285,23 @@ function getBaseStartOfWeekTimestamp() {
     base.setHours(0,0,0,0);
     console.log('DEBUG: base date:', base.toISOString());
     return base.getTime();
+}
+
+function getMealPlanStartDay() {
+    const parsedStartDay = Number.parseInt(String(window.settings?.mealPlanStartDay ?? ''), 10);
+    if (Number.isInteger(parsedStartDay) && parsedStartDay >= 0 && parsedStartDay <= 6) {
+        return parsedStartDay;
+    }
+    return 0;
+}
+
+function getWeekColumnIndexForWeekday(weekdayIndex) {
+    const parsedWeekdayIndex = Number.parseInt(String(weekdayIndex ?? ''), 10);
+    if (!Number.isInteger(parsedWeekdayIndex) || parsedWeekdayIndex < 0 || parsedWeekdayIndex > 6) {
+        return null;
+    }
+    const startDay = getMealPlanStartDay();
+    return (parsedWeekdayIndex - startDay + 7) % 7;
 }
 
 function getWeekDates(weekOffset = 0) {
@@ -469,8 +527,17 @@ async function updateUnifiedList() {
     
     const results = [];
     
-    // Search meals (recipes)
+    // Search recipes
     if (window.recipes && Array.isArray(window.recipes)) {
+        const recipeIngredientShape = window.recipes.reduce((acc, recipe) => {
+            const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+            ingredients.forEach((ing) => {
+                if (typeof ing === 'string') acc.stringIngredients++;
+                else if (ing && typeof ing === 'object' && typeof ing.name === 'string') acc.objectIngredientsWithName++;
+                else acc.otherIngredientShape++;
+            });
+            return acc;
+        }, { stringIngredients: 0, objectIngredientsWithName: 0, otherIngredientShape: 0 });
         const filteredMeals = window.recipes.filter(recipe => {
             const matchesSearch = searchTerm === '' || 
                 recipe.name.toLowerCase().includes(searchTerm) ||
@@ -478,10 +545,14 @@ async function updateUnifiedList() {
             const matchesCategory = category === 'all' || recipe.category === category;
             return matchesSearch && matchesCategory;
         });
+        // #region agent log
+        fetch('http://127.0.0.1:7925/ingest/e66f7dc7-4803-4948-8dd1-b7319f9ca164',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'79d31e'},body:JSON.stringify({sessionId:'79d31e',runId:'pre-fix',hypothesisId:'H4',location:'js/mealplan.js:481',message:'Unified recipe filter stage',data:{searchTerm,recipeCount:Array.isArray(window.recipes)?window.recipes.length:0,filteredMealCount:filteredMeals.length,recipeIngredientShape},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         
         filteredMeals.forEach(recipe => {
             results.push({
-                type: 'meal',
+                type: 'recipe',
+                entityType: 'recipe',
                 id: recipe.id,
                 name: recipe.name,
                 category: recipe.category,
@@ -493,6 +564,36 @@ async function updateUnifiedList() {
             });
         });
     }
+
+    // Search first-class meals
+    const mealLibrary = loadMeals();
+    const allIngredients = loadIngredients();
+    mealLibrary.forEach((meal) => {
+        const mealName = (meal.name || '').toLowerCase();
+        const mealNotes = (meal.notes || '').toLowerCase();
+        const matchesSearch = searchTerm === '' || mealName.includes(searchTerm) || mealNotes.includes(searchTerm);
+        const matchesCategory = category === 'all' || meal.category === category;
+        if (!matchesSearch || !matchesCategory) return;
+
+        const totals = calculateMealTotals(meal, meal.servingSize, {
+            recipes: window.recipes,
+            ingredients: allIngredients
+        });
+
+        results.push({
+            type: 'meal',
+            entityType: 'meal',
+            id: meal.id,
+            name: meal.name,
+            category: meal.category || 'dinner',
+            servingSize: meal.servingSize || 100,
+            nutrition: totals.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 },
+            cost: totals.cost || 0,
+            emoji: '',
+            icon: '🍱',
+            label: 'Meal'
+        });
+    });
     
     // Search custom ingredients only
     try {
@@ -510,6 +611,7 @@ async function updateUnifiedList() {
                 
                 results.push({
                     type: 'ingredient',
+                    entityType: 'ingredient',
                     id: id,
                     name: ingredient.name,
                     category: ingredientCategory,
@@ -532,10 +634,12 @@ async function updateUnifiedList() {
         console.error('Error searching ingredients:', error);
     }
     
-    // Sort results: meals first, then ingredients, then alphabetically
+    // Sort results: recipes first, then meals, then ingredients
     results.sort((a, b) => {
-        if (a.type === 'meal' && b.type !== 'meal') return -1;
-        if (a.type !== 'meal' && b.type === 'meal') return 1;
+        if (a.type === 'recipe' && b.type !== 'recipe') return -1;
+        if (a.type !== 'recipe' && b.type === 'recipe') return 1;
+        if (a.type === 'meal' && b.type === 'ingredient') return -1;
+        if (a.type === 'ingredient' && b.type === 'meal') return 1;
         return a.name.localeCompare(b.name);
     });
     
@@ -558,16 +662,16 @@ async function updateUnifiedList() {
         }
         
         // Per serving: ingredient = per-gram * servingSize; recipe = already per serving
-        const cal = item.type === 'meal'
+        const cal = (item.type === 'recipe' || item.type === 'meal')
             ? Math.round(item.nutrition.calories || 0)
             : Math.round((item.nutrition.calories || 0) * (item.servingSize || 100));
-        const pro = item.type === 'meal'
+        const pro = (item.type === 'recipe' || item.type === 'meal')
             ? Math.round((item.nutrition.protein || 0) * 10) / 10
             : Math.round((item.nutrition.protein || 0) * (item.servingSize || 100) * 10) / 10;
-        const carb = item.type === 'meal'
+        const carb = (item.type === 'recipe' || item.type === 'meal')
             ? Math.round((item.nutrition.carbs || 0) * 10) / 10
             : Math.round((item.nutrition.carbs || 0) * (item.servingSize || 100) * 10) / 10;
-        const f = item.type === 'meal'
+        const f = (item.type === 'recipe' || item.type === 'meal')
             ? Math.round((item.nutrition.fat || 0) * 10) / 10
             : Math.round((item.nutrition.fat || 0) * (item.servingSize || 100) * 10) / 10;
         div.innerHTML = `
@@ -783,6 +887,7 @@ function selectCustomMealItem() {
     // Mark that we're in custom meal mode
     selectedItem = {
         type: 'custommeal',
+        entityType: 'custommeal',
         id: 'custommeal',
         name: '',
         nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0 },
@@ -807,7 +912,7 @@ function getPer100gNutrition(item) {
             fat: Math.round(((n.fat || 0) * 100) * 10) / 10
         };
     }
-    if (item.type === 'meal') {
+    if (item.type === 'recipe' || item.type === 'meal') {
         const denom = servingSize > 0 ? servingSize : 100;
         return {
             calories: Math.round(((n.calories || 0) / denom) * 100),
@@ -957,7 +1062,8 @@ async function handleRecipeCreatedFromMealPlan(e) {
     if (!mealPlan[mealKey]) mealPlan[mealKey] = [];
     const amount = recipe.servingSize || 100;
     mealPlan[mealKey].push({
-        type: 'meal',
+        type: 'recipe',
+        entityType: 'recipe',
         id: recipe.id,
         name: recipe.name,
         amount,
@@ -1129,12 +1235,20 @@ function loadRecurringItems() {
     try {
         const saved = localStorage.getItem('meale-recurring-items');
         if (saved) {
-            recurringItems = JSON.parse(saved).map(item => ({
-                ...item,
-                store: item.store || '',
-                storeSection: item.storeSection || '',
-                emoji: item.emoji || ''
-            }));
+            recurringItems = JSON.parse(saved).map(item => {
+                const normalizedType = item.type === 'meal' && item.entityType !== 'meal'
+                    ? 'recipe'
+                    : item.type;
+                const entityType = item.entityType || normalizedType || 'ingredient';
+                return {
+                    ...item,
+                    type: normalizedType,
+                    entityType,
+                    store: item.store || '',
+                    storeSection: item.storeSection || '',
+                    emoji: item.emoji || ''
+                };
+            });
             console.log('Loaded recurring items:', recurringItems.length);
         }
     } catch (error) {
@@ -1179,7 +1293,14 @@ function applyRecurringItems() {
     
     recurringItems.forEach(recurringItem => {
         recurringItem.days.forEach(dayIndex => {
-            const date = week.dates[dayIndex];
+            const weekColumnIndex = getWeekColumnIndexForWeekday(dayIndex);
+            if (weekColumnIndex === null) {
+                return;
+            }
+            const date = week.dates[weekColumnIndex];
+            if (!date) {
+                return;
+            }
             
             // Check if this specific instance was manually deleted
             const deletedKey = `${recurringItem.id}-${date}-${recurringItem.mealType}`;
@@ -1204,6 +1325,7 @@ function applyRecurringItems() {
             
             mealPlan[mealKey].push({
                 type: recurringItem.type,
+                entityType: recurringItem.entityType || recurringItem.type,
                 id: recurringItem.itemId,
                 amount: recurringItem.amount,
                 name: recurringItem.name,
@@ -1305,7 +1427,7 @@ function createMealItem(item, amount, itemIndex, slot) {
     
     // Calculate nutrition for this item
     let itemNutrition = { calories: 0, protein: 0, carbs: 0, fat: 0 };
-    if (item.type === 'meal') {
+    if (item.type === 'recipe' || item.type === 'meal') {
         console.log('Processing meal nutrition for:', item.name);
         console.log('Recipe nutrition:', item.nutrition);
         console.log('Serving size:', item.servingSize);
@@ -1435,7 +1557,7 @@ async function loadMealPlan() {
         
         if (savedMealPlan) {
             try {
-                mealPlan = JSON.parse(savedMealPlan);
+                mealPlan = normalizeMealPlanShape(JSON.parse(savedMealPlan));
                 const mealPlanDates = Object.keys(mealPlan);
                 console.log('[MEALPLAN] ✅ Meal plan loaded from localStorage');
                 console.log('[MEALPLAN] Meal plan dates count:', mealPlanDates.length);
@@ -1493,7 +1615,7 @@ async function calculateDayNutrition(date) {
                 if (itemData.cost) {
                     nutrition.cost += itemData.cost * servings;
                 }
-            } else if (itemData.type === 'meal') {
+            } else if (itemData.type === 'recipe') {
                 const recipe = window.recipes.find(r => r.id === itemData.id);
                 if (recipe && recipe.nutrition) {
                     // Convert recipe nutrition to per-gram values
@@ -1535,6 +1657,20 @@ async function calculateDayNutrition(date) {
                         // Fallback to stored cost if available
                         nutrition.cost += itemData.cost;
                     }
+                }
+            } else if (itemData.type === 'meal') {
+                const mealLibrary = loadMeals();
+                const mealDefinition = mealLibrary.find((meal) => String(meal.id) === String(itemData.id));
+                if (mealDefinition) {
+                    const totals = calculateMealTotals(mealDefinition, itemData.amount || mealDefinition.servingSize || 100, {
+                        recipes: window.recipes,
+                        ingredients: loadIngredients()
+                    });
+                    nutrition.calories += totals.nutrition.calories || 0;
+                    nutrition.protein += totals.nutrition.protein || 0;
+                    nutrition.carbs += totals.nutrition.carbs || 0;
+                    nutrition.fat += totals.nutrition.fat || 0;
+                    nutrition.cost += totals.cost || 0;
                 }
             } else if (itemData.type === 'ingredient') {
                 // For ingredients, we need to get nutrition data
@@ -1613,7 +1749,7 @@ async function calculateSlotNutrition(date, mealType) {
             if (itemData.cost) {
                 nutrition.cost += itemData.cost * servings;
             }
-        } else if (itemData.type === 'meal') {
+        } else if (itemData.type === 'recipe') {
             const recipe = window.recipes.find(r => r.id === itemData.id);
             if (recipe && recipe.nutrition) {
                 const servingSize = recipe.servingSize || 100;
@@ -1650,6 +1786,20 @@ async function calculateSlotNutrition(date, mealType) {
                 } else if (itemData.cost) {
                     nutrition.cost += itemData.cost;
                 }
+            }
+        } else if (itemData.type === 'meal') {
+            const mealLibrary = loadMeals();
+            const mealDefinition = mealLibrary.find((meal) => String(meal.id) === String(itemData.id));
+            if (mealDefinition) {
+                const totals = calculateMealTotals(mealDefinition, itemData.amount || mealDefinition.servingSize || 100, {
+                    recipes: window.recipes,
+                    ingredients: loadIngredients()
+                });
+                nutrition.calories += totals.nutrition.calories || 0;
+                nutrition.protein += totals.nutrition.protein || 0;
+                nutrition.carbs += totals.nutrition.carbs || 0;
+                nutrition.fat += totals.nutrition.fat || 0;
+                nutrition.cost += totals.cost || 0;
             }
         } else if (itemData.type === 'ingredient') {
             try {
@@ -1946,6 +2096,7 @@ async function handleMealPlanSubmit(e) {
                 id: Date.now(),
                 name: mealName,
                 type: 'custommeal',
+                entityType: 'custommeal',
                 amount: 1, // per serving
                 mealType: selectedSlot.dataset.meal,
                 days: selectedDays,
@@ -1971,6 +2122,7 @@ async function handleMealPlanSubmit(e) {
             if (!mealPlan[mealKey]) mealPlan[mealKey] = [];
             mealPlan[mealKey].push({
                 type: 'custommeal',
+                entityType: 'custommeal',
                 id: `custommeal-${Date.now()}`,
                 name: mealName,
                 amount: 1, // Custom meals are per serving
@@ -2008,6 +2160,7 @@ async function handleMealPlanSubmit(e) {
             id: Date.now(),
             name: selectedItem.name,
             type: selectedItem.type,
+            entityType: selectedItem.entityType || selectedItem.type,
             amount: amount,
             mealType: selectedSlot.dataset.meal,
             days: selectedDays,
@@ -2035,6 +2188,7 @@ async function handleMealPlanSubmit(e) {
         if (!mealPlan[mealKey]) mealPlan[mealKey] = [];
         mealPlan[mealKey].push({
             type: selectedItem.type,
+            entityType: selectedItem.entityType || selectedItem.type,
             id: selectedItem.id,
             amount: amount,
             name: selectedItem.name,
@@ -2081,11 +2235,11 @@ async function addAddMealButton(slot) {
                     cost: itemData.cost || 0,
                     emoji: ''
                 };
-            } else if (itemData.type === 'meal') {
+            } else if (itemData.type === 'recipe') {
                 const recipe = window.recipes.find(r => r.id === itemData.id);
                 if (recipe) {
                     item = {
-                        type: 'meal',
+                        type: 'recipe',
                         id: recipe.id,
                         name: recipe.name,
                         nutrition: recipe.nutrition,
@@ -2094,11 +2248,35 @@ async function addAddMealButton(slot) {
                 } else {
                     console.error('Recipe not found for ID:', itemData.id);
                     item = {
+                        type: 'recipe',
+                        id: itemData.id,
+                        name: itemData.name || 'Unknown Recipe',
+                        nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+                        servingSize: 100
+                    };
+                }
+            } else if (itemData.type === 'meal') {
+                const mealLibrary = loadMeals();
+                const mealDefinition = mealLibrary.find(m => String(m.id) === String(itemData.id));
+                if (mealDefinition) {
+                    const totals = calculateMealTotals(mealDefinition, itemData.amount || mealDefinition.servingSize || 100, {
+                        recipes: window.recipes,
+                        ingredients: loadIngredients()
+                    });
+                    item = {
+                        type: 'meal',
+                        id: mealDefinition.id,
+                        name: mealDefinition.name,
+                        nutrition: totals.nutrition,
+                        servingSize: itemData.amount || mealDefinition.servingSize || 100
+                    };
+                } else {
+                    item = {
                         type: 'meal',
                         id: itemData.id,
                         name: itemData.name || 'Unknown Meal',
-                        nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0 },
-                        servingSize: 100
+                        nutrition: itemData.nutrition || { calories: 0, protein: 0, carbs: 0, fat: 0 },
+                        servingSize: itemData.servingSize || 100
                     };
                 }
             } else if (itemData.type === 'ingredient') {
@@ -2338,8 +2516,10 @@ async function updateMealPlanDisplay() {
 
 // Function to refresh meal plan when settings change
 export function refreshMealPlanOnSettingsChange() {
-    // Re-display the meal plan with updated settings
-    updateMealPlanDisplay();
+    // Re-anchor the current week to the active start-day setting.
+    baseStartOfWeekTimestamp = getBaseStartOfWeekTimestamp();
+    applyRecurringItems();
+    updateWeekDisplay();
 }
 
 // Add window resize handler to reload meal plan when switching between mobile and desktop
@@ -2606,6 +2786,8 @@ function buildShoppingListData() {
             }
             return '';
         };
+        const mealLibrary = loadMeals();
+        const ingredientLibrary = loadIngredients();
         
         // Process only meals from the current week
         console.log('DEBUG: Processing', Object.keys(mealPlan).length, 'total meals from meal plan');
@@ -2634,7 +2816,7 @@ function buildShoppingListData() {
                                 return;
                             }
                             
-                            if (item.type === 'meal') {
+                            if (item.type === 'recipe') {
                                 // For recipes, break down into individual ingredients
                                 const recipe = window.recipes.find(r => r.id === item.id);
                                 if (recipe && recipe.ingredients) {
@@ -2681,6 +2863,49 @@ function buildShoppingListData() {
                                 } else {
                                     console.warn(`Recipe not found or no ingredients for: ${item.name}`);
                                 }
+                            } else if (item.type === 'meal') {
+                                const mealDefinition = mealLibrary.find((meal) => String(meal.id) === String(item.id));
+                                if (!mealDefinition) {
+                                    console.warn(`Meal not found for: ${item.name}`);
+                                    return;
+                                }
+                                const expandedIngredients = expandMealToIngredients(
+                                    mealDefinition,
+                                    item.amount || mealDefinition.servingSize || 100,
+                                    { recipes: window.recipes, ingredients: ingredientLibrary }
+                                );
+                                expandedIngredients.forEach((expandedIngredient) => {
+                                    const ingredientName = expandedIngredient.name || 'Ingredient';
+                                    const amount = Number(expandedIngredient.amount) || 0;
+                                    if (amount <= 0) return;
+                                    const storeSection = resolveStoreSection(ingredientName, expandedIngredient.storeSection);
+                                    const emoji = resolveEmoji(ingredientName, expandedIngredient.emoji);
+                                    const image = resolveImage(ingredientName, expandedIngredient.image);
+                                    const key = `${storeSection.toLowerCase()}|${ingredientName.toLowerCase()}`;
+                                    if (ingredients.has(key)) {
+                                        const existing = ingredients.get(key);
+                                        existing.amount += amount;
+                                        if (!existing.notes.includes(item.name)) {
+                                            existing.notes += `, ${item.name}`;
+                                        }
+                                        if (!existing.emoji && emoji) {
+                                            existing.emoji = emoji;
+                                        }
+                                        if (!existing.image && image) {
+                                            existing.image = image;
+                                        }
+                                    } else {
+                                        ingredients.set(key, {
+                                            name: ingredientName,
+                                            amount: amount,
+                                            unit: 'g',
+                                            notes: `From meal: ${item.name}`,
+                                            storeSection: storeSection,
+                                            emoji: emoji,
+                                            image: image
+                                        });
+                                    }
+                                });
                             } else if (item.type === 'ingredient') {
                                 // For ingredients, add directly
                                 const storeSection = resolveStoreSection(item.name, item.storeSection);
@@ -3179,7 +3404,7 @@ function getCurrentWeekRecipesSummary() {
         const mealType = parts.slice(3).join('-');
         
         items.forEach(item => {
-            if (!item || item.type !== 'meal') return;
+            if (!item || item.type !== 'recipe') return;
             
             const recipe = recipesList.find(r => r.id === item.id);
             if (!recipe) return;

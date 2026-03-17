@@ -10,6 +10,7 @@ let customIngredients = [];
 let editingIngredientId = null;
 let selectedImageDataUrl = '';
 let shoppingListReturnContext = null;
+let genericReturnContext = null;
 
 // Image upload handling
 function updateImagePreview(imageDataUrl) {
@@ -539,6 +540,15 @@ async function saveCustomIngredient(event) {
             const openListId = encodeURIComponent(shoppingListReturnContext.openListId);
             const ingredientQuery = encodeURIComponent(ingredient.name || shoppingListReturnContext.ingredientQuery || '');
             window.location.href = `shopping-lists.html?openListId=${openListId}&ingredientQuery=${ingredientQuery}`;
+            return;
+        }
+
+        if (genericReturnContext === 'recipes' || genericReturnContext === 'mealplan') {
+            const params = new URLSearchParams();
+            params.set('resumeRecipeDraft', '1');
+            params.set('newIngredientId', String(ingredient.id || ''));
+            const targetPage = genericReturnContext === 'mealplan' ? 'mealplan.html' : 'recipes.html';
+            window.location.href = `${targetPage}?${params.toString()}`;
             return;
         }
         
@@ -1169,7 +1179,8 @@ applyDarkMode();
 // honor that by opening the existing modal on this page.
 try {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('returnTo') === 'shopping-lists') {
+    genericReturnContext = params.get('returnTo');
+    if (genericReturnContext === 'shopping-lists') {
         shoppingListReturnContext = {
             openListId: params.get('openListId') || '',
             ingredientQuery: params.get('ingredientQuery') || ''

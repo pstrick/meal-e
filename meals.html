@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meals - Meal-E</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>">
+    <script>
+        (function () {
+            const root = document.documentElement;
+            root.classList.add('theme-preload');
+            try {
+                const raw = localStorage.getItem('meale-settings');
+                const settings = raw ? JSON.parse(raw) : null;
+                if (settings && typeof settings.theme !== 'string' && typeof settings.darkMode === 'boolean') {
+                    settings.theme = settings.darkMode ? 'dark' : 'light';
+                    localStorage.setItem('meale-settings', JSON.stringify(settings));
+                }
+                const isDark = settings ? (settings.theme === 'dark' || settings.darkMode === true) : false;
+                if (isDark) {
+                    root.classList.add('dark-mode');
+                    root.style.colorScheme = 'dark';
+                    root.style.backgroundColor = '#0f172a';
+                }
+            } catch (error) {
+                console.warn('Unable to apply stored theme preference early:', error);
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <a href="mealplan.html" class="logo">Meal-E</a>
+                <div class="nav-links">
+                    <a href="mealplan.html">Meal Plan</a>
+                    <a href="recipes.html">Recipes</a>
+                    <a href="meals.html" class="active">Meals</a>
+                    <a href="ingredients.html">Ingredients</a>
+                    <a href="shopping-lists.html">Lists</a>
+                    <a href="settings.html">Settings</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="container">
+            <h1>Meals</h1>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>Meal Library</h2>
+                    <div class="card-header-actions">
+                        <button id="add-meal-btn" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add Meal
+                        </button>
+                    </div>
+                </div>
+
+                <div class="recipes-filters">
+                    <div class="search-bar">
+                        <input type="text" id="meal-search" placeholder="Search meals..." class="search-input">
+                    </div>
+                    <div class="filter-group">
+                        <label for="meal-category-filter">Category</label>
+                        <select id="meal-category-filter">
+                            <option value="all">All categories</option>
+                            <option value="breakfast">Breakfast</option>
+                            <option value="lunch">Lunch</option>
+                            <option value="dinner">Dinner</option>
+                            <option value="snacks">Snacks</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table id="meals-table" class="recipes-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-sort="name">Name <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort="category">Category <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort="components">Components <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort="servingSize">Serving Size <span class="sort-icon"></span></th>
+                                <th class="sortable" data-sort="calories">Calories <span class="sort-icon"></span></th>
+                                <th>Macros</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="meal-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="meal-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="meal-modal-title">Add Meal</h2>
+            <form id="meal-form">
+                <div class="form-group">
+                    <label for="meal-name">Meal Name</label>
+                    <input type="text" id="meal-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="meal-category">Category</label>
+                    <select id="meal-category" required>
+                        <option value="breakfast">Breakfast</option>
+                        <option value="lunch">Lunch</option>
+                        <option value="dinner">Dinner</option>
+                        <option value="snacks">Snacks</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="meal-serving-size">Serving Size (g)</label>
+                    <input type="number" id="meal-serving-size" min="1" step="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="meal-notes">Notes (optional)</label>
+                    <textarea id="meal-notes" rows="3" placeholder="e.g. Thanksgiving plate base"></textarea>
+                </div>
+
+                <div class="card" style="margin-top: 12px;">
+                    <div class="card-header">
+                        <h3>Components</h3>
+                    </div>
+                    <div style="padding: 12px;">
+                        <div class="form-group">
+                            <label for="component-type">Type</label>
+                            <select id="component-type">
+                                <option value="recipe">Recipe</option>
+                                <option value="ingredient">Ingredient</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="component-item">Item</label>
+                            <select id="component-item"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="component-amount">Amount (g)</label>
+                            <input type="number" id="component-amount" min="1" step="1" value="100">
+                        </div>
+                        <button type="button" id="add-component-btn" class="btn btn-secondary">
+                            <i class="fas fa-plus"></i> Add Component
+                        </button>
+                        <div id="meal-components-list" style="margin-top: 12px;"></div>
+                    </div>
+                </div>
+
+                <div id="meal-preview" class="recipe-totals-section" style="margin-top: 14px;">
+                    <h3>Meal Totals (Per Serving)</h3>
+                    <div class="nutrition-totals">
+                        <div class="nutrition-item">
+                            <span class="nutrition-label">Calories</span>
+                            <span class="nutrition-value" id="meal-total-calories">0</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-label">Protein</span>
+                            <span class="nutrition-value" id="meal-total-protein">0g</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-label">Carbs</span>
+                            <span class="nutrition-value" id="meal-total-carbs">0g</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-label">Fat</span>
+                            <span class="nutrition-value" id="meal-total-fat">0g</span>
+                        </div>
+                        <div class="nutrition-item">
+                            <span class="nutrition-label">Total Cost</span>
+                            <span class="nutrition-value" id="meal-total-cost">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-meal-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Meal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/meals-page.js" type="module"></script>
+    <script src="js/footer.js" type="module"></script>
+</body>
+</html>

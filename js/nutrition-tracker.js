@@ -1,6 +1,7 @@
 // Nutrition Tracker Module
 import { settings } from './settings.js';
 import { showAlert } from './alert.js';
+import { loadMeals, calculateMealTotals, loadIngredients } from './meals.js';
 
 // Global variables
 let currentDate = new Date();
@@ -735,7 +736,17 @@ async function autoLogFromMealPlan() {
             }
         }
         
-        const mealPlan = JSON.parse(localStorage.getItem('mealPlan') || '{}');
+        const mealPlanRaw = JSON.parse(localStorage.getItem('mealPlan') || '{}');
+        const mealPlan = Object.keys(mealPlanRaw).reduce((acc, key) => {
+            const items = Array.isArray(mealPlanRaw[key]) ? mealPlanRaw[key] : [];
+            acc[key] = items.map((item) => {
+                if (item?.type === 'meal' && item?.entityType !== 'meal') {
+                    return { ...item, type: 'recipe', entityType: 'recipe' };
+                }
+                return item;
+            });
+            return acc;
+        }, {});
         console.log('Meal plan data:', mealPlan);
         console.log('Meal plan keys:', Object.keys(mealPlan));
         const dayLog = getDayLog();
@@ -798,7 +809,7 @@ async function autoLogFromMealPlan() {
                     if (item.nutrition) {
                         const amount = item.amount || 100;
                         
-                        if (item.type === 'meal') {
+                        if (item.type === 'recipe') {
                             // For recipes: look up the actual recipe to get correct serving size
                             const recipe = window.recipes.find(r => r.id === item.id);
                             const servingSize = recipe ? (recipe.servingSize || 100) : (item.servingSize || 100);
@@ -828,6 +839,19 @@ async function autoLogFromMealPlan() {
                                     itemId: item.id
                                 }
                             });
+                        } else if (item.type === 'meal') {
+                            const mealLibrary = loadMeals();
+                            const mealDefinition = mealLibrary.find((meal) => String(meal.id) === String(item.id));
+                            if (mealDefinition) {
+                                const totals = calculateMealTotals(mealDefinition, amount, {
+                                    recipes: window.recipes,
+                                    ingredients: loadIngredients()
+                                });
+                                calories = Math.round(totals.nutrition.calories || 0);
+                                protein = Math.round(totals.nutrition.protein || 0);
+                                carbs = Math.round(totals.nutrition.carbs || 0);
+                                fat = Math.round(totals.nutrition.fat || 0);
+                            }
                         } else if (item.type === 'ingredient') {
                             // For ingredients: nutrition is already per-gram
                             calories = Math.round((item.nutrition.calories || 0) * amount);
