@@ -381,38 +381,25 @@ function cloneMealItemAsOneTime(item, amountOverride = null) {
     };
 }
 
-async function duplicateMealItemToSlot(sourceItem, targetDay, targetMealType) {
-    if (!sourceItem || !targetDay || !targetMealType) {
+async function duplicateMealItemInSlot(slot, itemIndex) {
+    if (!slot || !Number.isInteger(itemIndex)) {
         return;
     }
 
-    const targetMealKey = getMealKey(targetDay, targetMealType);
-    if (!mealPlan[targetMealKey]) {
-        mealPlan[targetMealKey] = [];
+    const mealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
+    const items = mealPlan[mealKey];
+    if (!Array.isArray(items) || !items[itemIndex]) {
+        return;
     }
 
-    const duplicated = cloneMealItemAsOneTime(sourceItem);
-    mealPlan[targetMealKey].push(duplicated);
+    const duplicated = cloneMealItemAsOneTime(items[itemIndex]);
+    items.splice(itemIndex + 1, 0, duplicated);
     saveMealPlan();
     await updateMealPlanDisplay();
 }
 
 async function handleQuickDuplicateMealItem(slot, itemIndex) {
-    const sourceMealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
-    const sourceItems = mealPlan[sourceMealKey];
-    const sourceItem = sourceItems?.[itemIndex];
-    if (!sourceItem) {
-        return;
-    }
-
-    const week = getWeekDates(currentWeekOffset);
-    const currentIndex = week.dates.indexOf(slot.dataset.day);
-    if (currentIndex === -1) {
-        return;
-    }
-    const nextDay = week.dates[(currentIndex + 1) % week.dates.length];
-    await duplicateMealItemToSlot(sourceItem, nextDay, slot.dataset.meal);
-    showAlert(`Duplicated to ${nextDay} (${slot.dataset.meal}).`, 'success');
+    await duplicateMealItemInSlot(slot, itemIndex);
 }
 
 async function moveMealItemBetweenSlots(sourceContext, targetSlot) {
@@ -1738,11 +1725,12 @@ function createMealItem(item, amount, itemIndex, slot) {
             <span class="meal-item-name" title="${displayName}">${displayName}</span>
             <div class="meal-item-meta">
                 <span class="meal-item-amount">${Math.round(amount)}g</span>
+                ${caloriesText ? '<span class="meal-item-meta-separator">|</span>' : ''}
                 ${caloriesText ? `<span class="meal-item-calories">${caloriesText}</span>` : ''}
             </div>
         </div>
         <div class="meal-item-actions">
-            <button class="duplicate-meal" title="Duplicate to next day"><i class="fas fa-copy"></i></button>
+            <button class="duplicate-meal" title="Duplicate below"><i class="fas fa-copy"></i></button>
             <button class="remove-meal" title="Remove Item">&times;</button>
         </div>
     `;

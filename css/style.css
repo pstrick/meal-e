@@ -1346,19 +1346,25 @@ tbody tr:hover {
     background: var(--color-brand-soft);
 }
 
-.meal-item-header,
+.meal-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+}
+
 .meal-item-row {
     display: flex;
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
-    gap: 0.15rem;
+    gap: 0.18rem;
 }
 
 .meal-item-actions {
     position: absolute;
-    top: -0.9rem;
-    right: 0.15rem;
+    top: -1rem;
+    right: 0.2rem;
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -1391,7 +1397,7 @@ tbody tr:hover {
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 0.35rem;
+    gap: 0.18rem;
     flex-shrink: 0;
     width: 100%;
 }
@@ -1500,15 +1506,22 @@ tbody tr:hover {
 }
 
 .meal-item-amount {
-    font-size: 0.6rem;
+    font-size: 0.62rem;
     font-weight: 600;
     color: var(--color-text-muted);
     white-space: nowrap;
     flex-shrink: 0;
 }
 
+.meal-item-meta-separator {
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
 .meal-item-calories {
-    font-size: 0.6rem;
+    font-size: 0.62rem;
     font-weight: 600;
     color: var(--color-text-muted);
     white-space: nowrap;
