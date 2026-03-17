@@ -170,18 +170,44 @@ function getWegmansProductIdFromUrl(rawUrl) {
 function convertWeightToGrams(value, rawUnit) {
     const amount = Number.parseFloat(String(value));
     if (!Number.isFinite(amount) || amount <= 0) return null;
-    const unit = String(rawUnit || '').trim().toLowerCase();
+    const unit = String(rawUnit || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\./g, '')
+        .replace(/\s+/g, ' ');
+
+    // Mass units
     if (!unit || unit === 'g' || unit === 'gram' || unit === 'grams') return amount;
     if (unit === 'kg' || unit === 'kilogram' || unit === 'kilograms') return amount * 1000;
     if (unit === 'oz' || unit === 'ounce' || unit === 'ounces') return amount * 28.3495;
     if (unit === 'lb' || unit === 'lbs' || unit === 'pound' || unit === 'pounds') return amount * 453.592;
+
+    // Volume units converted using water-equivalent density.
+    if (unit === 'ml' || unit === 'milliliter' || unit === 'milliliters' || unit === 'millilitre' || unit === 'millilitres') return amount;
+    if (unit === 'l' || unit === 'liter' || unit === 'liters' || unit === 'litre' || unit === 'litres') return amount * 1000;
+    if (unit === 'fl oz' || unit === 'floz' || unit === 'fluid ounce' || unit === 'fluid ounces') return amount * 29.5735;
+    if (unit === 'cup' || unit === 'cups') return amount * 236.588;
+    if (unit === 'tbsp' || unit === 'tablespoon' || unit === 'tablespoons') return amount * 14.7868;
+    if (unit === 'tsp' || unit === 'teaspoon' || unit === 'teaspoons') return amount * 4.92892;
     return null;
 }
 
 function parseWeightStringToGrams(rawWeightString) {
     const text = String(rawWeightString || '').trim().toLowerCase();
     if (!text) return null;
-    const match = text.match(/(\d+(?:\.\d+)?)\s*(kg|kilograms?|g|grams?|oz|ounces?|lb|lbs|pounds?)/i);
+    const normalizedText = text.replace(/,/g, '').replace(/-/g, ' ');
+    const unitPattern = '(fl\\.?\\s*oz|fluid\\s*ounces?|fluid\\s*ounce|kg|kilograms?|g|grams?|oz|ounces?|lb|lbs|pounds?|ml|millilit(?:er|re)s?|l|lit(?:er|re)s?|cups?|tbsp|tablespoons?|tsp|teaspoons?)';
+
+    const multipliedMatch = normalizedText.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*[x×]\\s*(\\d+(?:\\.\\d+)?)\\s*${unitPattern}\\b`, 'i'));
+    if (multipliedMatch) {
+        const packageCount = Number.parseFloat(multipliedMatch[1]);
+        const eachSize = Number.parseFloat(multipliedMatch[2]);
+        if (Number.isFinite(packageCount) && Number.isFinite(eachSize)) {
+            return convertWeightToGrams(packageCount * eachSize, multipliedMatch[3]);
+        }
+    }
+
+    const match = normalizedText.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*${unitPattern}\\b`, 'i'));
     if (!match) return null;
     return convertWeightToGrams(match[1], match[2]);
 }
@@ -242,17 +268,20 @@ function extractWegmansTotalPrice(product) {
 }
 
 function extractWegmansStoreSection(product) {
+    const aisleLocation = String(product?.planogram?.aisle || product?.aisle?.locationName || '').trim();
+    if (aisleLocation) {
+        const aisleValue = aisleLocation.replace(/^aisle\s+/i, '').trim();
+        return aisleValue ? `Aisle ${aisleValue}` : '';
+    }
+
     const categoryNames = Array.isArray(product?.category)
         ? product.category.map(entry => String(entry?.name || '').trim()).filter(Boolean)
         : [];
     const categoryLabel = categoryNames.length > 0 ? categoryNames[categoryNames.length - 1] : '';
-
-    const aisleLocation = String(product?.planogram?.aisle || product?.aisle?.locationName || '').trim();
     const planogramSection = String(product?.planogram?.section || '').trim();
     const shelf = String(product?.planogram?.shelf || '').trim();
 
     const locationParts = [];
-    if (aisleLocation) locationParts.push(`Aisle ${aisleLocation}`);
     if (planogramSection) locationParts.push(`Section ${planogramSection}`);
     if (shelf) locationParts.push(`Shelf ${shelf}`);
 
