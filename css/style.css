@@ -1357,6 +1357,11 @@ tbody tr:hover {
     align-items: center;
     gap: 0.2rem;
     flex-shrink: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(3px);
+    transition: opacity var(--transition-base), transform var(--transition-base), visibility var(--transition-base);
 }
 
 .meal-item-name {
@@ -1366,9 +1371,9 @@ tbody tr:hover {
     line-height: 1.2;
     flex: 1;
     min-width: 0;
-    line-clamp: 2;
+    line-clamp: 3;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1426,6 +1431,28 @@ tbody tr:hover {
 
 .meal-item.is-dragging {
     opacity: 0.45;
+}
+
+.meal-item:hover .meal-item-actions,
+.meal-item:focus-within .meal-item-actions {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(0);
+}
+
+.meal-item:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 1px;
+}
+
+@media (hover: none) {
+    .meal-item-actions {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateX(0);
+    }
 }
 
 .meal-item-details {

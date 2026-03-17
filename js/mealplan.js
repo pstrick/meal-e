@@ -1689,6 +1689,7 @@ function createMealItem(item, amount, itemIndex, slot) {
     
     const div = document.createElement('div');
     div.className = 'meal-item';
+    div.tabIndex = 0;
     div.setAttribute('draggable', 'true');
     div.dataset.itemType = item.type;
     div.dataset.itemId = item.id;
@@ -1718,10 +1719,9 @@ function createMealItem(item, amount, itemIndex, slot) {
     });
 
     const displayName = item.emoji ? `${item.emoji} ${item.name}` : item.name;
-    const truncatedName = displayName.length > 72 ? `${displayName.substring(0, 69).trimEnd()}...` : displayName;
     div.innerHTML = `
         <div class="meal-item-row">
-            <span class="meal-item-name" title="${displayName}">${truncatedName}</span>
+            <span class="meal-item-name" title="${displayName}">${displayName}</span>
             <div class="meal-item-meta">
                 <span class="meal-item-amount">${Math.round(amount)}g</span>
             </div>
