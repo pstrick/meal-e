@@ -648,7 +648,10 @@ function getFilteredRecipes() {
         if (!searchTerm) return true;
         const nameMatch = (recipe.name || '').toLowerCase().includes(searchTerm);
         const ingMatch = Array.isArray(recipe.ingredients) &&
-            recipe.ingredients.some(ing => (ing.name || '').toLowerCase().includes(searchTerm));
+            recipe.ingredients.some((ing) => {
+                const ingredientName = typeof ing === 'string' ? ing : (ing && ing.name) || '';
+                return ingredientName.toLowerCase().includes(searchTerm);
+            });
         const stepsMatch = (typeof recipe.steps === 'string' && recipe.steps.toLowerCase().includes(searchTerm));
         return nameMatch || ingMatch || stepsMatch;
     });
@@ -2573,30 +2576,18 @@ async function searchAllIngredients(query) {
     console.log('Query:', query);
     console.log('Total ingredients loaded:', allMyIngredients.length);
     
-    // Filter out ingredients without valid nutrition data
-    let filteredNoNutritionCount = 0;
-    let filteredZeroNutritionCount = 0;
-    const customIngredients = allMyIngredients.filter(ingredient => {
-        if (!ingredient.nutrition) {
-            console.log('Filtering out ingredient without nutrition object:', ingredient.name);
-            filteredNoNutritionCount++;
+    // Keep all named ingredients, including zero-macro entries like water.
+    let filteredInvalidNameCount = 0;
+    const customIngredients = allMyIngredients.filter((ingredient) => {
+        const name = (ingredient && typeof ingredient.name === 'string') ? ingredient.name.trim() : '';
+        if (!name) {
+            filteredInvalidNameCount++;
             return false;
         }
-        const nutrition = ingredient.nutrition;
-        const hasValidNutrition = 
-            nutrition.calories > 0 || 
-            nutrition.protein > 0 || 
-            nutrition.carbs > 0 || 
-            nutrition.fat > 0;
-        
-        if (!hasValidNutrition) {
-            console.log('Filtering out ingredient from "my ingredients" without valid nutrition:', ingredient.name);
-            filteredZeroNutritionCount++;
-        }
-        return hasValidNutrition;
+        return true;
     });
     // #region agent log
-    fetch('http://127.0.0.1:7925/ingest/e66f7dc7-4803-4948-8dd1-b7319f9ca164',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'79d31e'},body:JSON.stringify({sessionId:'79d31e',runId:'pre-fix',hypothesisId:'H1',location:'js/app.js:2368',message:'Nutrition filter stage',data:{queryNormalized:queryLower,totalLoaded:allMyIngredients.length,keptForSearch:customIngredients.length,filteredNoNutritionCount,filteredZeroNutritionCount},timestamp:Date.now()})}).catch(()=>{});
+    fetch('http://127.0.0.1:7925/ingest/e66f7dc7-4803-4948-8dd1-b7319f9ca164',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'79d31e'},body:JSON.stringify({sessionId:'79d31e',runId:'pre-fix',hypothesisId:'H1',location:'js/app.js:2368',message:'Ingredient eligibility stage',data:{queryNormalized:queryLower,totalLoaded:allMyIngredients.length,keptForSearch:customIngredients.length,filteredInvalidNameCount},timestamp:Date.now()})}).catch(()=>{});
     // #endregion
     
     console.log('Ingredients with valid nutrition:', customIngredients.length);
@@ -2753,7 +2744,8 @@ async function searchAllIngredients(query) {
     // Add custom ingredients to results
     customMatches.forEach(ingredient => {
         // Convert nutrition from total serving size to per-gram values
-        const servingSize = ingredient.servingSize || 100; // Default to 100g if not specified
+        const servingSize = Number(ingredient.servingSize) > 0 ? Number(ingredient.servingSize) : 100;
+        const nutrition = ingredient.nutrition || {};
         const imageSource = ingredient.image || ingredient.icon || ''; // Support both for backward compatibility
         const iconHtml = imageSource ? `<img src="${imageSource}" class="ingredient-icon" style="width: 20px; height: 20px; object-fit: cover; border-radius: 4px;" alt="">` : '';
         
@@ -2769,10 +2761,10 @@ async function searchAllIngredients(query) {
             name: ingredient.name,
             source: 'custom',
             nutrition: {
-                calories: ingredient.nutrition.calories / servingSize,
-                protein: ingredient.nutrition.protein / servingSize,
-                carbs: ingredient.nutrition.carbs / servingSize,
-                fat: ingredient.nutrition.fat / servingSize
+                calories: (Number(nutrition.calories) || 0) / servingSize,
+                protein: (Number(nutrition.protein) || 0) / servingSize,
+                carbs: (Number(nutrition.carbs) || 0) / servingSize,
+                fat: (Number(nutrition.fat) || 0) / servingSize
             },
             servingSize: ingredient.servingSize,
             brandOwner: 'Custom Ingredient',
@@ -2867,23 +2859,16 @@ async function displaySearchResults(results) {
                 const carbsNum = Number(nutrition.carbs) || 0;
                 const fatNum = Number(nutrition.fat) || 0;
                 
-                // Validate nutrition data exists - check if any value is a positive number
-                const hasValidNutrition = (
-                    (Number.isFinite(caloriesNum) && caloriesNum > 0) || 
-                    (Number.isFinite(proteinNum) && proteinNum > 0) || 
-                    (Number.isFinite(carbsNum) && carbsNum > 0) || 
-                    (Number.isFinite(fatNum) && fatNum > 0)
+                // Allow ingredients with zero macros (e.g., water). Reject only non-finite values.
+                const hasFiniteNutrition = (
+                    Number.isFinite(caloriesNum) &&
+                    Number.isFinite(proteinNum) &&
+                    Number.isFinite(carbsNum) &&
+                    Number.isFinite(fatNum)
                 );
-                
-                if (!hasValidNutrition) {
-                    console.warn('⚠️ Ingredient has no valid nutrition data - rejecting selection:', {
-                        name: ingredient.name,
-                        source: ingredient.source,
-                        rawNutrition: nutrition,
-                        numericValues: { calories: caloriesNum, protein: proteinNum, carbs: carbsNum, fat: fatNum }
-                    });
-                    showAlert(`Cannot select "${ingredient.name}" - no nutrition data available.`, { type: 'warning' });
-                    return; // Don't select ingredients without valid nutrition
+                if (!hasFiniteNutrition) {
+                    showAlert(`Cannot select "${ingredient.name}" - nutrition data is invalid.`, { type: 'warning' });
+                    return;
                 }
                 
                 // CRITICAL: Normalize nutrition to per-gram format ONCE and store statically

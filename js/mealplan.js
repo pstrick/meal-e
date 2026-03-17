@@ -146,29 +146,18 @@ async function searchAllIngredients(query) {
     fetch('http://127.0.0.1:7925/ingest/e66f7dc7-4803-4948-8dd1-b7319f9ca164',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'79d31e'},body:JSON.stringify({sessionId:'79d31e',runId:'pre-fix',hypothesisId:'H1',location:'js/mealplan.js:114',message:'Mealplan ingredient search loaded ingredients',data:{queryRaw:query,queryNormalized:queryLower,totalLoaded:allMyIngredients.length},timestamp:Date.now()})}).catch(()=>{});
     // #endregion
     
-    // Filter out ingredients without valid nutrition data
-    let filteredNoNutritionCount = 0;
-    let filteredZeroNutritionCount = 0;
-    const validMyIngredients = allMyIngredients.filter(ingredient => {
-        if (!ingredient.nutrition) {
-            filteredNoNutritionCount++;
+    // Keep all named ingredients, including zero-macro entries like water.
+    let filteredInvalidNameCount = 0;
+    const validMyIngredients = allMyIngredients.filter((ingredient) => {
+        const name = (ingredient && typeof ingredient.name === 'string') ? ingredient.name.trim() : '';
+        if (!name) {
+            filteredInvalidNameCount++;
             return false;
         }
-        const nutrition = ingredient.nutrition;
-        const hasValidNutrition = 
-            nutrition.calories > 0 || 
-            nutrition.protein > 0 || 
-            nutrition.carbs > 0 || 
-            nutrition.fat > 0;
-        
-        if (!hasValidNutrition) {
-            console.log('Filtering out ingredient from "my ingredients" without valid nutrition:', ingredient.name);
-            filteredZeroNutritionCount++;
-        }
-        return hasValidNutrition;
+        return true;
     });
     // #region agent log
-    fetch('http://127.0.0.1:7925/ingest/e66f7dc7-4803-4948-8dd1-b7319f9ca164',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'79d31e'},body:JSON.stringify({sessionId:'79d31e',runId:'pre-fix',hypothesisId:'H1',location:'js/mealplan.js:132',message:'Mealplan nutrition filter stage',data:{queryNormalized:queryLower,totalLoaded:allMyIngredients.length,keptForSearch:validMyIngredients.length,filteredNoNutritionCount,filteredZeroNutritionCount},timestamp:Date.now()})}).catch(()=>{});
+    fetch('http://127.0.0.1:7925/ingest/e66f7dc7-4803-4948-8dd1-b7319f9ca164',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'79d31e'},body:JSON.stringify({sessionId:'79d31e',runId:'pre-fix',hypothesisId:'H1',location:'js/mealplan.js:132',message:'Mealplan ingredient eligibility stage',data:{queryNormalized:queryLower,totalLoaded:allMyIngredients.length,keptForSearch:validMyIngredients.length,filteredInvalidNameCount},timestamp:Date.now()})}).catch(()=>{});
     // #endregion
     
     const customIngredients = validMyIngredients.map(ingredient => ({
@@ -541,7 +530,10 @@ async function updateUnifiedList() {
         const filteredMeals = window.recipes.filter(recipe => {
             const matchesSearch = searchTerm === '' || 
                 recipe.name.toLowerCase().includes(searchTerm) ||
-                recipe.ingredients.some(ing => ing.name.toLowerCase().includes(searchTerm));
+                recipe.ingredients.some((ing) => {
+                    const ingredientName = typeof ing === 'string' ? ing : (ing && ing.name) || '';
+                    return ingredientName.toLowerCase().includes(searchTerm);
+                });
             const matchesCategory = category === 'all' || recipe.category === category;
             return matchesSearch && matchesCategory;
         });
