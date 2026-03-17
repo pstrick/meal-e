@@ -13,7 +13,6 @@ let recipes = [];
 let ingredients = [];
 let currentEditMealId = null;
 let editingComponents = [];
-let inlineEditingMealId = null;
 
 let sortColumn = 'name';
 let sortDirection = 'asc';
@@ -108,6 +107,12 @@ function setupListeners() {
             wrap.classList.remove('is-open');
         });
     });
+
+    dom.mealList?.addEventListener('click', (event) => {
+        const editable = event.target.closest('[data-inline-field][data-id]');
+        if (!editable) return;
+        beginInlineMealCellEdit(editable);
+    });
 }
 
 function onSortClick(column) {
@@ -181,51 +186,13 @@ function renderMealsTable() {
     rows.forEach((meal) => {
         const totals = calculateMealTotals(meal, meal.servingSize, { recipes, ingredients });
         const tr = document.createElement('tr');
-        const isInlineEditing = compareIds(inlineEditingMealId, meal.id);
         const mealId = escapeHtml(String(meal.id));
-        const safeName = escapeHtml(meal.name || '');
-        const safeNotes = escapeHtml(meal.notes || '');
-        const safeCategory = escapeHtml(meal.category || 'dinner');
-        const safeServingSize = Math.round(meal.servingSize || 0);
-
-        if (isInlineEditing) {
-            tr.innerHTML = `
-                <td><input class="item-inline-input" data-inline-field="name" data-id="${mealId}" value="${safeName}" /></td>
-                <td>
-                    <select class="item-inline-input" data-inline-field="category" data-id="${mealId}">
-                        <option value="breakfast" ${safeCategory === 'breakfast' ? 'selected' : ''}>Breakfast</option>
-                        <option value="lunch" ${safeCategory === 'lunch' ? 'selected' : ''}>Lunch</option>
-                        <option value="dinner" ${safeCategory === 'dinner' ? 'selected' : ''}>Dinner</option>
-                        <option value="snacks" ${safeCategory === 'snacks' ? 'selected' : ''}>Snacks</option>
-                    </select>
-                </td>
-                <td>${meal.components?.length || 0}</td>
-                <td><input type="number" min="1" step="1" class="item-inline-input" data-inline-field="servingSize" data-id="${mealId}" value="${safeServingSize || 1}" /></td>
-                <td>${Math.round(totals.nutrition.calories || 0)}</td>
-                <td><input class="item-inline-input" data-inline-field="notes" data-id="${mealId}" value="${safeNotes}" placeholder="Notes" /></td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="btn btn-primary btn-icon" type="button" data-action="inline-save" data-id="${mealId}" title="Save" aria-label="Save">
-                            <i class="fas fa-check"></i>
-                        </button>
-                        <button class="btn btn-secondary btn-icon" type="button" data-action="inline-cancel" data-id="${mealId}" title="Cancel" aria-label="Cancel">
-                            <i class="fas fa-times"></i>
-                        </button>
-                        <button class="btn btn-edit btn-icon" type="button" data-action="edit" data-id="${mealId}" title="Open full editor" aria-label="Open full editor">
-                            <i class="fas fa-expand"></i>
-                        </button>
-                    </div>
-                </td>
-            `;
-            dom.mealList.appendChild(tr);
-            return;
-        }
 
         tr.innerHTML = `
-            <td><span class="recipe-name-text">${escapeHtml(meal.name)}</span></td>
-            <td>${escapeHtml(meal.category || '')}</td>
+            <td><span class="recipe-name-text" data-inline-field="name" data-id="${mealId}">${escapeHtml(meal.name)}</span></td>
+            <td><span data-inline-field="category" data-id="${mealId}">${escapeHtml(meal.category || '')}</span></td>
             <td>${meal.components?.length || 0}</td>
-            <td>${Math.round(meal.servingSize || 0)} <small>g</small></td>
+            <td><span data-inline-field="servingSize" data-id="${mealId}">${Math.round(meal.servingSize || 0)}</span> <small>g</small></td>
             <td>${Math.round(totals.nutrition.calories || 0)}</td>
             <td>
                 <div class="macro-info">
@@ -236,7 +203,7 @@ function renderMealsTable() {
             </td>
             <td>
                 <div class="action-buttons">
-                    <button class="btn btn-edit btn-icon" data-action="inline-edit" data-id="${mealId}" title="Quick edit" aria-label="Quick edit">
+                    <button class="btn btn-edit btn-icon" data-action="edit" data-id="${mealId}" title="Edit" aria-label="Edit">
                         <i class="fas fa-edit"></i>
                     </button>
                     <div class="kebab-dropdown-wrap">
@@ -244,9 +211,6 @@ function renderMealsTable() {
                             <i class="fas fa-ellipsis-v"></i>
                         </button>
                         <div class="kebab-dropdown">
-                            <button class="kebab-item" type="button" data-action="edit" data-id="${mealId}">
-                                <i class="fas fa-expand"></i> Open full editor
-                            </button>
                             <button class="kebab-item" type="button" data-action="duplicate" data-id="${mealId}">
                                 <i class="fas fa-copy"></i> Duplicate
                             </button>
@@ -261,21 +225,6 @@ function renderMealsTable() {
         dom.mealList.appendChild(tr);
     });
 
-    dom.mealList.querySelectorAll('[data-action="inline-edit"]').forEach((button) => {
-        button.addEventListener('click', () => {
-            inlineEditingMealId = button.dataset.id;
-            renderMealsTable();
-        });
-    });
-    dom.mealList.querySelectorAll('[data-action="inline-save"]').forEach((button) => {
-        button.addEventListener('click', () => saveInlineMealEdit(button.dataset.id));
-    });
-    dom.mealList.querySelectorAll('[data-action="inline-cancel"]').forEach((button) => {
-        button.addEventListener('click', () => {
-            inlineEditingMealId = null;
-            renderMealsTable();
-        });
-    });
     dom.mealList.querySelectorAll('[data-action="edit"]').forEach((button) => {
         button.addEventListener('click', () => openMealModal(button.dataset.id));
     });
@@ -287,39 +236,80 @@ function renderMealsTable() {
     });
 }
 
-function saveInlineMealEdit(mealId) {
-    const target = meals.find((meal) => compareIds(meal.id, mealId));
-    if (!target) return;
+function beginInlineMealCellEdit(cell) {
+    if (cell.querySelector('input, select')) return;
+    const mealId = cell.dataset.id;
+    const field = cell.dataset.inlineField;
+    const meal = meals.find((item) => compareIds(item.id, mealId));
+    if (!meal) return;
 
-    const getValue = (field) => dom.mealList.querySelector(`[data-inline-field="${field}"][data-id="${CSS.escape(String(mealId))}"]`);
-    const nameInput = getValue('name');
-    const categoryInput = getValue('category');
-    const servingSizeInput = getValue('servingSize');
-    const notesInput = getValue('notes');
+    const originalValue = field === 'servingSize' ? String(Math.round(meal.servingSize || 0)) : String(meal[field] || '');
+    let editor;
 
-    const name = (nameInput?.value || '').trim();
-    const category = (categoryInput?.value || '').trim() || 'dinner';
-    const servingSize = Number.parseFloat(servingSizeInput?.value || '');
-    const notes = (notesInput?.value || '').trim();
-
-    if (!name) {
-        showAlert('Meal name is required.', { type: 'warning' });
-        return;
+    if (field === 'category') {
+        editor = document.createElement('select');
+        editor.className = 'item-inline-input';
+        ['breakfast', 'lunch', 'dinner', 'snacks'].forEach((optionValue) => {
+            const option = document.createElement('option');
+            option.value = optionValue;
+            option.textContent = optionValue.charAt(0).toUpperCase() + optionValue.slice(1);
+            if (String(meal.category || '') === optionValue) option.selected = true;
+            editor.appendChild(option);
+        });
+    } else {
+        editor = document.createElement('input');
+        editor.className = 'item-inline-input';
+        editor.type = field === 'servingSize' ? 'number' : 'text';
+        if (field === 'servingSize') {
+            editor.min = '1';
+            editor.step = '1';
+        }
+        editor.value = originalValue;
     }
-    if (!Number.isFinite(servingSize) || servingSize <= 0) {
-        showAlert('Serving size must be greater than 0.', { type: 'warning' });
-        return;
-    }
 
-    target.name = name;
-    target.category = category;
-    target.servingSize = servingSize;
-    target.notes = notes;
-    target.updatedAt = new Date().toISOString();
+    const commit = () => {
+        const rawValue = editor.value;
+        if (field === 'servingSize') {
+            const numeric = Number.parseFloat(rawValue);
+            if (!Number.isFinite(numeric) || numeric <= 0) {
+                renderMealsTable();
+                return;
+            }
+            meal.servingSize = numeric;
+        } else if (field === 'name') {
+            const trimmed = rawValue.trim();
+            if (!trimmed) {
+                renderMealsTable();
+                return;
+            }
+            meal.name = trimmed;
+        } else if (field === 'category') {
+            meal.category = rawValue || 'dinner';
+        }
+        meal.updatedAt = new Date().toISOString();
+        meals = saveMeals(meals);
+        renderMealsTable();
+    };
 
-    meals = saveMeals(meals);
-    inlineEditingMealId = null;
-    renderMealsTable();
+    const cancel = () => {
+        renderMealsTable();
+    };
+
+    editor.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            commit();
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            cancel();
+        }
+    });
+    editor.addEventListener('blur', commit, { once: true });
+
+    cell.textContent = '';
+    cell.appendChild(editor);
+    editor.focus();
+    if (editor.select) editor.select();
 }
 
 function openMealModal(mealId = null) {

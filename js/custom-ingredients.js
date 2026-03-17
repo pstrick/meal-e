@@ -89,7 +89,6 @@ let searchTerm = '';
 let filterStoreSection = '';
 let sortColumn = 'name';
 let sortDirection = 'asc';
-let inlineEditingIngredientId = null;
 
 // CSV Upload/Download DOM Elements
 const downloadCsvTemplateBtn = document.getElementById('download-csv-template-btn');
@@ -929,11 +928,8 @@ function renderIngredientsList() {
             const imageMarkup = imageSource
                 ? `<img src="${imageSource}" class="ingredient-image" alt="${ingredient.name}" title="${ingredient.name}">`
                 : '<span class="no-image">—</span>';
-            const safeSourceUrl = getSafeExternalUrl(ingredient.sourceUrl || '');
             const safeIngredientName = escapeHtmlAttr(ingredient.name || '');
-            const nameHTML = safeSourceUrl
-                ? `<a class="ingredient-name-text ingredient-source-link" href="${escapeHtmlAttr(safeSourceUrl)}" target="_blank" rel="noopener noreferrer">${safeIngredientName}</a>`
-                : `<span class="ingredient-name-text">${safeIngredientName}</span>`;
+            const nameHTML = `<span class="ingredient-name-text">${safeIngredientName}</span>`;
 
             const servingSize = ingredient.servingSize || 100;
             let priceDisplay = 'N/A';
@@ -951,34 +947,6 @@ function renderIngredientsList() {
             const carbsPerServing = (nutrition.carbs || 0).toFixed(1);
             const proteinPerServing = (nutrition.protein || 0).toFixed(1);
             const ingredientId = escapeHtmlAttr(String(ingredient.id));
-            const isInlineEditing = String(inlineEditingIngredientId) === String(ingredient.id);
-
-            if (isInlineEditing) {
-                row.innerHTML = `
-                    <td class="ingredient-image-cell">${imageMarkup}</td>
-                    <td><input class="item-inline-input" data-inline-field="name" data-id="${ingredientId}" value="${escapeHtmlAttr(ingredient.name || '')}" /></td>
-                    <td><input class="item-inline-input" data-inline-field="store" data-id="${ingredientId}" value="${escapeHtmlAttr(ingredient.store || '')}" /></td>
-                    <td><input class="item-inline-input" data-inline-field="storeSection" data-id="${ingredientId}" value="${escapeHtmlAttr(ingredient.storeSection || '')}" /></td>
-                    <td>${priceDisplay}</td>
-                    <td><input type="number" class="item-inline-input" data-inline-field="calories" data-id="${ingredientId}" min="0" step="1" value="${caloriesPerServing}" /></td>
-                    <td>${fatPerServing}/${carbsPerServing}/${proteinPerServing}</td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn btn-primary btn-icon" type="button" data-action="inline-save" data-id="${ingredientId}" title="Save" aria-label="Save">
-                                <i class="fas fa-check"></i>
-                            </button>
-                            <button class="btn btn-secondary btn-icon" type="button" data-action="inline-cancel" data-id="${ingredientId}" title="Cancel" aria-label="Cancel">
-                                <i class="fas fa-times"></i>
-                            </button>
-                            <button class="btn btn-edit btn-icon" type="button" onclick='editCustomIngredient(${JSON.stringify(String(ingredient.id))})' title="Open full editor" aria-label="Open full editor">
-                                <i class="fas fa-expand"></i>
-                            </button>
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(row);
-                return;
-            }
 
             let sourceBadge = '';
             if (ingredient.source === 'usda' || ingredient.source === 'openfoodfacts' || ingredient.source === 'wegmans' || ingredient.source === 'costco') {
@@ -992,11 +960,11 @@ function renderIngredientsList() {
 
             row.innerHTML = `
                 <td class="ingredient-image-cell">${imageMarkup}</td>
-                <td class="ingredient-name-cell">${nameHTML} ${sourceBadge}</td>
-                <td>${ingredient.store || '—'}</td>
-                <td>${ingredient.storeSection || 'Uncategorized'}</td>
+                <td class="ingredient-name-cell"><span data-inline-field="name" data-id="${ingredientId}">${nameHTML}</span> ${sourceBadge}</td>
+                <td><span data-inline-field="store" data-id="${ingredientId}">${ingredient.store || '—'}</span></td>
+                <td><span data-inline-field="storeSection" data-id="${ingredientId}">${ingredient.storeSection || 'Uncategorized'}</span></td>
                 <td>${priceDisplay}</td>
-                <td>${caloriesPerServing} <small>(${servingSize}g)</small></td>
+                <td><span data-inline-field="calories" data-id="${ingredientId}">${caloriesPerServing}</span> <small>(${servingSize}g)</small></td>
                 <td>
                     <div class="macro-info">
                         <span>F: ${fatPerServing}g</span>
@@ -1006,7 +974,7 @@ function renderIngredientsList() {
                 </td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn btn-edit btn-icon" type="button" data-action="inline-edit" data-id="${ingredientId}" title="Quick edit" aria-label="Quick edit">
+                        <button class="btn btn-edit btn-icon" type="button" onclick="editCustomIngredient('${ingredient.id}')" title="Edit" aria-label="Edit">
                             <i class="fas fa-edit"></i>
                         </button>
                         <div class="kebab-dropdown-wrap">
@@ -1014,9 +982,6 @@ function renderIngredientsList() {
                                 <i class="fas fa-ellipsis-v"></i>
                             </button>
                             <div class="kebab-dropdown">
-                                <button class="kebab-item" type="button" onclick="editCustomIngredient('${ingredient.id}'); this.closest('.kebab-dropdown-wrap').classList.remove('is-open')">
-                                    <i class="fas fa-expand"></i> Open full editor
-                                </button>
                                 <button class="kebab-item" type="button" onclick="deleteCustomIngredient('${ingredient.id}'); this.closest('.kebab-dropdown-wrap').classList.remove('is-open')">
                                     <i class="fas fa-trash"></i> Delete
                                 </button>
@@ -1027,61 +992,77 @@ function renderIngredientsList() {
             `;
             tbody.appendChild(row);
         });
-
-        tbody.querySelectorAll('[data-action="inline-edit"]').forEach((button) => {
-            button.addEventListener('click', () => {
-                inlineEditingIngredientId = button.dataset.id;
-                renderIngredientsList();
-            });
-        });
-        tbody.querySelectorAll('[data-action="inline-save"]').forEach((button) => {
-            button.addEventListener('click', () => saveInlineIngredientEdit(button.dataset.id));
-        });
-        tbody.querySelectorAll('[data-action="inline-cancel"]').forEach((button) => {
-            button.addEventListener('click', () => {
-                inlineEditingIngredientId = null;
-                renderIngredientsList();
-            });
-        });
     } catch (error) {
         console.error('Error rendering ingredients list:', error);
     }
 }
 
-function saveInlineIngredientEdit(ingredientId) {
+function beginInlineIngredientCellEdit(cell) {
+    if (cell.querySelector('input')) return;
+    const ingredientId = cell.dataset.id;
+    const field = cell.dataset.inlineField;
     const ingredient = customIngredients.find((item) => String(item.id) === String(ingredientId));
-    if (!ingredient) return;
+    if (!ingredient || !field) return;
 
-    const getField = (field) => ingredientsList.querySelector(`[data-inline-field="${field}"][data-id="${CSS.escape(String(ingredientId))}"]`);
-    const nameInput = getField('name');
-    const storeInput = getField('store');
-    const sectionInput = getField('storeSection');
-    const caloriesInput = getField('calories');
+    const currentValue = field === 'calories'
+        ? String(Math.round((ingredient.nutrition?.calories || 0)))
+        : String(ingredient[field] || '');
 
-    const nextName = (nameInput?.value || '').trim();
-    const nextStore = (storeInput?.value || '').trim();
-    const nextSection = normalizeStoreSectionName((sectionInput?.value || '').trim());
-    const nextCalories = Number.parseFloat(caloriesInput?.value || '');
-
-    if (!nextName) {
-        alert('Ingredient name is required.');
-        return;
+    const input = document.createElement('input');
+    input.className = 'item-inline-input';
+    if (field === 'calories') {
+        input.type = 'number';
+        input.min = '0';
+        input.step = '1';
+    } else {
+        input.type = 'text';
     }
-    if (!Number.isFinite(nextCalories) || nextCalories < 0) {
-        alert('Calories must be 0 or greater.');
-        return;
-    }
+    input.value = currentValue;
 
-    ingredient.name = nextName;
-    ingredient.store = nextStore;
-    ingredient.storeSection = nextSection;
-    ingredient.nutrition = ingredient.nutrition || { calories: 0, fat: 0, carbs: 0, protein: 0 };
-    ingredient.nutrition.calories = Math.round(nextCalories);
-    ensureStoreSectionExists(nextSection);
-    saveCustomIngredients();
-    updateStoreSectionFilterOptions();
-    inlineEditingIngredientId = null;
-    renderIngredientsList();
+    const commit = () => {
+        const raw = input.value.trim();
+        if (field === 'name') {
+            if (!raw) {
+                renderIngredientsList();
+                return;
+            }
+            ingredient.name = raw;
+        } else if (field === 'calories') {
+            const numeric = Number.parseFloat(raw);
+            if (!Number.isFinite(numeric) || numeric < 0) {
+                renderIngredientsList();
+                return;
+            }
+            ingredient.nutrition = ingredient.nutrition || { calories: 0, fat: 0, carbs: 0, protein: 0 };
+            ingredient.nutrition.calories = Math.round(numeric);
+        } else if (field === 'storeSection') {
+            ingredient.storeSection = normalizeStoreSectionName(raw);
+            ensureStoreSectionExists(ingredient.storeSection);
+        } else {
+            ingredient[field] = raw;
+        }
+        saveCustomIngredients();
+        updateStoreSectionFilterOptions();
+        renderIngredientsList();
+    };
+
+    const cancel = () => renderIngredientsList();
+
+    input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            commit();
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            cancel();
+        }
+    });
+    input.addEventListener('blur', commit, { once: true });
+
+    cell.textContent = '';
+    cell.appendChild(input);
+    input.focus();
+    input.select();
 }
 
 // Edit custom ingredient
@@ -1439,6 +1420,13 @@ const sortableHeaders = ingredientsList ? ingredientsList.querySelectorAll('th.s
 sortableHeaders.forEach(th => {
     th.addEventListener('click', onSortHeaderClick);
 });
+if (ingredientsList) {
+    ingredientsList.addEventListener('click', (event) => {
+        const editable = event.target.closest('[data-inline-field][data-id]');
+        if (!editable) return;
+        beginInlineIngredientCellEdit(editable);
+    });
+}
 if (addIngredientBtn) {
     addIngredientBtn.addEventListener('click', () => openIngredientModal());
 }

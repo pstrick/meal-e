@@ -13,7 +13,6 @@ let quickAddSearchTimeout = null;
 let quickAddResults = [];
 let quickAddActiveIndex = -1;
 let draggedSectionName = null;
-let inlineEditingListId = null;
 
 let addListBtn;
 let listsTableBody;
@@ -261,6 +260,12 @@ function setupEventListeners() {
                 wrap.classList.remove('is-open');
             });
         }
+    });
+
+    listsTableBody?.addEventListener('click', (event) => {
+        const editable = event.target.closest('[data-inline-field][data-list-id]');
+        if (!editable) return;
+        beginInlineListCellEdit(editable);
     });
 }
 
@@ -867,40 +872,15 @@ function renderListsTable() {
         const listId = escapeHtml(String(list.id));
         const safeName = escapeHtml(list.name || '');
         const safeDescription = escapeHtml(list.description || '');
-        const isInlineEditing = compareIds(inlineEditingListId, list.id);
-
-        if (isInlineEditing) {
-            row.innerHTML = `
-                <td><input class="item-inline-input" data-inline-field="name" data-id="${listId}" value="${safeName}" /></td>
-                <td><input class="item-inline-input" data-inline-field="description" data-id="${listId}" value="${safeDescription}" /></td>
-                <td>${itemCount}</td>
-                <td>${escapeHtml(created)}</td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="btn btn-primary btn-icon" type="button" data-action="inline-save" data-list-id="${listId}" title="Save" aria-label="Save">
-                            <i class="fas fa-check"></i>
-                        </button>
-                        <button class="btn btn-secondary btn-icon" type="button" data-action="inline-cancel" data-list-id="${listId}" title="Cancel" aria-label="Cancel">
-                            <i class="fas fa-times"></i>
-                        </button>
-                        <button class="btn btn-edit btn-icon list-edit-btn" data-list-id="${listId}" title="Open full editor" aria-label="Open full editor">
-                            <i class="fas fa-expand"></i>
-                        </button>
-                    </div>
-                </td>
-            `;
-            listsTableBody.appendChild(row);
-            return;
-        }
 
         row.innerHTML = `
-            <td><span class="ingredient-name-text">${safeName}</span></td>
-            <td>${safeDescription || '—'}</td>
+            <td><span class="ingredient-name-text" data-inline-field="name" data-list-id="${listId}">${safeName}</span></td>
+            <td><span data-inline-field="description" data-list-id="${listId}">${safeDescription || '—'}</span></td>
             <td>${itemCount}</td>
             <td>${escapeHtml(created)}</td>
             <td>
                 <div class="action-buttons">
-                    <button class="btn btn-edit btn-icon" data-action="inline-edit" data-list-id="${listId}" title="Quick edit" aria-label="Quick edit">
+                    <button class="btn btn-edit btn-icon list-edit-btn" data-list-id="${listId}" title="Edit" aria-label="Edit">
                         <i class="fas fa-edit"></i>
                     </button>
                     <div class="kebab-dropdown-wrap">
@@ -908,9 +888,6 @@ function renderListsTable() {
                             <i class="fas fa-ellipsis-v"></i>
                         </button>
                         <div class="kebab-dropdown">
-                            <button class="kebab-item list-edit-btn" type="button" data-list-id="${listId}">
-                                <i class="fas fa-expand"></i> Open full editor
-                            </button>
                             <button class="kebab-item list-duplicate-btn" type="button" data-list-id="${listId}">
                                 <i class="fas fa-copy"></i> Duplicate
                             </button>
@@ -925,21 +902,6 @@ function renderListsTable() {
         listsTableBody.appendChild(row);
     });
 
-    listsTableBody.querySelectorAll('[data-action="inline-edit"]').forEach((button) => {
-        button.addEventListener('click', () => {
-            inlineEditingListId = button.dataset.listId;
-            renderListsTable();
-        });
-    });
-    listsTableBody.querySelectorAll('[data-action="inline-save"]').forEach((button) => {
-        button.addEventListener('click', () => saveInlineListEdit(button.dataset.listId));
-    });
-    listsTableBody.querySelectorAll('[data-action="inline-cancel"]').forEach((button) => {
-        button.addEventListener('click', () => {
-            inlineEditingListId = null;
-            renderListsTable();
-        });
-    });
     listsTableBody.querySelectorAll('.list-edit-btn').forEach((button) => {
         button.addEventListener('click', () => openManageListModal(button.dataset.listId));
     });
@@ -953,27 +915,46 @@ function renderListsTable() {
     });
 }
 
-function saveInlineListEdit(listId) {
+function beginInlineListCellEdit(cell) {
+    if (cell.querySelector('input')) return;
+    const listId = cell.dataset.listId;
+    const field = cell.dataset.inlineField;
     const list = getListById(listId);
-    if (!list) return;
+    if (!list || !field) return;
 
-    const queryByField = (field) => listsTableBody.querySelector(`[data-inline-field="${field}"][data-id="${CSS.escape(String(listId))}"]`);
-    const nameInput = queryByField('name');
-    const descriptionInput = queryByField('description');
+    const currentValue = String(list[field] || '');
+    const input = document.createElement('input');
+    input.className = 'item-inline-input';
+    input.value = currentValue;
 
-    const nextName = (nameInput?.value || '').trim();
-    const nextDescription = (descriptionInput?.value || '').trim();
+    const commit = () => {
+        const nextValue = input.value.trim();
+        if (field === 'name' && !nextValue) {
+            renderListsTable();
+            return;
+        }
+        list[field] = nextValue;
+        saveShoppingLists();
+        renderListsTable();
+    };
 
-    if (!nextName) {
-        notifyUser('List name is required.', { type: 'warning' });
-        return;
-    }
+    const cancel = () => renderListsTable();
 
-    list.name = nextName;
-    list.description = nextDescription;
-    saveShoppingLists();
-    inlineEditingListId = null;
-    renderListsTable();
+    input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            commit();
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            cancel();
+        }
+    });
+    input.addEventListener('blur', commit, { once: true });
+
+    cell.textContent = '';
+    cell.appendChild(input);
+    input.focus();
+    input.select();
 }
 
 function duplicateShoppingList(listId) {
