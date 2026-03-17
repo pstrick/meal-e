@@ -293,6 +293,35 @@ function getWeekColumnIndexForWeekday(weekdayIndex) {
     return (parsedWeekdayIndex - startDay + 7) % 7;
 }
 
+function reorderRecurringDayCheckboxes() {
+    const daysContainer = mealPlanForm?.querySelector('.days-checkboxes');
+    if (!daysContainer) {
+        return;
+    }
+
+    const checkboxLabels = Array.from(daysContainer.querySelectorAll('label'));
+    const labelByDayIndex = new Map();
+    checkboxLabels.forEach(label => {
+        const checkbox = label.querySelector('input[name="recurring-days"]');
+        if (!checkbox) {
+            return;
+        }
+        const dayIndex = Number.parseInt(String(checkbox.value), 10);
+        if (Number.isInteger(dayIndex) && dayIndex >= 0 && dayIndex <= 6) {
+            labelByDayIndex.set(dayIndex, label);
+        }
+    });
+
+    const startDay = getMealPlanStartDay();
+    for (let offset = 0; offset < 7; offset++) {
+        const dayIndex = (startDay + offset) % 7;
+        const dayLabel = labelByDayIndex.get(dayIndex);
+        if (dayLabel) {
+            daysContainer.appendChild(dayLabel);
+        }
+    }
+}
+
 function getWeekDates(weekOffset = 0) {
     if (!baseStartOfWeekTimestamp) {
         baseStartOfWeekTimestamp = getBaseStartOfWeekTimestamp();
@@ -431,6 +460,7 @@ function openMealPlanModal(slot) {
     if (recurringOptions) {
         recurringOptions.style.display = 'none';
     }
+    reorderRecurringDayCheckboxes();
     
     // Store the slot reference in a data attribute
     mealPlanForm.dataset.currentSlot = `${slot.dataset.day}-${slot.dataset.meal}`;
@@ -1352,7 +1382,6 @@ function initializeRecurringItems() {
 function initializeRecurringModalOptions() {
     const makeRecurringCheckbox = document.getElementById('make-recurring');
     const recurringDetails = document.querySelector('.recurring-details');
-    const recurringOptions = document.querySelector('.recurring-options');
     
     if (makeRecurringCheckbox && recurringDetails) {
         makeRecurringCheckbox.addEventListener('change', function() {
@@ -1363,6 +1392,8 @@ function initializeRecurringModalOptions() {
             }
         });
     }
+
+    reorderRecurringDayCheckboxes();
 }
 
 

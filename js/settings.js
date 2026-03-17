@@ -89,6 +89,7 @@ function initializeForm() {
             settings.mealPlanStartDay = startDay;
             saveToLocalStorage();
             updateRecurringItemsDisplay();
+            reorderEditRecurringDayCheckboxes();
             console.log('Settings updated:', settings);
         });
     }
@@ -129,6 +130,8 @@ function initializeForm() {
     if (saveNutritionGoalsBtn) {
         saveNutritionGoalsBtn.addEventListener('click', saveNutritionGoals);
     }
+
+    reorderEditRecurringDayCheckboxes();
 }
 
 async function saveNutritionGoals() {
@@ -212,6 +215,35 @@ function formatRecurringDaysByWeekStart(days) {
     return orderedSelectedDayLabels.join(', ');
 }
 
+function reorderEditRecurringDayCheckboxes() {
+    const daysContainer = document.querySelector('#edit-recurring-item-modal .days-checkboxes');
+    if (!daysContainer) {
+        return;
+    }
+
+    const checkboxLabels = Array.from(daysContainer.querySelectorAll('label'));
+    const labelByDayIndex = new Map();
+    checkboxLabels.forEach(label => {
+        const checkbox = label.querySelector('input[name="edit-recurring-days"]');
+        if (!checkbox) {
+            return;
+        }
+        const dayIndex = Number.parseInt(String(checkbox.value), 10);
+        if (Number.isInteger(dayIndex) && dayIndex >= 0 && dayIndex <= 6) {
+            labelByDayIndex.set(dayIndex, label);
+        }
+    });
+
+    const startDay = getMealPlanStartDayForDisplay();
+    for (let offset = 0; offset < 7; offset++) {
+        const dayIndex = (startDay + offset) % 7;
+        const dayLabel = labelByDayIndex.get(dayIndex);
+        if (dayLabel) {
+            daysContainer.appendChild(dayLabel);
+        }
+    }
+}
+
 function updateRecurringItemsDisplay() {
     const recurringItemsList = document.getElementById('recurring-items-list');
     if (!recurringItemsList) return;
@@ -268,6 +300,7 @@ function openEditRecurringItemModal(itemId) {
     }
     
     currentEditingItemId = itemId;
+    reorderEditRecurringDayCheckboxes();
     
     // Populate form fields
     document.getElementById('edit-recurring-name').value = item.name;
