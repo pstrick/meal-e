@@ -2350,25 +2350,24 @@ function selectIngredient(ingredient) {
             nutritionKeys: ingredient.nutrition ? Object.keys(ingredient.nutrition) : []
         });
         
-        // Validate nutrition data exists - filter out ingredients with no valid nutrition
-        // Check if any value is a positive number (even very small per-gram values are valid)
-        const hasValidNutrition = (
-            (Number.isFinite(caloriesNum) && caloriesNum > 0) || 
-            (Number.isFinite(proteinNum) && proteinNum > 0) || 
-            (Number.isFinite(carbsNum) && carbsNum > 0) || 
-            (Number.isFinite(fatNum) && fatNum > 0)
+        // Allow zero-macro ingredients (e.g., water). Reject only non-finite values.
+        const hasFiniteNutrition = (
+            Number.isFinite(caloriesNum) &&
+            Number.isFinite(proteinNum) &&
+            Number.isFinite(carbsNum) &&
+            Number.isFinite(fatNum)
         );
         
-        if (!hasValidNutrition) {
-            console.warn('⚠️ Ingredient has no valid nutrition data - rejecting selection:', {
+        if (!hasFiniteNutrition) {
+            console.warn('⚠️ Ingredient has invalid nutrition numbers - rejecting selection:', {
                 name: ingredient.name,
                 source: ingredient.source,
                 rawNutrition: nutrition,
                 numericValues: { calories: caloriesNum, protein: proteinNum, carbs: carbsNum, fat: fatNum },
                 fullIngredient: ingredient
             });
-            showAlert(`Cannot select "${ingredient.name}" - no nutrition data available.`, { type: 'warning' });
-            return; // Don't select ingredients without valid nutrition
+            showAlert(`Cannot select "${ingredient.name}" - nutrition data is invalid.`, { type: 'warning' });
+            return;
         }
         
         // Set default amount to 100g if empty
