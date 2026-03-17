@@ -4041,11 +4041,18 @@ function printMealPlan(selectedRecipeIds = []) {
                     margin-bottom: 0;
                 }
                 
-                .meal-item-header,
-                .meal-item-row {
+                .meal-item-header {
                     display: flex;
                     align-items: center;
                     gap: 4px;
+                }
+
+                .meal-item-row {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: stretch;
+                    justify-content: flex-start;
+                    gap: 2px;
                 }
                 
                 .meal-item-name {
@@ -4053,12 +4060,17 @@ function printMealPlan(selectedRecipeIds = []) {
                     margin: 0;
                     font-size: 7.6pt;
                     word-break: break-word;
-                    flex: 1;
+                    line-height: 1.2;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
                 }
 
                 .meal-item-meta {
-                    display: inline-flex;
+                    display: flex;
                     align-items: center;
+                    justify-content: flex-start;
                     gap: 4px;
                 }
                 
@@ -4070,12 +4082,17 @@ function printMealPlan(selectedRecipeIds = []) {
                     flex-shrink: 0;
                 }
                 
-                .remove-meal {
-                    display: none;
+                .meal-item-meta-separator,
+                .meal-item-calories {
+                    font-size: 7.4pt;
+                    font-weight: 600;
+                    color: #6b7280;
+                    white-space: nowrap;
                 }
 
-                .duplicate-meal,
-                .meal-item-context {
+                .meal-item-actions,
+                .remove-meal,
+                .duplicate-meal {
                     display: none;
                 }
                 
