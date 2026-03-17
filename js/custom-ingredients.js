@@ -89,6 +89,7 @@ let searchTerm = '';
 let filterStoreSection = '';
 let sortColumn = 'name';
 let sortDirection = 'asc';
+let inlineEditingIngredientId = null;
 
 // CSV Upload/Download DOM Elements
 const downloadCsvTemplateBtn = document.getElementById('download-csv-template-btn');
@@ -949,6 +950,35 @@ function renderIngredientsList() {
             const fatPerServing = (nutrition.fat || 0).toFixed(1);
             const carbsPerServing = (nutrition.carbs || 0).toFixed(1);
             const proteinPerServing = (nutrition.protein || 0).toFixed(1);
+            const ingredientId = escapeHtmlAttr(String(ingredient.id));
+            const isInlineEditing = String(inlineEditingIngredientId) === String(ingredient.id);
+
+            if (isInlineEditing) {
+                row.innerHTML = `
+                    <td class="ingredient-image-cell">${imageMarkup}</td>
+                    <td><input class="item-inline-input" data-inline-field="name" data-id="${ingredientId}" value="${escapeHtmlAttr(ingredient.name || '')}" /></td>
+                    <td><input class="item-inline-input" data-inline-field="store" data-id="${ingredientId}" value="${escapeHtmlAttr(ingredient.store || '')}" /></td>
+                    <td><input class="item-inline-input" data-inline-field="storeSection" data-id="${ingredientId}" value="${escapeHtmlAttr(ingredient.storeSection || '')}" /></td>
+                    <td>${priceDisplay}</td>
+                    <td><input type="number" class="item-inline-input" data-inline-field="calories" data-id="${ingredientId}" min="0" step="1" value="${caloriesPerServing}" /></td>
+                    <td>${fatPerServing}/${carbsPerServing}/${proteinPerServing}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary btn-icon" type="button" data-action="inline-save" data-id="${ingredientId}" title="Save" aria-label="Save">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="btn btn-secondary btn-icon" type="button" data-action="inline-cancel" data-id="${ingredientId}" title="Cancel" aria-label="Cancel">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <button class="btn btn-edit btn-icon" type="button" onclick='editCustomIngredient(${JSON.stringify(String(ingredient.id))})' title="Open full editor" aria-label="Open full editor">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+                return;
+            }
 
             let sourceBadge = '';
             if (ingredient.source === 'usda' || ingredient.source === 'openfoodfacts' || ingredient.source === 'wegmans' || ingredient.source === 'costco') {
@@ -976,7 +1006,7 @@ function renderIngredientsList() {
                 </td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn btn-edit btn-icon" onclick="editCustomIngredient('${ingredient.id}')" title="Edit" aria-label="Edit">
+                        <button class="btn btn-edit btn-icon" type="button" data-action="inline-edit" data-id="${ingredientId}" title="Quick edit" aria-label="Quick edit">
                             <i class="fas fa-edit"></i>
                         </button>
                         <div class="kebab-dropdown-wrap">
@@ -984,6 +1014,9 @@ function renderIngredientsList() {
                                 <i class="fas fa-ellipsis-v"></i>
                             </button>
                             <div class="kebab-dropdown">
+                                <button class="kebab-item" type="button" onclick="editCustomIngredient('${ingredient.id}'); this.closest('.kebab-dropdown-wrap').classList.remove('is-open')">
+                                    <i class="fas fa-expand"></i> Open full editor
+                                </button>
                                 <button class="kebab-item" type="button" onclick="deleteCustomIngredient('${ingredient.id}'); this.closest('.kebab-dropdown-wrap').classList.remove('is-open')">
                                     <i class="fas fa-trash"></i> Delete
                                 </button>
@@ -994,9 +1027,61 @@ function renderIngredientsList() {
             `;
             tbody.appendChild(row);
         });
+
+        tbody.querySelectorAll('[data-action="inline-edit"]').forEach((button) => {
+            button.addEventListener('click', () => {
+                inlineEditingIngredientId = button.dataset.id;
+                renderIngredientsList();
+            });
+        });
+        tbody.querySelectorAll('[data-action="inline-save"]').forEach((button) => {
+            button.addEventListener('click', () => saveInlineIngredientEdit(button.dataset.id));
+        });
+        tbody.querySelectorAll('[data-action="inline-cancel"]').forEach((button) => {
+            button.addEventListener('click', () => {
+                inlineEditingIngredientId = null;
+                renderIngredientsList();
+            });
+        });
     } catch (error) {
         console.error('Error rendering ingredients list:', error);
     }
+}
+
+function saveInlineIngredientEdit(ingredientId) {
+    const ingredient = customIngredients.find((item) => String(item.id) === String(ingredientId));
+    if (!ingredient) return;
+
+    const getField = (field) => ingredientsList.querySelector(`[data-inline-field="${field}"][data-id="${CSS.escape(String(ingredientId))}"]`);
+    const nameInput = getField('name');
+    const storeInput = getField('store');
+    const sectionInput = getField('storeSection');
+    const caloriesInput = getField('calories');
+
+    const nextName = (nameInput?.value || '').trim();
+    const nextStore = (storeInput?.value || '').trim();
+    const nextSection = normalizeStoreSectionName((sectionInput?.value || '').trim());
+    const nextCalories = Number.parseFloat(caloriesInput?.value || '');
+
+    if (!nextName) {
+        alert('Ingredient name is required.');
+        return;
+    }
+    if (!Number.isFinite(nextCalories) || nextCalories < 0) {
+        alert('Calories must be 0 or greater.');
+        return;
+    }
+
+    ingredient.name = nextName;
+    ingredient.store = nextStore;
+    ingredient.storeSection = nextSection;
+    ingredient.nutrition = ingredient.nutrition || { calories: 0, fat: 0, carbs: 0, protein: 0 };
+    ingredient.nutrition.calories = Math.round(nextCalories);
+    ensureStoreSectionExists(nextSection);
+    saveCustomIngredients();
+    updateStoreSectionFilterOptions();
+    inlineEditingIngredientId = null;
+    renderIngredientsList();
 }
 
 // Edit custom ingredient
@@ -1314,11 +1399,21 @@ if (uploadCsvBtn && uploadCsvModal && uploadCsvForm) {
         if (event.target === uploadCsvModal) {
             closeCsvUploadModal();
         }
+        if (!event.target.closest('.kebab-dropdown-wrap')) {
+            document.querySelectorAll('.kebab-dropdown-wrap.is-open').forEach((wrap) => {
+                wrap.classList.remove('is-open');
+            });
+        }
     });
     
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && uploadCsvModal && uploadCsvModal.classList.contains('active')) {
             closeCsvUploadModal();
+        }
+        if (event.key === 'Escape') {
+            document.querySelectorAll('.kebab-dropdown-wrap.is-open').forEach((wrap) => {
+                wrap.classList.remove('is-open');
+            });
         }
     });
 }

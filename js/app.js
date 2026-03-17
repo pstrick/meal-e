@@ -56,6 +56,7 @@ let selectedIngredients = new Map(); // Maps ingredient IDs to their nutrition d
 
 // Track the current recipe being edited
 let currentEditRecipeId = null;
+let inlineEditingRecipeId = null;
 const RECIPE_DRAFT_SESSION_KEY = 'meale-return-recipe-draft';
 const RECIPE_DRAFT_MAX_AGE_MS = 30 * 60 * 1000;
 let recipeDraftResumeHandled = false;
@@ -924,6 +925,45 @@ function createRecipeRow(recipe) {
     const category = escapeRecipeHtml((recipe.category || '').trim() || '—');
     const name = escapeRecipeHtml((recipe.name || '').trim() || 'Untitled');
     const id = recipe.id;
+    const safeId = escapeRecipeHtml(String(id));
+    const isInlineEditing = String(inlineEditingRecipeId) === String(id);
+
+    if (isInlineEditing) {
+        row.innerHTML = `
+            <td class="recipe-name-cell"><input class="item-inline-input" data-inline-field="name" data-id="${safeId}" value="${escapeRecipeHtml((recipe.name || '').trim())}"></td>
+            <td>
+                <select class="item-inline-input" data-inline-field="category" data-id="${safeId}">
+                    <option value="breakfast" ${recipe.category === 'breakfast' ? 'selected' : ''}>Breakfast</option>
+                    <option value="lunch" ${recipe.category === 'lunch' ? 'selected' : ''}>Lunch</option>
+                    <option value="dinner" ${recipe.category === 'dinner' ? 'selected' : ''}>Dinner</option>
+                    <option value="snacks" ${recipe.category === 'snacks' ? 'selected' : ''}>Snacks</option>
+                </select>
+            </td>
+            <td><input type="number" min="1" step="1" class="item-inline-input" data-inline-field="servingSize" data-id="${safeId}" value="${servingSize || 1}"></td>
+            <td>${calories}</td>
+            <td>
+                <div class="macro-info">
+                    <span>F: ${fat}g</span>
+                    <span>C: ${carbs}g</span>
+                    <span>P: ${protein}g</span>
+                </div>
+            </td>
+            <td>
+                <div class="action-buttons">
+                    <button class="btn btn-primary btn-icon" type="button" data-action="inline-save" data-id="${safeId}" title="Save" aria-label="Save">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="btn btn-secondary btn-icon" type="button" data-action="inline-cancel" data-id="${safeId}" title="Cancel" aria-label="Cancel">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <button class="btn btn-edit btn-icon" type="button" data-action="edit" data-id="${safeId}" title="Open full editor" aria-label="Open full editor">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        return row;
+    }
 
     row.innerHTML = `
         <td class="recipe-name-cell"><span class="recipe-name-text">${name}</span></td>
@@ -939,7 +979,7 @@ function createRecipeRow(recipe) {
         </td>
         <td>
             <div class="action-buttons">
-                <button class="btn btn-edit btn-icon" onclick="editRecipe(${id})" title="Edit" aria-label="Edit">
+                <button class="btn btn-edit btn-icon" type="button" data-action="inline-edit" data-id="${safeId}" title="Quick edit" aria-label="Quick edit">
                     <i class="fas fa-edit"></i>
                 </button>
                 <div class="kebab-dropdown-wrap">
@@ -947,13 +987,16 @@ function createRecipeRow(recipe) {
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
                     <div class="kebab-dropdown">
-                        <button class="kebab-item" type="button" onclick="duplicateRecipe(${id}); this.closest('.kebab-dropdown-wrap').classList.remove('is-open')">
+                        <button class="kebab-item" type="button" data-action="edit" data-id="${safeId}">
+                            <i class="fas fa-expand"></i> Open full editor
+                        </button>
+                        <button class="kebab-item" type="button" data-action="duplicate" data-id="${safeId}">
                             <i class="fas fa-copy"></i> Duplicate
                         </button>
-                        <button class="kebab-item" type="button" onclick="printRecipe(${id}); this.closest('.kebab-dropdown-wrap').classList.remove('is-open')">
+                        <button class="kebab-item" type="button" data-action="print" data-id="${safeId}">
                             <i class="fas fa-print"></i> Print
                         </button>
-                        <button class="kebab-item" type="button" onclick="deleteRecipe(${id}); this.closest('.kebab-dropdown-wrap').classList.remove('is-open')">
+                        <button class="kebab-item" type="button" data-action="delete" data-id="${safeId}">
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </div>
@@ -1707,7 +1750,7 @@ if (document.readyState === 'loading') {
 
 // Print recipe function
 function printRecipe(id) {
-    const recipe = recipes.find(r => r.id === id);
+    const recipe = recipes.find(r => String(r.id) === String(id));
     if (!recipe) return;
 
     const printWindow = window.open('', '_blank');
@@ -2036,7 +2079,7 @@ function printRecipe(id) {
 
 // Update editRecipe to set the global edit ID and handler
 function editRecipe(id) {
-    const recipe = recipes.find(r => r.id === id);
+    const recipe = recipes.find(r => String(r.id) === String(id));
     if (!recipe) return;
     recipeForm.reset();
     ingredientsList.innerHTML = '';
@@ -3914,7 +3957,7 @@ function addRecipe(recipe) {
 }
 
 async function deleteRecipe(id) {
-    const recipe = recipes.find(r => r.id === id);
+    const recipe = recipes.find(r => String(r.id) === String(id));
     const recipeName = recipe?.name ? `"${recipe.name}"` : 'this recipe';
 
     const confirmed = await showAlert(
@@ -3933,13 +3976,13 @@ async function deleteRecipe(id) {
         return;
     }
 
-    recipes = recipes.filter(recipe => recipe.id !== id);
+    recipes = recipes.filter(recipe => String(recipe.id) !== String(id));
     updateRecipeList();
     saveToLocalStorage();
 }
 
 function duplicateRecipe(id) {
-    const originalRecipe = recipes.find(recipe => recipe.id === id);
+    const originalRecipe = recipes.find(recipe => String(recipe.id) === String(id));
     if (!originalRecipe) {
         console.error('Recipe not found for duplication');
         return;
@@ -4134,6 +4177,68 @@ function updateRecipeList() {
     sorted.forEach(recipe => {
         tbody.appendChild(createRecipeRow(recipe));
     });
+
+    tbody.querySelectorAll('[data-action="inline-edit"]').forEach((button) => {
+        button.addEventListener('click', () => startInlineRecipeEdit(button.dataset.id));
+    });
+    tbody.querySelectorAll('[data-action="inline-save"]').forEach((button) => {
+        button.addEventListener('click', () => saveInlineRecipeEdit(button.dataset.id));
+    });
+    tbody.querySelectorAll('[data-action="inline-cancel"]').forEach((button) => {
+        button.addEventListener('click', () => cancelInlineRecipeEdit());
+    });
+    tbody.querySelectorAll('[data-action="edit"]').forEach((button) => {
+        button.addEventListener('click', () => editRecipe(button.dataset.id));
+    });
+    tbody.querySelectorAll('[data-action="duplicate"]').forEach((button) => {
+        button.addEventListener('click', () => duplicateRecipe(button.dataset.id));
+    });
+    tbody.querySelectorAll('[data-action="print"]').forEach((button) => {
+        button.addEventListener('click', () => printRecipe(button.dataset.id));
+    });
+    tbody.querySelectorAll('[data-action="delete"]').forEach((button) => {
+        button.addEventListener('click', () => deleteRecipe(button.dataset.id));
+    });
+}
+
+function startInlineRecipeEdit(id) {
+    inlineEditingRecipeId = String(id);
+    updateRecipeList();
+}
+
+function cancelInlineRecipeEdit() {
+    inlineEditingRecipeId = null;
+    updateRecipeList();
+}
+
+function saveInlineRecipeEdit(id) {
+    const recipe = recipes.find((item) => String(item.id) === String(id));
+    if (!recipe) return;
+
+    const selector = (field) => document.querySelector(`[data-inline-field="${field}"][data-id="${CSS.escape(String(id))}"]`);
+    const nameInput = selector('name');
+    const categoryInput = selector('category');
+    const servingSizeInput = selector('servingSize');
+
+    const nextName = (nameInput?.value || '').trim();
+    const nextCategory = (categoryInput?.value || '').trim() || 'dinner';
+    const nextServingSize = Number.parseFloat(servingSizeInput?.value || '');
+
+    if (!nextName) {
+        showAlert('Recipe name is required.', { type: 'warning' });
+        return;
+    }
+    if (!Number.isFinite(nextServingSize) || nextServingSize <= 0) {
+        showAlert('Serving size must be greater than 0.', { type: 'warning' });
+        return;
+    }
+
+    recipe.name = nextName;
+    recipe.category = nextCategory;
+    recipe.servingSize = nextServingSize;
+    saveToLocalStorage();
+    inlineEditingRecipeId = null;
+    updateRecipeList();
 }
 
 // Make recipes available globally for other modules
@@ -4144,3 +4249,22 @@ window.duplicateRecipe = duplicateRecipe;
 window.deleteRecipe = deleteRecipe;
 window.printRecipe = printRecipe;
 window.openRecipeModal = openModal; 
+window.startInlineRecipeEdit = startInlineRecipeEdit;
+window.cancelInlineRecipeEdit = cancelInlineRecipeEdit;
+window.saveInlineRecipeEdit = saveInlineRecipeEdit;
+
+document.addEventListener('click', (event) => {
+    if (event.target.closest('.kebab-dropdown-wrap')) {
+        return;
+    }
+    document.querySelectorAll('.kebab-dropdown-wrap.is-open').forEach((wrap) => {
+        wrap.classList.remove('is-open');
+    });
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    document.querySelectorAll('.kebab-dropdown-wrap.is-open').forEach((wrap) => {
+        wrap.classList.remove('is-open');
+    });
+});

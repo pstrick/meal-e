@@ -573,6 +573,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    document.addEventListener('click', (event) => {
+        if (event.target.closest('.kebab-dropdown-wrap')) {
+            return;
+        }
+        document.querySelectorAll('.kebab-dropdown-wrap.is-open').forEach((wrap) => {
+            wrap.classList.remove('is-open');
+        });
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return;
+        document.querySelectorAll('.kebab-dropdown-wrap.is-open').forEach((wrap) => {
+            wrap.classList.remove('is-open');
+        });
+    });
 });
 
 // Export settings utilities

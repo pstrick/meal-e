@@ -927,34 +927,72 @@ tbody tr:hover {
     font-weight: 700;
 }
 
-/* Ingredient Modal - Fit within viewport */
-#ingredient-modal .modal-content {
-    max-height: calc(100vh - 4rem);
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-}
-
-#ingredient-modal .modal-content form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    min-height: 0;
-}
-
-/* Recipe Modal - Fit within viewport */
-#recipe-modal .modal-content {
-    max-height: calc(100vh - 4rem);
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-}
-
-#recipe-modal .modal-content form {
+/* Full-screen editor takeovers */
+#meal-modal .modal-content,
+#recipe-modal .modal-content,
+#ingredient-modal .modal-content,
+#list-details-modal .modal-content,
+#edit-recurring-item-modal .modal-content {
+    width: 100%;
+    max-width: none;
+    min-height: 100vh;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    padding: clamp(1.5rem, 2vw + 1rem, 3rem);
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
-    min-height: 0;
+    overflow-y: auto;
+    background: var(--color-bg);
+}
+
+#meal-modal.modal,
+#recipe-modal.modal,
+#ingredient-modal.modal,
+#list-details-modal.modal,
+#edit-recurring-item-modal.modal {
+    padding: 0;
+}
+
+#meal-modal.modal.active,
+#recipe-modal.modal.active,
+#ingredient-modal.modal.active,
+#list-details-modal.modal.active,
+#edit-recurring-item-modal.modal.active {
+    align-items: stretch;
+}
+
+#meal-modal .modal-content form,
+#recipe-modal .modal-content form,
+#ingredient-modal .modal-content form,
+#edit-recurring-item-modal .modal-content form {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+#meal-modal .form-actions,
+#recipe-modal .form-actions,
+#ingredient-modal .form-actions,
+#edit-recurring-item-modal .form-actions {
+    margin-top: auto;
+    position: sticky;
+    bottom: 0;
+    padding-top: var(--space-3);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, var(--color-bg) 36%);
+}
+
+#meal-modal .modal-content > .close,
+#recipe-modal .modal-content > .close,
+#ingredient-modal .modal-content > .close,
+#list-details-modal .modal-content > .close,
+#edit-recurring-item-modal .modal-content > .close {
+    position: sticky;
+    top: 1rem;
+    align-self: flex-end;
+    z-index: 1;
 }
 
 .scrape-progress,
