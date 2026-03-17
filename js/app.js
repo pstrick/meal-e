@@ -198,6 +198,44 @@ function buildIngredientCreateUrl(returnTo) {
     return `ingredients.html?${params.toString()}`;
 }
 
+function getCustomIngredientById(ingredientId) {
+    if (!ingredientId) return null;
+    try {
+        const primary = JSON.parse(localStorage.getItem('meale-my-ingredients') || '[]');
+        const fallback = JSON.parse(localStorage.getItem('meale-custom-ingredients') || '[]');
+        const allIngredients = Array.isArray(primary) && primary.length > 0 ? primary : fallback;
+        return allIngredients.find((ingredient) => String(ingredient?.id) === String(ingredientId)) || null;
+    } catch (error) {
+        console.error('Unable to read custom ingredients for draft resume:', error);
+        return null;
+    }
+}
+
+function toSearchResultFromCustomIngredient(ingredient) {
+    if (!ingredient) return null;
+    const servingSize = Number(ingredient.servingSize) > 0 ? Number(ingredient.servingSize) : 100;
+    const nutrition = ingredient.nutrition || {};
+    return {
+        id: ingredient.id,
+        fdcId: `custom-${ingredient.id}`,
+        name: ingredient.name || '',
+        source: 'custom',
+        nutrition: {
+            calories: (Number(nutrition.calories) || 0) / servingSize,
+            protein: (Number(nutrition.protein) || 0) / servingSize,
+            carbs: (Number(nutrition.carbs) || 0) / servingSize,
+            fat: (Number(nutrition.fat) || 0) / servingSize
+        },
+        servingSize: ingredient.servingSize,
+        brandOwner: 'Custom Ingredient',
+        store: ingredient.store || '',
+        storeSection: ingredient.storeSection || '',
+        emoji: ingredient.emoji || '',
+        pricePerGram: ingredient.pricePerGram || null,
+        pricePer100g: ingredient.pricePerGram ? ingredient.pricePerGram * 100 : null
+    };
+}
+
 function launchIngredientCreatorFromRecipeFlow(sourceInput = null) {
     const recipeModalEl = document.getElementById('recipe-modal');
     const ingredientsContainer = document.getElementById('ingredients-list');
@@ -381,13 +419,20 @@ function resumeRecipeDraftIfNeeded() {
         const targetItem = ingredientsContainer.children[targetIndex] || ingredientsContainer.children[0];
         if (targetItem && newIngredientId) {
             openIngredientSearch(targetItem);
+            const createdIngredient = getCustomIngredientById(newIngredientId);
+            const createdIngredientSearchResult = toSearchResultFromCustomIngredient(createdIngredient);
+            if (createdIngredientSearchResult) {
+                currentIngredientInput = targetItem;
+                selectIngredient(createdIngredientSearchResult);
+                removeSearchDropdown();
+            }
             const refreshedInput = targetItem.querySelector('.ingredient-name');
             if (refreshedInput) {
                 const query = draft.focusedQuery || refreshedInput.value || '';
                 refreshedInput.value = query;
-                if (query.length >= 2) {
+                if (!createdIngredientSearchResult && query.length >= 2) {
                     refreshedInput.dispatchEvent(new Event('input', { bubbles: true }));
-                } else {
+                } else if (!createdIngredientSearchResult) {
                     refreshedInput.focus();
                 }
             }
