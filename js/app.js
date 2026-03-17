@@ -58,6 +58,7 @@ let selectedIngredients = new Map(); // Maps ingredient IDs to their nutrition d
 let currentEditRecipeId = null;
 const RECIPE_DRAFT_SESSION_KEY = 'meale-return-recipe-draft';
 const RECIPE_DRAFT_MAX_AGE_MS = 30 * 60 * 1000;
+let recipeDraftResumeHandled = false;
 
 // Recipe table sort state (recipes page)
 let recipeSortColumn = 'name';
@@ -327,6 +328,11 @@ function resumeRecipeDraftIfNeeded() {
     if (params.get('resumeRecipeDraft') !== '1') {
         return;
     }
+    if (recipeDraftResumeHandled) {
+        cleanupRecipeDraftResumeQuery();
+        return;
+    }
+    recipeDraftResumeHandled = true;
 
     const recipeModalEl = document.getElementById('recipe-modal');
     const ingredientsContainer = document.getElementById('ingredients-list');
@@ -342,6 +348,7 @@ function resumeRecipeDraftIfNeeded() {
         }
     };
 
+    let draftRestored = false;
     try {
         const rawDraft = sessionStorage.getItem(RECIPE_DRAFT_SESSION_KEY);
         if (!rawDraft) {
@@ -411,6 +418,7 @@ function resumeRecipeDraftIfNeeded() {
 
         updateServingSizeDefault();
         updateTotalNutrition();
+        draftRestored = true;
 
         const newIngredientId = params.get('newIngredientId');
         const targetIndex = Number.isInteger(draft.focusedIngredientIndex)
@@ -418,30 +426,36 @@ function resumeRecipeDraftIfNeeded() {
             : 0;
         const targetItem = ingredientsContainer.children[targetIndex] || ingredientsContainer.children[0];
         if (targetItem && newIngredientId) {
-            openIngredientSearch(targetItem);
-            const createdIngredient = getCustomIngredientById(newIngredientId);
-            const createdIngredientSearchResult = toSearchResultFromCustomIngredient(createdIngredient);
-            if (createdIngredientSearchResult) {
-                currentIngredientInput = targetItem;
-                selectIngredient(createdIngredientSearchResult);
-                removeSearchDropdown();
-            }
-            const refreshedInput = targetItem.querySelector('.ingredient-name');
-            if (refreshedInput) {
-                const query = draft.focusedQuery || refreshedInput.value || '';
-                refreshedInput.value = query;
-                if (!createdIngredientSearchResult && query.length >= 2) {
-                    refreshedInput.dispatchEvent(new Event('input', { bubbles: true }));
-                } else if (!createdIngredientSearchResult) {
-                    refreshedInput.focus();
+            try {
+                openIngredientSearch(targetItem);
+                const createdIngredient = getCustomIngredientById(newIngredientId);
+                const createdIngredientSearchResult = toSearchResultFromCustomIngredient(createdIngredient);
+                if (createdIngredientSearchResult) {
+                    currentIngredientInput = targetItem;
+                    selectIngredient(createdIngredientSearchResult);
+                    removeSearchDropdown();
                 }
+                const refreshedInput = targetItem.querySelector('.ingredient-name');
+                if (refreshedInput) {
+                    const query = draft.focusedQuery || refreshedInput.value || '';
+                    refreshedInput.value = query;
+                    if (!createdIngredientSearchResult && query.length >= 2) {
+                        refreshedInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    } else if (!createdIngredientSearchResult) {
+                        refreshedInput.focus();
+                    }
+                }
+            } catch (focusError) {
+                console.error('Error finalizing ingredient focus after recipe restore:', focusError);
             }
         }
 
         sessionStorage.removeItem(RECIPE_DRAFT_SESSION_KEY);
     } catch (error) {
         console.error('Error restoring recipe draft:', error);
-        openFallbackModal();
+        if (!draftRestored) {
+            openFallbackModal();
+        }
     } finally {
         cleanupRecipeDraftResumeQuery();
     }
