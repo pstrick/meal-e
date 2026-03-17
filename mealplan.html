@@ -209,6 +209,36 @@
                         <label for="edit-item-amount">Amount (g):</label>
                         <input type="number" id="edit-item-amount" min="1" step="1" value="100" required>
                     </div>
+
+                    <div class="recurring-options">
+                        <h3>Recurring Options</h3>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="edit-make-recurring"> Make this a recurring item
+                            </label>
+                        </div>
+
+                        <div class="recurring-details edit-recurring-details" style="display: none;">
+                            <div class="form-group">
+                                <label>Days of Week</label>
+                                <div class="days-checkboxes edit-days-checkboxes">
+                                    <label><input type="checkbox" name="edit-recurring-days" value="0"> Sunday</label>
+                                    <label><input type="checkbox" name="edit-recurring-days" value="1"> Monday</label>
+                                    <label><input type="checkbox" name="edit-recurring-days" value="2"> Tuesday</label>
+                                    <label><input type="checkbox" name="edit-recurring-days" value="3"> Wednesday</label>
+                                    <label><input type="checkbox" name="edit-recurring-days" value="4"> Thursday</label>
+                                    <label><input type="checkbox" name="edit-recurring-days" value="5"> Friday</label>
+                                    <label><input type="checkbox" name="edit-recurring-days" value="6"> Saturday</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="edit-recurring-end-date">End Date (optional)</label>
+                                <input type="date" id="edit-recurring-end-date" placeholder="Leave blank for indefinite">
+                                <small>Leave blank to recur indefinitely</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="form-actions">

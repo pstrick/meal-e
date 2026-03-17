@@ -25,6 +25,7 @@ let selectedItem = null;
 let editingItem = null;
 let editingSlot = null;
 let editingItemIndex = null;
+let draggedMealItemContext = null;
 let mealPlanForm = null;
 let mealPlanModal = null;
 let cancelMeal = null;
@@ -320,6 +321,173 @@ function reorderRecurringDayCheckboxes() {
             daysContainer.appendChild(dayLabel);
         }
     }
+}
+
+function reorderRecurringDayCheckboxesInContainer(daysContainer, checkboxName) {
+    if (!daysContainer) {
+        return;
+    }
+
+    const checkboxLabels = Array.from(daysContainer.querySelectorAll('label'));
+    const labelByDayIndex = new Map();
+    checkboxLabels.forEach(label => {
+        const checkbox = label.querySelector(`input[name="${checkboxName}"]`);
+        if (!checkbox) {
+            return;
+        }
+        const dayIndex = Number.parseInt(String(checkbox.value), 10);
+        if (Number.isInteger(dayIndex) && dayIndex >= 0 && dayIndex <= 6) {
+            labelByDayIndex.set(dayIndex, label);
+        }
+    });
+
+    const startDay = getMealPlanStartDay();
+    for (let offset = 0; offset < 7; offset++) {
+        const dayIndex = (startDay + offset) % 7;
+        const dayLabel = labelByDayIndex.get(dayIndex);
+        if (dayLabel) {
+            daysContainer.appendChild(dayLabel);
+        }
+    }
+}
+
+function addDeletedRecurringInstance(recurringId, day, mealType) {
+    if (!recurringId || !day || !mealType) {
+        return;
+    }
+    const deletedKey = `${recurringId}-${day}-${mealType}`;
+    const deletedInstances = JSON.parse(localStorage.getItem('meale-deleted-recurring-instances') || '[]');
+    if (!deletedInstances.includes(deletedKey)) {
+        deletedInstances.push(deletedKey);
+        localStorage.setItem('meale-deleted-recurring-instances', JSON.stringify(deletedInstances));
+    }
+}
+
+function cloneMealItemAsOneTime(item, amountOverride = null) {
+    return {
+        type: item.type,
+        entityType: item.entityType || item.type,
+        id: item.id,
+        amount: amountOverride ?? item.amount ?? 100,
+        name: item.name,
+        nutrition: item.nutrition,
+        servingSize: item.servingSize,
+        store: item.store || '',
+        storeSection: item.storeSection || '',
+        emoji: item.emoji || '',
+        source: item.source || 'custom',
+        fdcId: item.fdcId || null,
+        cost: item.cost || 0
+    };
+}
+
+async function duplicateMealItemToSlot(sourceItem, targetDay, targetMealType) {
+    if (!sourceItem || !targetDay || !targetMealType) {
+        return;
+    }
+
+    const targetMealKey = getMealKey(targetDay, targetMealType);
+    if (!mealPlan[targetMealKey]) {
+        mealPlan[targetMealKey] = [];
+    }
+
+    const duplicated = cloneMealItemAsOneTime(sourceItem);
+    mealPlan[targetMealKey].push(duplicated);
+    saveMealPlan();
+    await updateMealPlanDisplay();
+}
+
+async function handleQuickDuplicateMealItem(slot, itemIndex) {
+    const sourceMealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
+    const sourceItems = mealPlan[sourceMealKey];
+    const sourceItem = sourceItems?.[itemIndex];
+    if (!sourceItem) {
+        return;
+    }
+
+    const week = getWeekDates(currentWeekOffset);
+    const currentIndex = week.dates.indexOf(slot.dataset.day);
+    if (currentIndex === -1) {
+        return;
+    }
+    const nextDay = week.dates[(currentIndex + 1) % week.dates.length];
+    await duplicateMealItemToSlot(sourceItem, nextDay, slot.dataset.meal);
+    showAlert(`Duplicated to ${nextDay} (${slot.dataset.meal}).`, 'success');
+}
+
+async function moveMealItemBetweenSlots(sourceContext, targetSlot) {
+    if (!sourceContext || !targetSlot) {
+        return;
+    }
+
+    const sourceMealKey = getMealKey(sourceContext.day, sourceContext.meal);
+    const targetMealKey = getMealKey(targetSlot.dataset.day, targetSlot.dataset.meal);
+    const sourceItems = mealPlan[sourceMealKey];
+    if (!Array.isArray(sourceItems) || !sourceItems[sourceContext.itemIndex]) {
+        return;
+    }
+
+    if (sourceMealKey === targetMealKey) {
+        return;
+    }
+
+    const sourceItem = sourceItems[sourceContext.itemIndex];
+    let movedItem = { ...sourceItem };
+
+    if (sourceItem.isRecurring && sourceItem.recurringId) {
+        addDeletedRecurringInstance(sourceItem.recurringId, sourceContext.day, sourceContext.meal);
+        movedItem = cloneMealItemAsOneTime(sourceItem);
+    }
+
+    sourceItems.splice(sourceContext.itemIndex, 1);
+    if (sourceItems.length === 0) {
+        delete mealPlan[sourceMealKey];
+    }
+    if (!mealPlan[targetMealKey]) {
+        mealPlan[targetMealKey] = [];
+    }
+    mealPlan[targetMealKey].push(movedItem);
+
+    saveMealPlan();
+    await updateMealPlanDisplay();
+}
+
+function setupMealSlotDropZone(slot) {
+    if (!slot) {
+        return;
+    }
+
+    slot.addEventListener('dragover', (event) => {
+        if (!draggedMealItemContext) {
+            return;
+        }
+        event.preventDefault();
+        slot.classList.add('drag-over');
+    });
+
+    slot.addEventListener('dragleave', () => {
+        slot.classList.remove('drag-over');
+    });
+
+    slot.addEventListener('drop', async (event) => {
+        event.preventDefault();
+        slot.classList.remove('drag-over');
+
+        let sourceContext = draggedMealItemContext;
+        if (!sourceContext && event.dataTransfer) {
+            try {
+                sourceContext = JSON.parse(event.dataTransfer.getData('text/plain') || '{}');
+            } catch (error) {
+                sourceContext = null;
+            }
+        }
+
+        if (!sourceContext) {
+            return;
+        }
+
+        await moveMealItemBetweenSlots(sourceContext, slot);
+    });
 }
 
 function getWeekDates(weekOffset = 0) {
@@ -1168,6 +1336,28 @@ function openEditMealItemModal(item, amount, itemIndex, slot) {
     if (amountInput) {
         amountInput.value = itemData.amount || amount || 100;
     }
+
+    const editRecurringCheckbox = editModal.querySelector('#edit-make-recurring');
+    const editRecurringDetails = editModal.querySelector('.edit-recurring-details');
+    const editRecurringDays = editModal.querySelectorAll('input[name="edit-recurring-days"]');
+    const editRecurringEndDate = editModal.querySelector('#edit-recurring-end-date');
+
+    if (editRecurringCheckbox && editRecurringDetails) {
+        const recurringSource = itemData.isRecurring && itemData.recurringId
+            ? recurringItems.find(recurringItem => String(recurringItem.id) === String(itemData.recurringId))
+            : null;
+
+        editRecurringCheckbox.checked = !!recurringSource;
+        editRecurringDetails.style.display = recurringSource ? 'block' : 'none';
+
+        editRecurringDays.forEach((checkbox) => {
+            checkbox.checked = recurringSource ? recurringSource.days.includes(Number.parseInt(checkbox.value, 10)) : false;
+        });
+
+        if (editRecurringEndDate) {
+            editRecurringEndDate.value = recurringSource?.endDate || '';
+        }
+    }
     
     editModal.classList.add('active');
 }
@@ -1199,10 +1389,85 @@ async function handleEditMealItemSubmit(e) {
     
     const amountInput = document.getElementById('edit-item-amount');
     const newAmount = parseInt(amountInput?.value) || 100;
-    
-    // Update the amount
-    items[editingItemIndex].amount = newAmount;
-    
+    const currentItem = items[editingItemIndex];
+    const editModal = document.getElementById('edit-meal-item-modal');
+    const setRecurring = !!editModal?.querySelector('#edit-make-recurring')?.checked;
+    const selectedDays = Array.from(editModal?.querySelectorAll('input[name="edit-recurring-days"]:checked') || [])
+        .map((checkbox) => Number.parseInt(checkbox.value, 10))
+        .filter((value) => Number.isInteger(value) && value >= 0 && value <= 6);
+    const endDate = editModal?.querySelector('#edit-recurring-end-date')?.value || null;
+
+    if (setRecurring) {
+        if (selectedDays.length === 0) {
+            alert('Please select at least one day of the week for recurring items.');
+            return;
+        }
+
+        const recurringPayload = {
+            name: currentItem.name,
+            type: currentItem.type,
+            entityType: currentItem.entityType || currentItem.type,
+            amount: newAmount,
+            mealType: editingSlot.dataset.meal,
+            days: selectedDays,
+            itemId: currentItem.id,
+            nutrition: currentItem.nutrition,
+            servingSize: currentItem.servingSize,
+            store: currentItem.store || '',
+            storeSection: currentItem.storeSection || '',
+            emoji: currentItem.emoji || '',
+            endDate: endDate || null,
+            source: currentItem.source || 'custom',
+            fdcId: currentItem.fdcId || null,
+            cost: currentItem.cost || 0
+        };
+
+        if (currentItem.isRecurring && currentItem.recurringId) {
+            const recurringIndex = recurringItems.findIndex(item => String(item.id) === String(currentItem.recurringId));
+            if (recurringIndex !== -1) {
+                recurringItems[recurringIndex] = {
+                    ...recurringItems[recurringIndex],
+                    ...recurringPayload
+                };
+            } else {
+                recurringItems.push({
+                    id: currentItem.recurringId,
+                    ...recurringPayload
+                });
+            }
+        } else {
+            recurringItems.push({
+                id: Date.now(),
+                ...recurringPayload
+            });
+            items.splice(editingItemIndex, 1);
+            if (items.length === 0) {
+                delete mealPlan[mealKey];
+            }
+        }
+
+        saveRecurringItems();
+        applyRecurringItems();
+        saveMealPlan();
+        await updateMealPlanDisplay();
+        closeEditMealItemModal();
+        return;
+    }
+
+    if (currentItem.isRecurring && currentItem.recurringId) {
+        recurringItems = recurringItems.filter(item => String(item.id) !== String(currentItem.recurringId));
+        saveRecurringItems();
+        applyRecurringItems();
+
+        const oneTimeMealKey = getMealKey(editingSlot.dataset.day, editingSlot.dataset.meal);
+        if (!mealPlan[oneTimeMealKey]) {
+            mealPlan[oneTimeMealKey] = [];
+        }
+        mealPlan[oneTimeMealKey].push(cloneMealItemAsOneTime(currentItem, newAmount));
+    } else {
+        items[editingItemIndex].amount = newAmount;
+    }
+
     saveMealPlan();
     await updateMealPlanDisplay();
     closeEditMealItemModal();
@@ -1396,6 +1661,25 @@ function initializeRecurringModalOptions() {
     reorderRecurringDayCheckboxes();
 }
 
+function initializeEditRecurringModalOptions() {
+    const editModal = document.getElementById('edit-meal-item-modal');
+    if (!editModal) {
+        return;
+    }
+
+    const makeRecurringCheckbox = editModal.querySelector('#edit-make-recurring');
+    const recurringDetails = editModal.querySelector('.edit-recurring-details');
+    const editDaysContainer = editModal.querySelector('.edit-days-checkboxes');
+
+    if (makeRecurringCheckbox && recurringDetails) {
+        makeRecurringCheckbox.addEventListener('change', function() {
+            recurringDetails.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+
+    reorderRecurringDayCheckboxesInContainer(editDaysContainer, 'edit-recurring-days');
+}
+
 
 // Make recurring functions globally available
 window.deleteRecurringItem = deleteRecurringItem;
@@ -1405,10 +1689,33 @@ function createMealItem(item, amount, itemIndex, slot) {
     
     const div = document.createElement('div');
     div.className = 'meal-item';
+    div.setAttribute('draggable', 'true');
     div.dataset.itemType = item.type;
     div.dataset.itemId = item.id;
     div.dataset.itemAmount = amount;
     div.dataset.itemEmoji = item.emoji || '';
+    div.dataset.itemIndex = itemIndex;
+    div.dataset.sourceDay = slot.dataset.day;
+    div.dataset.sourceMeal = slot.dataset.meal;
+
+    div.addEventListener('dragstart', (event) => {
+        draggedMealItemContext = {
+            day: slot.dataset.day,
+            meal: slot.dataset.meal,
+            itemIndex
+        };
+        div.classList.add('is-dragging');
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', JSON.stringify(draggedMealItemContext));
+        }
+    });
+
+    div.addEventListener('dragend', () => {
+        div.classList.remove('is-dragging');
+        draggedMealItemContext = null;
+        document.querySelectorAll('.meal-slot.drag-over').forEach((slotNode) => slotNode.classList.remove('drag-over'));
+    });
     
     // Handle custom meal items
     if (item.type === 'custommeal') {
@@ -1419,7 +1726,10 @@ function createMealItem(item, amount, itemIndex, slot) {
             <div class="meal-item-header">
                 <span class="meal-item-name" title="${displayName}">${truncatedName}</span>
                 <span class="meal-item-amount">${Math.round(amount)}g</span>
-                <button class="remove-meal" title="Remove Item">&times;</button>
+                <div class="meal-item-actions">
+                    <button class="duplicate-meal" title="Duplicate to next day"><i class="fas fa-copy"></i></button>
+                    <button class="remove-meal" title="Remove Item">&times;</button>
+                </div>
             </div>
         `;
         
@@ -1434,10 +1744,15 @@ function createMealItem(item, amount, itemIndex, slot) {
                 updateMealPlanDisplay();
             }
         });
+
+        div.querySelector('.duplicate-meal')?.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await handleQuickDuplicateMealItem(slot, itemIndex);
+        });
         
         // Add click handler to open edit modal
         div.addEventListener('click', (e) => {
-            if (e.target.closest('.remove-meal')) return;
+            if (e.target.closest('.remove-meal') || e.target.closest('.duplicate-meal')) return;
             e.stopPropagation();
             openEditMealItemModal(item, amount, itemIndex, slot);
         });
@@ -1510,7 +1825,10 @@ function createMealItem(item, amount, itemIndex, slot) {
         <div class="meal-item-header">
             <span class="meal-item-name" title="${displayName}">${truncatedName}</span>
             <span class="meal-item-amount">${Math.round(amount)}g</span>
-            <button class="remove-meal" title="Remove Item">&times;</button>
+            <div class="meal-item-actions">
+                <button class="duplicate-meal" title="Duplicate to next day"><i class="fas fa-copy"></i></button>
+                <button class="remove-meal" title="Remove Item">&times;</button>
+            </div>
         </div>
     `;
     
@@ -1539,10 +1857,15 @@ function createMealItem(item, amount, itemIndex, slot) {
             updateMealPlanDisplay();
         }
     });
+
+    div.querySelector('.duplicate-meal')?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await handleQuickDuplicateMealItem(slot, itemIndex);
+    });
     
     // Add click handler to open edit modal
     div.addEventListener('click', (e) => {
-        if (e.target.closest('.remove-meal')) return;
+        if (e.target.closest('.remove-meal') || e.target.closest('.duplicate-meal')) return;
         e.stopPropagation();
         openEditMealItemModal(item, amount, itemIndex, slot);
     });
@@ -2002,6 +2325,7 @@ async function continueInitialization() {
         
         // Initialize recurring options in modal
         initializeRecurringModalOptions();
+        initializeEditRecurringModalOptions();
         
         // Initialize edit meal item modal
         const editMealItemModal = document.getElementById('edit-meal-item-modal');
@@ -2358,6 +2682,8 @@ async function addAddMealButton(slot) {
         if (e.target.closest('button')) return;
         openMealPlanModal(slot);
     });
+
+    setupMealSlotDropZone(slot);
 }
 
 // Add flag to prevent multiple simultaneous updates

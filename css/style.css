@@ -1353,6 +1353,12 @@ tbody tr:hover {
     gap: var(--space-2);
 }
 
+.meal-item-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+}
+
 .meal-item-name {
     font-weight: 600;
     font-size: 0.7rem;
@@ -1379,11 +1385,39 @@ tbody tr:hover {
     transition: color var(--transition-base), background-color var(--transition-base);
 }
 
+.duplicate-meal {
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 0.75rem;
+    line-height: 1;
+    padding: 0.2rem 0.25rem;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition-base), background-color var(--transition-base);
+}
+
+.duplicate-meal:hover,
+.duplicate-meal:focus-visible {
+    color: var(--color-brand);
+    background: var(--color-brand-soft);
+    outline: none;
+}
+
 .remove-meal:hover,
 .remove-meal:focus-visible {
     color: var(--color-danger);
     background: rgba(192, 57, 43, 0.08);
     outline: none;
+}
+
+.meal-slot.drag-over {
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 2px var(--color-brand-soft);
+}
+
+.meal-item.is-dragging {
+    opacity: 0.45;
 }
 
 .meal-item-details {
@@ -2845,6 +2879,38 @@ tbody tr:hover {
 
 .recurring-item-info p {
     color: var(--color-text-muted);
+}
+
+.settings-section-description {
+    color: var(--color-text-muted);
+}
+
+.settings-store-section-action {
+    justify-content: flex-end;
+}
+
+.settings-store-section-action .btn {
+    width: 100%;
+}
+
+.settings-store-sections-list {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.settings-store-section-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-alt);
+}
+
+.settings-store-section-name {
+    font-weight: 600;
 }
 
 /* Miscellaneous ---------------------------------------------------------- */
