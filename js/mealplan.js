@@ -1719,14 +1719,11 @@ function createMealItem(item, amount, itemIndex, slot) {
 
     const displayName = item.emoji ? `${item.emoji} ${item.name}` : item.name;
     const truncatedName = displayName.length > 72 ? `${displayName.substring(0, 69).trimEnd()}...` : displayName;
-    const mealContext = `${(slot.dataset.meal || '').charAt(0).toUpperCase()}${(slot.dataset.meal || '').slice(1)}`;
-
     div.innerHTML = `
         <div class="meal-item-row">
             <span class="meal-item-name" title="${displayName}">${truncatedName}</span>
             <div class="meal-item-meta">
                 <span class="meal-item-amount">${Math.round(amount)}g</span>
-                <span class="meal-item-context">${mealContext}</span>
             </div>
             <div class="meal-item-actions">
                 <button class="duplicate-meal" title="Duplicate to next day"><i class="fas fa-copy"></i></button>

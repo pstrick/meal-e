@@ -1474,18 +1474,6 @@ tbody tr:hover {
     flex-shrink: 0;
 }
 
-.meal-item-context {
-    font-size: 0.56rem;
-    font-weight: 700;
-    color: var(--color-brand-strong);
-    border: 1px solid var(--color-border);
-    background: var(--color-surface);
-    border-radius: 999px;
-    padding: 0.08rem 0.32rem;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-}
-
 .empty-slot {
     text-align: center;
     font-weight: 600;
