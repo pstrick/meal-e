@@ -1,5 +1,6 @@
 import { version } from './version.js';
 import { showAlert } from './alert.js';
+import { DEFAULT_STORE_SECTIONS, normalizeStoreSectionName, sanitizeStoreSections } from './store-sections.js';
 
 // Initialize settings immediately
 let settings = {
@@ -7,6 +8,7 @@ let settings = {
     theme: 'light',
     darkMode: false,      // Kept for backwards compatibility
     defaultWegmansStoreNumber: 24,
+    storeSections: [...DEFAULT_STORE_SECTIONS],
     nutritionGoals: {
         calories: 2000,
         protein: 150,
@@ -27,6 +29,8 @@ function normalizeThemeSettings(target) {
     target.darkMode = target.theme === 'dark';
     const parsedStore = Number.parseInt(String(target.defaultWegmansStoreNumber ?? ''), 10);
     target.defaultWegmansStoreNumber = Number.isInteger(parsedStore) && parsedStore > 0 ? parsedStore : 24;
+    const normalizedSections = sanitizeStoreSections(target.storeSections);
+    target.storeSections = normalizedSections.length > 0 ? normalizedSections : [...DEFAULT_STORE_SECTIONS];
     return target;
 }
 
@@ -131,7 +135,93 @@ function initializeForm() {
         saveNutritionGoalsBtn.addEventListener('click', saveNutritionGoals);
     }
 
+    initializeStoreSectionsUI();
     reorderEditRecurringDayCheckboxes();
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function renderStoreSectionsList() {
+    const listEl = document.getElementById('store-sections-list');
+    if (!listEl) return;
+
+    const sections = sanitizeStoreSections(settings.storeSections);
+    settings.storeSections = sections.length > 0 ? sections : [];
+
+    if (settings.storeSections.length === 0) {
+        listEl.innerHTML = '<div class="no-items">No store sections configured yet</div>';
+        return;
+    }
+
+    listEl.innerHTML = settings.storeSections.map(section => `
+        <div class="settings-store-section-item">
+            <span class="settings-store-section-name">${escapeHtml(section)}</span>
+            <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                data-remove-store-section="${escapeHtml(section)}"
+                aria-label="Remove ${escapeHtml(section)} store section"
+            >
+                <i class="fas fa-trash"></i> Remove
+            </button>
+        </div>
+    `).join('');
+}
+
+function initializeStoreSectionsUI() {
+    const addBtn = document.getElementById('add-store-section-btn');
+    const input = document.getElementById('new-store-section');
+    const listEl = document.getElementById('store-sections-list');
+
+    if (!addBtn || !input || !listEl) return;
+
+    const addStoreSection = () => {
+        const sectionName = normalizeStoreSectionName(input.value);
+        if (!sectionName) {
+            showAlert('Enter a store section name before adding.', { type: 'error' });
+            return;
+        }
+
+        const exists = (settings.storeSections || []).some(section => section.toLowerCase() === sectionName.toLowerCase());
+        if (exists) {
+            showAlert('That store section already exists.', { type: 'warning' });
+            return;
+        }
+
+        settings.storeSections = sanitizeStoreSections([...(settings.storeSections || []), sectionName]);
+        saveToLocalStorage();
+        renderStoreSectionsList();
+        input.value = '';
+    };
+
+    addBtn.addEventListener('click', addStoreSection);
+    input.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            addStoreSection();
+        }
+    });
+
+    listEl.addEventListener('click', event => {
+        const removeBtn = event.target.closest('[data-remove-store-section]');
+        if (!removeBtn) return;
+
+        const sectionName = normalizeStoreSectionName(removeBtn.getAttribute('data-remove-store-section'));
+        if (!sectionName) return;
+
+        settings.storeSections = (settings.storeSections || []).filter(section => section.toLowerCase() !== sectionName.toLowerCase());
+        saveToLocalStorage();
+        renderStoreSectionsList();
+    });
+
+    renderStoreSectionsList();
 }
 
 async function saveNutritionGoals() {

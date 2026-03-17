@@ -1,5 +1,6 @@
 import { version } from './version.js';
 import { settings, applyDarkMode } from './settings.js';
+import { loadStoreSectionsFromSettings, normalizeStoreSectionName, saveStoreSectionsToSettings } from './store-sections.js';
 
 // Update version in footer
 const versionEl = document.getElementById('version');
@@ -11,6 +12,7 @@ let editingIngredientId = null;
 let selectedImageDataUrl = '';
 let shoppingListReturnContext = null;
 let genericReturnContext = null;
+let embeddedReturnContext = false;
 
 // Image upload handling
 function updateImagePreview(imageDataUrl) {
@@ -101,6 +103,27 @@ const csvUploadSummary = document.getElementById('csv-upload-summary');
 const csvCloseBtn = uploadCsvModal ? uploadCsvModal.querySelector('.csv-close') : null;
 const cancelCsvUploadBtn = document.getElementById('cancel-csv-upload');
 const storeSectionFilterEl = document.getElementById('ingredient-store-section-filter');
+const storeSectionOptionsEl = document.getElementById('store-section-options');
+
+function updateStoreSectionInputOptions() {
+    if (!storeSectionOptionsEl) return;
+    const storeSections = loadStoreSectionsFromSettings();
+    storeSectionOptionsEl.innerHTML = storeSections
+        .map(section => `<option value="${escapeHtmlAttr(section)}"></option>`)
+        .join('');
+}
+
+function ensureStoreSectionExists(sectionName) {
+    const normalized = normalizeStoreSectionName(sectionName);
+    if (!normalized) return;
+
+    const storeSections = loadStoreSectionsFromSettings();
+    const exists = storeSections.some(section => section.toLowerCase() === normalized.toLowerCase());
+    if (exists) return;
+
+    saveStoreSectionsToSettings([...storeSections, normalized]);
+    updateStoreSectionInputOptions();
+}
 
 function getDefaultWegmansStoreNumber() {
     const fallback = 24;
@@ -270,8 +293,8 @@ function extractWegmansTotalPrice(product) {
 function extractWegmansStoreSection(product) {
     const aisleLocation = String(product?.planogram?.aisle || product?.aisle?.locationName || '').trim();
     if (aisleLocation) {
-        const aisleValue = aisleLocation.replace(/^aisle\s+/i, '').trim();
-        return aisleValue ? `Aisle ${aisleValue}` : '';
+        const aisleValue = aisleLocation.replace(/^aisle\b[:\s-]*/i, '').trim();
+        return aisleValue || aisleLocation;
     }
 
     const categoryNames = Array.isArray(product?.category)
@@ -437,6 +460,7 @@ function saveCustomIngredients() {
 // Open modal for adding/editing ingredient
 function openIngredientModal(ingredient = null) {
     editingIngredientId = ingredient ? ingredient.id : null;
+    updateStoreSectionInputOptions();
     
     // Reset form
     form.reset();
@@ -480,7 +504,8 @@ function openIngredientModal(ingredient = null) {
 }
 
 // Close ingredient modal
-function closeIngredientModal() {
+function closeIngredientModal(options = {}) {
+    const { suppressEmbeddedNotify = false } = options;
     ingredientModal.classList.remove('active');
     editingIngredientId = null;
     form.reset();
@@ -492,6 +517,14 @@ function closeIngredientModal() {
     clearWegmansFetchMessages();
     if (imageInput) {
         imageInput.value = '';
+    }
+
+    if (embeddedReturnContext && !suppressEmbeddedNotify && window.parent && window.parent !== window) {
+        try {
+            window.parent.postMessage({ type: 'meale:ingredient-cancelled' }, window.location.origin);
+        } catch (error) {
+            console.error('Failed to notify parent about embedded ingredient modal close:', error);
+        }
     }
 }
 
@@ -522,7 +555,7 @@ async function saveCustomIngredient(event) {
             },
             isCustom: true,
             store: storeInput ? storeInput.value.trim() : '',
-            storeSection: storeSectionInput ? storeSectionInput.value.trim() : '',
+            storeSection: normalizeStoreSectionName(storeSectionInput ? storeSectionInput.value : ''),
             sourceUrl,
             source: sourceUrl ? 'wegmans' : (existingIngredient?.source || ''),
             emoji: '',
@@ -544,6 +577,7 @@ async function saveCustomIngredient(event) {
         }
         
         saveCustomIngredients();
+        ensureStoreSectionExists(ingredient.storeSection);
 
         const listEl = document.getElementById('custom-ingredients-list');
         if (listEl) {
@@ -551,7 +585,7 @@ async function saveCustomIngredient(event) {
             renderIngredientsList();
         }
         
-        closeIngredientModal();
+        closeIngredientModal({ suppressEmbeddedNotify: true });
         selectedImageDataUrl = '';
         
         console.log('Saved ingredient:', ingredient);
@@ -563,6 +597,19 @@ async function saveCustomIngredient(event) {
         
         // Dispatch custom event that recipes page can listen to
         window.dispatchEvent(new CustomEvent('ingredientSaved', { detail: { ingredient } }));
+
+        if (embeddedReturnContext && window.parent && window.parent !== window) {
+            try {
+                window.parent.postMessage({
+                    type: 'meale:ingredient-saved',
+                    ingredientId: String(ingredient.id || ''),
+                    ingredient
+                }, window.location.origin);
+            } catch (error) {
+                console.error('Failed to notify parent about embedded ingredient save:', error);
+            }
+            return;
+        }
 
         // Return to shopping lists flow when ingredient creation was launched from list quick-add.
         if (shoppingListReturnContext && shoppingListReturnContext.openListId) {
@@ -1201,14 +1248,22 @@ window.openIngredientModal = openIngredientModal;
 
 // Initialize
 loadCustomIngredients();
+updateStoreSectionInputOptions();
 // Apply dark mode on page load
 applyDarkMode();
+
+window.addEventListener('storage', event => {
+    if (event.key === 'meale-settings') {
+        updateStoreSectionInputOptions();
+    }
+});
 
 // If we were sent here from another page with a request to open the ingredient modal,
 // honor that by opening the existing modal on this page.
 try {
     const params = new URLSearchParams(window.location.search);
     genericReturnContext = params.get('returnTo');
+    embeddedReturnContext = params.get('embedded') === '1' || genericReturnContext === 'embedded';
     if (genericReturnContext === 'shopping-lists') {
         shoppingListReturnContext = {
             openListId: params.get('openListId') || '',
