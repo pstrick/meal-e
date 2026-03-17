@@ -1,3 +1,5 @@
+const { createWorker } = require('tesseract.js');
+
 function sendJson(res, statusCode, payload) {
     res.statusCode = statusCode;
     res.setHeader('Content-Type', 'application/json');
@@ -126,6 +128,18 @@ function parseServingSizeGramsFromNutrition(nutrition) {
     return null;
 }
 
+function sanitizeAbsoluteImageUrl(rawUrl) {
+    const value = String(rawUrl || '').trim();
+    if (!value) return '';
+    try {
+        const parsed = new URL(value, 'https://www.costco.com');
+        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return '';
+        return parsed.href;
+    } catch (error) {
+        return '';
+    }
+}
+
 function extractMetaContent(html, propertyName) {
     const escapedName = String(propertyName).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const match = html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${escapedName}["'][^>]+content=["']([^"']+)["'][^>]*>`, 'i'));
@@ -159,7 +173,149 @@ function extractStoreSectionFromBreadcrumbs(breadcrumbList) {
     return '';
 }
 
-function buildNormalizedProduct({ productNode, breadcrumbNode, html, sourceUrl }) {
+function extractCandidateNutritionImageUrls(html, productNode) {
+    const urls = new Set();
+    const productImages = asArray(productNode?.image);
+    productImages.forEach(imageUrl => {
+        const absolute = sanitizeAbsoluteImageUrl(imageUrl);
+        if (absolute) urls.add(absolute);
+    });
+
+    // Capture any image URL-like strings in HTML that reference nutrition facts.
+    const imageUrlPattern = /https?:\/\/[^"'\\\s]+?\.(?:jpg|jpeg|png|webp)(?:\?[^"'\\\s]*)?/gi;
+    let match = imageUrlPattern.exec(html);
+    while (match) {
+        const candidate = sanitizeAbsoluteImageUrl(match[0]);
+        if (candidate) urls.add(candidate);
+        match = imageUrlPattern.exec(html);
+    }
+
+    const all = Array.from(urls);
+    const nutritionFirst = all.filter(url => /nutri|nutrition|facts|label/i.test(url));
+    const nonNutrition = all.filter(url => !/nutri|nutrition|facts|label/i.test(url));
+    return [...nutritionFirst, ...nonNutrition].slice(0, 4);
+}
+
+function extractMatchNumber(text, pattern) {
+    const match = text.match(pattern);
+    if (!match || !match[1]) return null;
+    const parsed = Number.parseFloat(match[1]);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseOcrNutritionText(rawText) {
+    const text = String(rawText || '')
+        .toLowerCase()
+        .replace(/[\r\n]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .replace(/[,]/g, '');
+
+    if (!text) {
+        return {
+            calories: null,
+            fat: null,
+            carbs: null,
+            protein: null,
+            servingSizeGrams: null,
+            fieldsFound: 0
+        };
+    }
+
+    const calories = extractMatchNumber(text, /calories?\s*([0-9]{1,4}(?:\.[0-9]+)?)/i);
+    const fat = extractMatchNumber(text, /(?:total\s+fat|fat)\s*([0-9]{1,3}(?:\.[0-9]+)?)\s*g/i);
+    const carbs = extractMatchNumber(text, /(?:total\s+carb(?:ohydrate)?s?|carbohydrate)\s*([0-9]{1,3}(?:\.[0-9]+)?)\s*g/i);
+    const protein = extractMatchNumber(text, /protein\s*([0-9]{1,3}(?:\.[0-9]+)?)\s*g/i);
+
+    let servingSizeGrams = null;
+    const servingMatch = text.match(/serving\s+size\s*([0-9]{1,4}(?:\.[0-9]+)?)\s*(g|gram|grams|oz|ounce|ounces|ml|l|cup|cups|tbsp|tablespoon|tablespoons|tsp|teaspoon|teaspoons)\b/i);
+    if (servingMatch && servingMatch[1] && servingMatch[2]) {
+        servingSizeGrams = parseWeightToGrams(servingMatch[1], servingMatch[2]);
+    }
+
+    const values = [calories, fat, carbs, protein].filter(value => Number.isFinite(value) && value >= 0);
+    return {
+        calories: Number.isFinite(calories) ? calories : null,
+        fat: Number.isFinite(fat) ? fat : null,
+        carbs: Number.isFinite(carbs) ? carbs : null,
+        protein: Number.isFinite(protein) ? protein : null,
+        servingSizeGrams: Number.isFinite(servingSizeGrams) && servingSizeGrams > 0 ? servingSizeGrams : null,
+        fieldsFound: values.length
+    };
+}
+
+function shouldRunNutritionOcr(nutritionData) {
+    const fields = ['calories', 'fat', 'carbs', 'protein'];
+    const filled = fields.filter(key => Number.isFinite(nutritionData?.[key]));
+    return filled.length < 4;
+}
+
+async function recognizeNutritionFromImageUrl(imageUrl) {
+    const worker = await createWorker('eng');
+    try {
+        const result = await worker.recognize(imageUrl);
+        const text = String(result?.data?.text || '');
+        return {
+            parsed: parseOcrNutritionText(text),
+            confidence: Number.parseFloat(String(result?.data?.confidence))
+        };
+    } finally {
+        await worker.terminate();
+    }
+}
+
+async function runNutritionOcrFallback({ html, productNode, nutritionData, servingSizeGrams }) {
+    if (!shouldRunNutritionOcr(nutritionData)) {
+        return {
+            nutrition: nutritionData,
+            servingSizeGrams,
+            ocr: null
+        };
+    }
+
+    const candidates = extractCandidateNutritionImageUrls(html, productNode);
+    if (candidates.length === 0) {
+        return {
+            nutrition: nutritionData,
+            servingSizeGrams,
+            ocr: null
+        };
+    }
+
+    for (const imageUrl of candidates) {
+        try {
+            const recognized = await recognizeNutritionFromImageUrl(imageUrl);
+            const parsed = recognized.parsed;
+            if (parsed.fieldsFound < 2) {
+                continue;
+            }
+
+            return {
+                nutrition: {
+                    calories: Number.isFinite(nutritionData.calories) ? nutritionData.calories : parsed.calories,
+                    fat: Number.isFinite(nutritionData.fat) ? nutritionData.fat : parsed.fat,
+                    carbs: Number.isFinite(nutritionData.carbs) ? nutritionData.carbs : parsed.carbs,
+                    protein: Number.isFinite(nutritionData.protein) ? nutritionData.protein : parsed.protein
+                },
+                servingSizeGrams: Number.isFinite(servingSizeGrams) ? servingSizeGrams : parsed.servingSizeGrams,
+                ocr: {
+                    imageUrl,
+                    confidence: Number.isFinite(recognized.confidence) ? recognized.confidence : null,
+                    fieldsFound: parsed.fieldsFound
+                }
+            };
+        } catch (error) {
+            // Try next image candidate.
+        }
+    }
+
+    return {
+        nutrition: nutritionData,
+        servingSizeGrams,
+        ocr: null
+    };
+}
+
+async function buildNormalizedProduct({ productNode, breadcrumbNode, html, sourceUrl }) {
     const nameFromNode = String(productNode?.name || '').trim();
     const nameFromMeta = extractMetaContent(html, 'og:title');
     const name = nameFromNode || nameFromMeta;
@@ -183,6 +339,12 @@ function buildNormalizedProduct({ productNode, breadcrumbNode, html, sourceUrl }
     const servingSizeGrams = parseServingSizeGramsFromNutrition(nutrition);
     const combinedWeightText = [nameFromNode, productNode?.description, extractMetaContent(html, 'description')].filter(Boolean).join(' ');
     const totalWeightGrams = parseWeightStringToGrams(combinedWeightText);
+    const ocrResolved = await runNutritionOcrFallback({
+        html,
+        productNode,
+        nutritionData,
+        servingSizeGrams
+    });
 
     const storeSection = extractStoreSectionFromBreadcrumbs(breadcrumbNode);
 
@@ -192,9 +354,10 @@ function buildNormalizedProduct({ productNode, breadcrumbNode, html, sourceUrl }
         imageUrl,
         totalPrice,
         totalWeightGrams,
-        servingSizeGrams,
-        nutrition: nutritionData,
-        storeSection
+        servingSizeGrams: ocrResolved.servingSizeGrams,
+        nutrition: ocrResolved.nutrition,
+        storeSection,
+        ocr: ocrResolved.ocr
     };
 }
 
@@ -249,7 +412,7 @@ module.exports = async (req, res) => {
             });
         }
 
-        const product = buildNormalizedProduct({ productNode, breadcrumbNode, html, sourceUrl });
+        const product = await buildNormalizedProduct({ productNode, breadcrumbNode, html, sourceUrl });
         if (!product.name) {
             return sendJson(res, 422, {
                 success: false,
