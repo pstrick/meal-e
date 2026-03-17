@@ -1716,115 +1716,18 @@ function createMealItem(item, amount, itemIndex, slot) {
         draggedMealItemContext = null;
         document.querySelectorAll('.meal-slot.drag-over').forEach((slotNode) => slotNode.classList.remove('drag-over'));
     });
-    
-    // Handle custom meal items
-    if (item.type === 'custommeal') {
-        const displayName = item.name;
-        const truncatedName = displayName.length > 100 ? `${displayName.substring(0, 97).trimEnd()}...` : displayName;
-        
-        div.innerHTML = `
-            <div class="meal-item-header">
-                <span class="meal-item-name" title="${displayName}">${truncatedName}</span>
-                <span class="meal-item-amount">${Math.round(amount)}g</span>
-                <div class="meal-item-actions">
-                    <button class="duplicate-meal" title="Duplicate to next day"><i class="fas fa-copy"></i></button>
-                    <button class="remove-meal" title="Remove Item">&times;</button>
-                </div>
-            </div>
-        `;
-        
-        // Remove item handler
-        div.querySelector('.remove-meal').addEventListener('click', (e) => {
-            e.stopPropagation();
-            const mealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
-            if (mealPlan[mealKey] && Array.isArray(mealPlan[mealKey])) {
-                mealPlan[mealKey].splice(itemIndex, 1);
-                if (mealPlan[mealKey].length === 0) delete mealPlan[mealKey];
-                saveMealPlan();
-                updateMealPlanDisplay();
-            }
-        });
 
-        div.querySelector('.duplicate-meal')?.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            await handleQuickDuplicateMealItem(slot, itemIndex);
-        });
-        
-        // Add click handler to open edit modal
-        div.addEventListener('click', (e) => {
-            if (e.target.closest('.remove-meal') || e.target.closest('.duplicate-meal')) return;
-            e.stopPropagation();
-            openEditMealItemModal(item, amount, itemIndex, slot);
-        });
-        
-        return div;
-    }
-    
     const displayName = item.emoji ? `${item.emoji} ${item.name}` : item.name;
-    const truncatedName = displayName.length > 100 ? `${displayName.substring(0, 97).trimEnd()}...` : displayName;
-    
-    // Calculate nutrition for this item
-    let itemNutrition = { calories: 0, protein: 0, carbs: 0, fat: 0 };
-    if (item.type === 'recipe' || item.type === 'meal') {
-        console.log('Processing meal nutrition for:', item.name);
-        console.log('Recipe nutrition:', item.nutrition);
-        console.log('Serving size:', item.servingSize);
-        
-        if (item.nutrition) {
-            const servingSize = item.servingSize || 100;
-            const nutritionPerGram = {
-                calories: item.nutrition.calories / servingSize,
-                protein: item.nutrition.protein / servingSize,
-                carbs: item.nutrition.carbs / servingSize,
-                fat: item.nutrition.fat / servingSize
-            };
-            itemNutrition = {
-                calories: nutritionPerGram.calories * amount,
-                protein: nutritionPerGram.protein * amount,
-                carbs: nutritionPerGram.carbs * amount,
-                fat: nutritionPerGram.fat * amount
-            };
-            console.log('Calculated meal nutrition:', itemNutrition);
-        } else {
-            console.log('No nutrition data found for meal:', item.name);
-        }
-    } else if (item.type === 'ingredient') {
-        if (item.id.startsWith('custom-')) {
-            const customIngredients = getMyIngredients();
-            const customId = item.id.replace('custom-', '');
-            const customIngredient = customIngredients.find(ing => ing.id === customId);
-            if (customIngredient) {
-                const servingSize = customIngredient.servingSize || 100;
-                const nutritionPerGram = {
-                    calories: customIngredient.nutrition.calories / servingSize,
-                    protein: customIngredient.nutrition.protein / servingSize,
-                    carbs: customIngredient.nutrition.carbs / servingSize,
-                    fat: customIngredient.nutrition.fat / servingSize
-                };
-                itemNutrition = {
-                    calories: nutritionPerGram.calories * amount,
-                    protein: nutritionPerGram.protein * amount,
-                    carbs: nutritionPerGram.carbs * amount,
-                    fat: nutritionPerGram.fat * amount
-                };
-            }
-        } else if (item.nutrition) {
-            itemNutrition = {
-                calories: item.nutrition.calories * amount,
-                protein: item.nutrition.protein * amount,
-                carbs: item.nutrition.carbs * amount,
-                fat: item.nutrition.fat * amount
-            };
-        }
-    }
-    
-    console.log('Final item nutrition:', itemNutrition);
-    
-    // Display name with portion amount in grams
+    const truncatedName = displayName.length > 72 ? `${displayName.substring(0, 69).trimEnd()}...` : displayName;
+    const mealContext = `${(slot.dataset.meal || '').charAt(0).toUpperCase()}${(slot.dataset.meal || '').slice(1)}`;
+
     div.innerHTML = `
-        <div class="meal-item-header">
+        <div class="meal-item-row">
             <span class="meal-item-name" title="${displayName}">${truncatedName}</span>
-            <span class="meal-item-amount">${Math.round(amount)}g</span>
+            <div class="meal-item-meta">
+                <span class="meal-item-amount">${Math.round(amount)}g</span>
+                <span class="meal-item-context">${mealContext}</span>
+            </div>
             <div class="meal-item-actions">
                 <button class="duplicate-meal" title="Duplicate to next day"><i class="fas fa-copy"></i></button>
                 <button class="remove-meal" title="Remove Item">&times;</button>
@@ -1835,22 +1738,14 @@ function createMealItem(item, amount, itemIndex, slot) {
     // Remove item handler
     div.querySelector('.remove-meal').addEventListener('click', (e) => {
         e.stopPropagation();
-        // Remove this item from the slot
         const mealKey = getMealKey(slot.dataset.day, slot.dataset.meal);
         if (mealPlan[mealKey] && Array.isArray(mealPlan[mealKey])) {
-            const item = mealPlan[mealKey][itemIndex];
-            
-            // If it's a recurring item, mark this specific instance as deleted
-            if (item.isRecurring && item.recurringId) {
-                // Store the deleted instance info to prevent re-adding
-                const deletedKey = `${item.recurringId}-${slot.dataset.day}-${slot.dataset.meal}`;
-                let deletedInstances = JSON.parse(localStorage.getItem('meale-deleted-recurring-instances') || '[]');
-                if (!deletedInstances.includes(deletedKey)) {
-                    deletedInstances.push(deletedKey);
-                    localStorage.setItem('meale-deleted-recurring-instances', JSON.stringify(deletedInstances));
-                }
+            const itemToRemove = mealPlan[mealKey][itemIndex];
+
+            if (itemToRemove?.isRecurring && itemToRemove.recurringId) {
+                addDeletedRecurringInstance(itemToRemove.recurringId, slot.dataset.day, slot.dataset.meal);
             }
-            
+
             mealPlan[mealKey].splice(itemIndex, 1);
             if (mealPlan[mealKey].length === 0) delete mealPlan[mealKey];
             saveMealPlan();
@@ -4146,9 +4041,10 @@ function printMealPlan(selectedRecipeIds = []) {
                     margin-bottom: 0;
                 }
                 
-                .meal-item-header {
+                .meal-item-header,
+                .meal-item-row {
                     display: flex;
-                    align-items: flex-start;
+                    align-items: center;
                     gap: 4px;
                 }
                 
@@ -4158,6 +4054,12 @@ function printMealPlan(selectedRecipeIds = []) {
                     font-size: 7.6pt;
                     word-break: break-word;
                     flex: 1;
+                }
+
+                .meal-item-meta {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
                 }
                 
                 .meal-item-amount {
@@ -4169,6 +4071,11 @@ function printMealPlan(selectedRecipeIds = []) {
                 }
                 
                 .remove-meal {
+                    display: none;
+                }
+
+                .duplicate-meal,
+                .meal-item-context {
                     display: none;
                 }
                 
