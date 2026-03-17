@@ -182,12 +182,19 @@ function renderMealsTable() {
                     <button class="btn btn-edit btn-icon" data-action="edit" data-id="${escapeHtml(String(meal.id))}" title="Edit" aria-label="Edit">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-duplicate btn-icon" data-action="duplicate" data-id="${escapeHtml(String(meal.id))}" title="Duplicate" aria-label="Duplicate">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                    <button class="btn btn-delete btn-icon" data-action="delete" data-id="${escapeHtml(String(meal.id))}" title="Delete" aria-label="Delete">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="kebab-dropdown-wrap">
+                        <button class="btn btn-secondary btn-icon" type="button" title="More actions" aria-label="More actions" onclick="this.closest('.kebab-dropdown-wrap').classList.toggle('is-open')">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="kebab-dropdown">
+                            <button class="kebab-item" type="button" data-action="duplicate" data-id="${escapeHtml(String(meal.id))}">
+                                <i class="fas fa-copy"></i> Duplicate
+                            </button>
+                            <button class="kebab-item" type="button" data-action="delete" data-id="${escapeHtml(String(meal.id))}">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </td>
         `;

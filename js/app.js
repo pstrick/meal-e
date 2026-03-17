@@ -942,15 +942,22 @@ function createRecipeRow(recipe) {
                 <button class="btn btn-edit btn-icon" onclick="editRecipe(${id})" title="Edit" aria-label="Edit">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-duplicate btn-icon" onclick="duplicateRecipe(${id})" title="Duplicate" aria-label="Duplicate">
-                    <i class="fas fa-copy"></i>
-                </button>
-                <button class="btn btn-print" onclick="printRecipe(${id})" title="Print">
-                    <i class="fas fa-print"></i>
-                </button>
-                <button class="btn btn-delete btn-icon" onclick="deleteRecipe(${id})" title="Delete" aria-label="Delete">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <div class="kebab-dropdown-wrap">
+                    <button class="btn btn-secondary btn-icon" type="button" title="More actions" aria-label="More actions" onclick="this.closest('.kebab-dropdown-wrap').classList.toggle('is-open')">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div class="kebab-dropdown">
+                        <button class="kebab-item" type="button" onclick="duplicateRecipe(${id}); this.closest('.kebab-dropdown-wrap').classList.remove('is-open')">
+                            <i class="fas fa-copy"></i> Duplicate
+                        </button>
+                        <button class="kebab-item" type="button" onclick="printRecipe(${id}); this.closest('.kebab-dropdown-wrap').classList.remove('is-open')">
+                            <i class="fas fa-print"></i> Print
+                        </button>
+                        <button class="kebab-item" type="button" onclick="deleteRecipe(${id}); this.closest('.kebab-dropdown-wrap').classList.remove('is-open')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
             </div>
         </td>
     `;
@@ -1340,9 +1347,16 @@ function updateCustomIngredientsList(ingredients = null) {
                 <button class="btn btn-edit btn-icon" onclick="editCustomIngredient('${ingredient.id}')" title="Edit" aria-label="Edit">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-delete btn-icon" onclick="deleteCustomIngredient('${ingredient.id}')" title="Delete" aria-label="Delete">
-                    <i class="fas fa-trash"></i>
-                </button>
+                <div class="kebab-dropdown-wrap">
+                    <button class="btn btn-secondary btn-icon" type="button" title="More actions" aria-label="More actions" onclick="this.closest('.kebab-dropdown-wrap').classList.toggle('is-open')">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div class="kebab-dropdown">
+                        <button class="kebab-item" type="button" onclick="deleteCustomIngredient('${ingredient.id}'); this.closest('.kebab-dropdown-wrap').classList.remove('is-open')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     `).join('');

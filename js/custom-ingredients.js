@@ -847,9 +847,16 @@ function renderIngredientsList() {
                         <button class="btn btn-edit btn-icon" onclick="editCustomIngredient('${ingredient.id}')" title="Edit" aria-label="Edit">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-delete btn-icon" onclick="deleteCustomIngredient('${ingredient.id}')" title="Delete" aria-label="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        <div class="kebab-dropdown-wrap">
+                            <button class="btn btn-secondary btn-icon" type="button" title="More actions" aria-label="More actions" onclick="this.closest('.kebab-dropdown-wrap').classList.toggle('is-open')">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div class="kebab-dropdown">
+                                <button class="kebab-item" type="button" onclick="deleteCustomIngredient('${ingredient.id}'); this.closest('.kebab-dropdown-wrap').classList.remove('is-open')">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </td>
             `;
