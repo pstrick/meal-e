@@ -627,7 +627,7 @@ function updateShoppingItemsDisplay() {
                 <td><input class="item-inline-input item-section-input" type="text" value="${escapeHtml(item.storeSection)}" data-item-id="${escapeHtml(String(item.id))}"></td>
                 <td><input class="item-inline-input item-notes-input" type="text" value="${escapeHtml(item.notes || '')}" data-item-id="${escapeHtml(String(item.id))}"></td>
                 <td>
-                    <button type="button" class="btn btn-delete item-delete-btn" data-item-id="${escapeHtml(String(item.id))}">
+                    <button type="button" class="btn btn-delete btn-icon item-delete-btn" data-item-id="${escapeHtml(String(item.id))}" title="Delete" aria-label="Delete">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -862,14 +862,14 @@ function renderListsTable() {
             <td>${escapeHtml(created)}</td>
             <td>
                 <div class="action-buttons">
-                    <button class="btn btn-edit list-edit-btn" data-list-id="${escapeHtml(String(list.id))}">
-                        <i class="fas fa-pen"></i> Edit
+                    <button class="btn btn-edit btn-icon list-edit-btn" data-list-id="${escapeHtml(String(list.id))}" title="Edit" aria-label="Edit">
+                        <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-duplicate list-duplicate-btn" data-list-id="${escapeHtml(String(list.id))}">
-                        <i class="fas fa-copy"></i> Duplicate
+                    <button class="btn btn-duplicate btn-icon list-duplicate-btn" data-list-id="${escapeHtml(String(list.id))}" title="Duplicate" aria-label="Duplicate">
+                        <i class="fas fa-copy"></i>
                     </button>
-                    <button class="btn btn-delete list-delete-btn" data-list-id="${escapeHtml(String(list.id))}">
-                        <i class="fas fa-trash"></i> Delete
+                    <button class="btn btn-delete btn-icon list-delete-btn" data-list-id="${escapeHtml(String(list.id))}" title="Delete" aria-label="Delete">
+                        <i class="fas fa-trash"></i>
                     </button>
                 </div>
             </td>

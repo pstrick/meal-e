@@ -939,16 +939,16 @@ function createRecipeRow(recipe) {
         </td>
         <td>
             <div class="action-buttons">
-                <button class="btn btn-edit" onclick="editRecipe(${id})" title="Edit">
+                <button class="btn btn-edit btn-icon" onclick="editRecipe(${id})" title="Edit" aria-label="Edit">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-duplicate" onclick="duplicateRecipe(${id})" title="Duplicate">
+                <button class="btn btn-duplicate btn-icon" onclick="duplicateRecipe(${id})" title="Duplicate" aria-label="Duplicate">
                     <i class="fas fa-copy"></i>
                 </button>
                 <button class="btn btn-print" onclick="printRecipe(${id})" title="Print">
                     <i class="fas fa-print"></i>
                 </button>
-                <button class="btn btn-delete" onclick="deleteRecipe(${id})" title="Delete">
+                <button class="btn btn-delete btn-icon" onclick="deleteRecipe(${id})" title="Delete" aria-label="Delete">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -1337,10 +1337,10 @@ function updateCustomIngredientsList(ingredients = null) {
                 <p>Macros: ${(ingredient.fatPerGram * 100).toFixed(1)}g fat, ${(ingredient.carbsPerGram * 100).toFixed(1)}g carbs, ${(ingredient.proteinPerGram * 100).toFixed(1)}g protein</p>
             </div>
             <div class="ingredient-actions">
-                <button class="btn btn-edit" onclick="editCustomIngredient('${ingredient.id}')">
+                <button class="btn btn-edit btn-icon" onclick="editCustomIngredient('${ingredient.id}')" title="Edit" aria-label="Edit">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-delete" onclick="deleteCustomIngredient('${ingredient.id}')">
+                <button class="btn btn-delete btn-icon" onclick="deleteCustomIngredient('${ingredient.id}')" title="Delete" aria-label="Delete">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>

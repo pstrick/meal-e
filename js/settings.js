@@ -359,11 +359,11 @@ function updateRecurringItemsDisplay() {
                     <p><strong>Duration:</strong> ${endDateText}</p>
                 </div>
                 <div class="recurring-item-actions">
-                    <button class="btn btn-edit btn-sm" onclick="editRecurringItem(${item.id})">
-                        <i class="fas fa-edit"></i> Edit
+                    <button class="btn btn-edit btn-icon" onclick="editRecurringItem(${item.id})" title="Edit" aria-label="Edit">
+                        <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-delete btn-sm" onclick="deleteRecurringItem(${item.id})">
-                        <i class="fas fa-trash"></i> Delete
+                    <button class="btn btn-delete btn-icon" onclick="deleteRecurringItem(${item.id})" title="Delete" aria-label="Delete">
+                        <i class="fas fa-trash"></i>
                     </button>
                 </div>
             </div>

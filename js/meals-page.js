@@ -179,13 +179,13 @@ function renderMealsTable() {
             </td>
             <td>
                 <div class="action-buttons">
-                    <button class="btn btn-edit" data-action="edit" data-id="${escapeHtml(String(meal.id))}" title="Edit">
+                    <button class="btn btn-edit btn-icon" data-action="edit" data-id="${escapeHtml(String(meal.id))}" title="Edit" aria-label="Edit">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-duplicate" data-action="duplicate" data-id="${escapeHtml(String(meal.id))}" title="Duplicate">
+                    <button class="btn btn-duplicate btn-icon" data-action="duplicate" data-id="${escapeHtml(String(meal.id))}" title="Duplicate" aria-label="Duplicate">
                         <i class="fas fa-copy"></i>
                     </button>
-                    <button class="btn btn-delete" data-action="delete" data-id="${escapeHtml(String(meal.id))}" title="Delete">
+                    <button class="btn btn-delete btn-icon" data-action="delete" data-id="${escapeHtml(String(meal.id))}" title="Delete" aria-label="Delete">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -299,7 +299,7 @@ function renderComponentList() {
             <div class="ingredient-item" style="margin-bottom: 8px;">
                 <div class="ingredient-header">
                     <span class="ingredient-name">${escapeHtml(itemName)} <small>(${escapeHtml(component.type)})</small></span>
-                    <button type="button" class="btn btn-delete btn-sm" data-remove-component="${index}">
+                    <button type="button" class="btn btn-delete btn-icon" data-remove-component="${index}" title="Delete" aria-label="Delete">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>

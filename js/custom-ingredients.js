@@ -844,10 +844,10 @@ function renderIngredientsList() {
                 </td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn btn-edit" onclick="editCustomIngredient('${ingredient.id}')">
+                        <button class="btn btn-edit btn-icon" onclick="editCustomIngredient('${ingredient.id}')" title="Edit" aria-label="Edit">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-delete" onclick="deleteCustomIngredient('${ingredient.id}')">
+                        <button class="btn btn-delete btn-icon" onclick="deleteCustomIngredient('${ingredient.id}')" title="Delete" aria-label="Delete">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>

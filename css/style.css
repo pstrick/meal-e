@@ -508,6 +508,7 @@ footer p {
     padding: 0.55rem;
     width: 2.5rem;
     height: 2.5rem;
+    flex: 0 0 auto;
 }
 
 .btn-sm {
@@ -1948,6 +1949,10 @@ tbody tr:hover {
     flex: 1 1 140px;
 }
 
+.recipe-actions .btn-icon {
+    flex: 0 0 auto;
+}
+
 .btn-edit,
 .btn-duplicate,
 .btn-print {
@@ -3030,6 +3035,10 @@ tbody tr:hover {
     .btn {
         width: 100%;
         justify-content: center;
+    }
+
+    .btn-icon {
+        width: 2.5rem;
     }
 
     .recipe-actions .btn {
