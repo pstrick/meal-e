@@ -4029,7 +4029,7 @@ function printMealPlan(selectedRecipeIds = []) {
                 }
                 
                 .print-recipe-category {
-                    background: rgba(46, 204, 113, 0.16);
+                    background: rgba(39, 174, 96, 0.16);
                     color: #1c7c46;
                     padding: 1px 6px;
                     border-radius: 999px;

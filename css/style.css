@@ -8,9 +8,9 @@
     --font-heading: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     --font-mono: 'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
 
-    --color-brand: #2ecc71;
-    --color-brand-strong: #27ae60;
-    --color-brand-soft: rgba(46, 204, 113, 0.14);
+    --color-brand: #27ae60;
+    --color-brand-strong: #1f8f4f;
+    --color-brand-soft: rgba(39, 174, 96, 0.14);
 
     --color-bg: #f5f5f5;
     --color-bg-muted: #ebebeb;
@@ -31,10 +31,10 @@
     --color-text-muted: #6b6b6b;
     --color-text-inverse: #ffffff;
 
-    --color-success: #2ecc71;
+    --color-success: #27ae60;
     --color-warning: #f39c12;
-    --color-danger: #e74c3c;
-    --color-info: #3498db;
+    --color-danger: #c0392b;
+    --color-info: #6f6f6f;
 
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.12);
     --shadow-sm: 0 6px 16px rgba(0, 0, 0, 0.08);
@@ -72,9 +72,9 @@ html.theme-preload * {
 
 html.dark-mode {
     color-scheme: dark;
-    --color-brand: #2ecc71;
-    --color-brand-strong: #27ae60;
-    --color-brand-soft: rgba(46, 204, 113, 0.2);
+    --color-brand: #27ae60;
+    --color-brand-strong: #1f8f4f;
+    --color-brand-soft: rgba(39, 174, 96, 0.2);
 
     --color-bg: #121212;
     --color-bg-muted: #1e1e1e;
@@ -95,10 +95,10 @@ html.dark-mode {
     --color-text-muted: #a3a3a3;
     --color-text-inverse: #ffffff;
 
-    --color-success: #2ecc71;
+    --color-success: #27ae60;
     --color-warning: #f39c12;
-    --color-danger: #e74c3c;
-    --color-info: #3498db;
+    --color-danger: #c0392b;
+    --color-info: #b0b0b0;
 
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
     --shadow-sm: 0 12px 24px rgba(0, 0, 0, 0.45);
@@ -245,7 +245,7 @@ nav {
 .nav-links a.active {
     color: var(--color-brand-strong);
     background: var(--color-brand-soft);
-    box-shadow: inset 0 0 0 1px rgba(46, 204, 113, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(39, 174, 96, 0.35);
 }
 
 footer {
@@ -454,7 +454,7 @@ footer p {
     --btn-bg: var(--color-brand);
     --btn-color: var(--color-text-inverse);
     --btn-border: var(--color-brand);
-    --btn-shadow: 0 12px 24px rgba(46, 204, 113, 0.25);
+    --btn-shadow: 0 12px 24px rgba(39, 174, 96, 0.25);
 }
 
 .btn-primary:not(:disabled):hover {
@@ -463,15 +463,15 @@ footer p {
 }
 
 .btn-secondary {
-    --btn-bg: var(--color-info);
-    --btn-color: var(--color-text-inverse);
-    --btn-border: var(--color-info);
-    --btn-shadow: 0 12px 24px rgba(52, 152, 219, 0.22);
+    --btn-bg: var(--color-surface-alt);
+    --btn-color: var(--color-text);
+    --btn-border: var(--color-border-strong);
+    --btn-shadow: none;
 }
 
 .btn-secondary:not(:disabled):hover {
-    --btn-bg: #2d86c1;
-    --btn-border: #2d86c1;
+    --btn-bg: var(--color-bg-muted);
+    --btn-border: var(--color-border-strong);
 }
 
 .btn-ghost {
@@ -496,12 +496,12 @@ footer p {
     --btn-bg: var(--color-danger);
     --btn-border: var(--color-danger);
     --btn-color: var(--color-text-inverse);
-    --btn-shadow: 0 12px 24px rgba(231, 76, 60, 0.25);
+    --btn-shadow: 0 12px 24px rgba(192, 57, 43, 0.25);
 }
 
 .btn-danger:not(:disabled):hover {
-    --btn-bg: #c0392b;
-    --btn-border: #c0392b;
+    --btn-bg: #a93226;
+    --btn-border: #a93226;
 }
 
 .btn-icon {
@@ -609,7 +609,7 @@ input:focus,
 select:focus,
 textarea:focus {
     border-color: var(--color-brand);
-    box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.2);
+    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.2);
     outline: none;
 }
 
@@ -673,7 +673,7 @@ small {
 }
 
 .toggle-input:checked + .toggle-slider {
-    background: rgba(46, 204, 113, 0.45);
+    background: rgba(39, 174, 96, 0.45);
 }
 
 .toggle-input:checked + .toggle-slider::after {
@@ -973,7 +973,7 @@ tbody tr:hover {
 .scrape-error {
     padding: var(--space-2);
     border-radius: var(--radius-md);
-    background: rgba(231, 76, 60, 0.12);
+    background: rgba(192, 57, 43, 0.12);
     color: var(--color-danger);
     font-weight: 600;
 }
@@ -1382,7 +1382,7 @@ tbody tr:hover {
 .remove-meal:hover,
 .remove-meal:focus-visible {
     color: var(--color-danger);
-    background: rgba(231, 76, 60, 0.08);
+    background: rgba(192, 57, 43, 0.08);
     outline: none;
 }
 
@@ -1542,7 +1542,7 @@ tbody tr:hover {
 }
 
 .calorie-progress-fill.over-goal {
-    background: linear-gradient(90deg, var(--color-danger) 0%, #c0392b 100%);
+    background: linear-gradient(90deg, var(--color-danger) 0%, #a93226 100%);
 }
 
 .calorie-remaining {
@@ -1617,7 +1617,7 @@ tbody tr:hover {
 }
 
 .macro-progress-fill-small.over-goal {
-    background: linear-gradient(90deg, var(--color-danger) 0%, #c0392b 100%);
+    background: linear-gradient(90deg, var(--color-danger) 0%, #a93226 100%);
 }
 
 .daily-cost {
@@ -1918,7 +1918,7 @@ tbody tr:hover {
 .btn-duplicate,
 .btn-print {
     --btn-bg: var(--color-surface-alt);
-    --btn-border: var(--color-border);
+    --btn-border: var(--color-border-strong);
     --btn-shadow: none;
     color: var(--color-text);
 }
@@ -2214,7 +2214,7 @@ tbody tr:hover {
 
 .ingredient-main .remove-ingredient:hover {
     color: var(--color-danger);
-    background: rgba(231, 76, 60, 0.08);
+    background: rgba(192, 57, 43, 0.08);
 }
 
 .ingredient-macros {

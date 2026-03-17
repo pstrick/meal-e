@@ -269,10 +269,10 @@ function updateRecurringItemsDisplay() {
                     <p><strong>Duration:</strong> ${endDateText}</p>
                 </div>
                 <div class="recurring-item-actions">
-                    <button class="btn btn-primary btn-sm" onclick="editRecurringItem(${item.id})">
+                    <button class="btn btn-edit btn-sm" onclick="editRecurringItem(${item.id})">
                         <i class="fas fa-edit"></i> Edit
                     </button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteRecurringItem(${item.id})">
+                    <button class="btn btn-delete btn-sm" onclick="deleteRecurringItem(${item.id})">
                         <i class="fas fa-trash"></i> Delete
                     </button>
                 </div>

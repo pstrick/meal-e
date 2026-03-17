@@ -862,10 +862,10 @@ function renderListsTable() {
             <td>${escapeHtml(created)}</td>
             <td>
                 <div class="action-buttons">
-                    <button class="btn btn-primary list-edit-btn" data-list-id="${escapeHtml(String(list.id))}">
+                    <button class="btn btn-edit list-edit-btn" data-list-id="${escapeHtml(String(list.id))}">
                         <i class="fas fa-pen"></i> Edit
                     </button>
-                    <button class="btn btn-secondary list-duplicate-btn" data-list-id="${escapeHtml(String(list.id))}">
+                    <button class="btn btn-duplicate list-duplicate-btn" data-list-id="${escapeHtml(String(list.id))}">
                         <i class="fas fa-copy"></i> Duplicate
                     </button>
                     <button class="btn btn-delete list-delete-btn" data-list-id="${escapeHtml(String(list.id))}">

@@ -214,7 +214,7 @@ function updateProgressBar(type, current, target) {
     
     // Color coding
     if (percentage >= 100) {
-        progressBar.style.backgroundColor = '#e74c3c'; // Red for over
+        progressBar.style.backgroundColor = '#c0392b'; // Red for over
     } else if (percentage >= 80) {
         progressBar.style.backgroundColor = '#f39c12'; // Orange for close
     } else {

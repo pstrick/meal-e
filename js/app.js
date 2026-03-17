@@ -59,6 +59,8 @@ let currentEditRecipeId = null;
 const RECIPE_DRAFT_SESSION_KEY = 'meale-return-recipe-draft';
 const RECIPE_DRAFT_MAX_AGE_MS = 30 * 60 * 1000;
 let recipeDraftResumeHandled = false;
+let embeddedIngredientOverlay = null;
+let embeddedIngredientTargetItem = null;
 
 // Recipe table sort state (recipes page)
 let recipeSortColumn = 'name';
@@ -199,6 +201,115 @@ function buildIngredientCreateUrl(returnTo) {
     return `ingredients.html?${params.toString()}`;
 }
 
+function closeEmbeddedIngredientCreator() {
+    if (embeddedIngredientOverlay) {
+        embeddedIngredientOverlay.remove();
+        embeddedIngredientOverlay = null;
+    }
+    embeddedIngredientTargetItem = null;
+}
+
+function openEmbeddedIngredientCreator(sourceInput = null) {
+    const ingredientItems = Array.from(document.querySelectorAll('#ingredients-list .ingredient-item'));
+    const sourceItem = sourceInput ? sourceInput.closest('.ingredient-item') : null;
+    const activeElement = document.activeElement;
+    const activeItem = activeElement ? activeElement.closest('.ingredient-item') : null;
+    embeddedIngredientTargetItem = sourceItem || currentIngredientInput || activeItem || ingredientItems[0] || null;
+
+    closeEmbeddedIngredientCreator();
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = [
+        'position: fixed',
+        'inset: 0',
+        'z-index: 3000',
+        'background: rgba(0, 0, 0, 0.55)',
+        'display: flex',
+        'align-items: center',
+        'justify-content: center',
+        'padding: 16px'
+    ].join(';');
+
+    const panel = document.createElement('div');
+    panel.style.cssText = [
+        'position: relative',
+        'width: min(1180px, 96vw)',
+        'height: min(900px, 92vh)',
+        'background: var(--color-surface, #fff)',
+        'border-radius: 12px',
+        'overflow: hidden',
+        'box-shadow: 0 24px 64px rgba(0,0,0,0.35)'
+    ].join(';');
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('aria-label', 'Close ingredient creator');
+    closeBtn.textContent = '×';
+    closeBtn.style.cssText = [
+        'position: absolute',
+        'top: 8px',
+        'right: 8px',
+        'z-index: 2',
+        'width: 36px',
+        'height: 36px',
+        'border: 0',
+        'border-radius: 999px',
+        'background: rgba(15,23,42,0.85)',
+        'color: #fff',
+        'font-size: 24px',
+        'line-height: 1',
+        'cursor: pointer'
+    ].join(';');
+    closeBtn.addEventListener('click', closeEmbeddedIngredientCreator);
+
+    const iframe = document.createElement('iframe');
+    iframe.src = `${buildIngredientCreateUrl('embedded')}&embedded=1`;
+    iframe.title = 'Create ingredient';
+    iframe.style.cssText = 'width:100%;height:100%;border:0;display:block;background:#fff;';
+
+    panel.appendChild(closeBtn);
+    panel.appendChild(iframe);
+    overlay.appendChild(panel);
+    overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) {
+            closeEmbeddedIngredientCreator();
+        }
+    });
+    document.body.appendChild(overlay);
+    embeddedIngredientOverlay = overlay;
+}
+
+function handleEmbeddedIngredientMessage(event) {
+    if (event.origin !== window.location.origin) {
+        return;
+    }
+    const data = event.data || {};
+    if (!data || typeof data !== 'object') {
+        return;
+    }
+
+    if (data.type === 'meale:ingredient-cancelled') {
+        closeEmbeddedIngredientCreator();
+        return;
+    }
+
+    if (data.type !== 'meale:ingredient-saved') {
+        return;
+    }
+
+    const ingredientId = data.ingredientId || data?.ingredient?.id;
+    const createdIngredient = data.ingredient || getCustomIngredientById(ingredientId);
+    const createdIngredientSearchResult = toSearchResultFromCustomIngredient(createdIngredient);
+    if (embeddedIngredientTargetItem && createdIngredientSearchResult) {
+        currentIngredientInput = embeddedIngredientTargetItem;
+        selectIngredient(createdIngredientSearchResult);
+        removeSearchDropdown();
+    }
+    closeEmbeddedIngredientCreator();
+}
+
+window.addEventListener('message', handleEmbeddedIngredientMessage);
+
 function getCustomIngredientById(ingredientId) {
     if (!ingredientId) return null;
     try {
@@ -250,6 +361,13 @@ function launchIngredientCreatorFromRecipeFlow(sourceInput = null) {
     if (!recipeModalEl || !ingredientsContainer || !recipeFormEl || !recipeModalEl.classList.contains('active')) {
         fallbackRedirect();
         return;
+    }
+
+    try {
+        openEmbeddedIngredientCreator(sourceInput);
+        return;
+    } catch (overlayError) {
+        console.error('Failed to open embedded ingredient creator, falling back to redirect:', overlayError);
     }
 
     try {
@@ -1780,7 +1898,7 @@ function printRecipe(id) {
                 }
 
                 .print-recipe-category {
-                    background: rgba(46, 204, 113, 0.16);
+                    background: rgba(39, 174, 96, 0.16);
                     color: #1c7c46;
                     padding: 1px 6px;
                     border-radius: 999px;
