@@ -64,17 +64,17 @@ let recipeSortColumn = 'name';
 let recipeSortDirection = 'asc';
 
 const DARK_THEME_VARS = {
-    '--color-bg': '#0f172a',
-    '--color-bg-muted': '#1e293b',
-    '--color-surface': '#101b2d',
-    '--color-surface-alt': '#152136',
-    '--color-surface-elevated': '#1c2b44',
-    '--color-text': '#e2e8f0',
-    '--color-text-muted': '#94a3b8',
-    '--color-text-subtle': '#c3d1e2',
-    '--color-border': 'rgba(148, 163, 184, 0.18)',
-    '--color-border-strong': 'rgba(148, 163, 184, 0.26)',
-    '--color-divider': 'rgba(71, 85, 105, 0.22)'
+    '--color-bg': '#121212',
+    '--color-bg-muted': '#1e1e1e',
+    '--color-surface': '#1a1a1a',
+    '--color-surface-alt': '#232323',
+    '--color-surface-elevated': '#2b2b2b',
+    '--color-text': '#f1f1f1',
+    '--color-text-muted': '#a3a3a3',
+    '--color-text-subtle': '#d0d0d0',
+    '--color-border': 'rgba(255, 255, 255, 0.16)',
+    '--color-border-strong': 'rgba(255, 255, 255, 0.25)',
+    '--color-divider': 'rgba(255, 255, 255, 0.18)'
 };
 
 function addDarkModePreloadStyle() {
@@ -82,7 +82,7 @@ function addDarkModePreloadStyle() {
     if (document.getElementById('dark-mode-preload')) return;
     const style = document.createElement('style');
     style.id = 'dark-mode-preload';
-    style.textContent = 'html, body { background-color: #0f172a !important; color: #e2e8f0 !important; }';
+    style.textContent = 'html, body { background-color: #121212 !important; color: #f1f1f1 !important; }';
     (document.head || document.documentElement).appendChild(style);
 }
 
@@ -1109,7 +1109,7 @@ function initializeSettings() {
                 document.documentElement.classList.toggle('dark-mode', isDark);
                 document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
                 if (isDark) {
-                    document.documentElement.style.backgroundColor = '#0f172a';
+                    document.documentElement.style.backgroundColor = '#121212';
                     addDarkModePreloadStyle();
                     applyInlineDarkThemeVars();
                 } else {
@@ -1129,7 +1129,7 @@ function initializeSettings() {
             document.documentElement.classList.toggle('dark-mode', initialDark);
             document.documentElement.style.colorScheme = initialDark ? 'dark' : 'light';
             if (initialDark) {
-                document.documentElement.style.backgroundColor = '#0f172a';
+                document.documentElement.style.backgroundColor = '#121212';
                 addDarkModePreloadStyle();
                 applyInlineDarkThemeVars();
             } else {
@@ -1702,7 +1702,7 @@ function printRecipe(id) {
                     font-size: 18pt;
                     font-weight: 700;
                     letter-spacing: -0.01em;
-                    color: #0f172a;
+                    color: #1f1f1f;
                 }
 
                 .print-title .print-subtitle {
@@ -1752,7 +1752,7 @@ function printRecipe(id) {
                 .print-recipe-title {
                     margin: 0;
                     font-size: 11pt;
-                    color: #0f172a;
+                    color: #1f1f1f;
                     font-weight: 600;
                 }
 
@@ -1766,8 +1766,8 @@ function printRecipe(id) {
                 }
 
                 .print-recipe-category {
-                    background: rgba(76, 175, 80, 0.16);
-                    color: #065f46;
+                    background: rgba(46, 204, 113, 0.16);
+                    color: #1c7c46;
                     padding: 1px 6px;
                     border-radius: 999px;
                     font-weight: 600;
@@ -1784,8 +1784,8 @@ function printRecipe(id) {
                     display: grid;
                     grid-template-columns: repeat(2, minmax(80px, 1fr));
                     gap: 4px;
-                    background: #f4f8f6;
-                    border: 1px solid #d1ede1;
+                    background: #f3f3f3;
+                    border: 1px solid #d8d8d8;
                     border-radius: 6px;
                     padding: 8px;
                     margin-bottom: 10px;
@@ -1798,7 +1798,7 @@ function printRecipe(id) {
                 .print-section-title {
                     font-size: 8.2pt;
                     font-weight: 600;
-                    color: #0f172a;
+                    color: #1f1f1f;
                     margin: 0 0 6px;
                     letter-spacing: 0.03em;
                     text-transform: uppercase;
@@ -1824,7 +1824,7 @@ function printRecipe(id) {
 
                 .ingredient-name {
                     font-weight: 600;
-                    color: #0f172a;
+                    color: #1f1f1f;
                 }
 
                 .ingredient-amount {

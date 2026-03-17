@@ -149,7 +149,7 @@ async function saveNutritionGoals() {
     const btn = document.getElementById('save-nutrition-goals');
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-check"></i> Saved!';
-    btn.style.background = 'var(--success-color)';
+    btn.style.background = 'var(--color-success)';
     
     setTimeout(() => {
         btn.innerHTML = originalText;

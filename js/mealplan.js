@@ -3711,7 +3711,7 @@ function printMealPlan(selectedRecipeIds = []) {
                     font-size: 18pt;
                     font-weight: 700;
                     letter-spacing: -0.01em;
-                    color: #0f172a;
+                    color: #1f1f1f;
                 }
                 
                 .print-title .print-subtitle {
@@ -3893,7 +3893,7 @@ function printMealPlan(selectedRecipeIds = []) {
                 .daily-calories {
                     font-weight: 700;
                     font-size: 9.4pt;
-                    color: #0f172a;
+                    color: #1f1f1f;
                 }
                 
                 .daily-calories span {
@@ -3990,7 +3990,7 @@ function printMealPlan(selectedRecipeIds = []) {
                     column-span: all;
                     font-size: 14pt;
                     margin: 0 0 10px 0;
-                    color: #0f172a;
+                    color: #1f1f1f;
                     font-weight: 600;
                 }
                 
@@ -4015,7 +4015,7 @@ function printMealPlan(selectedRecipeIds = []) {
                 .print-recipe-title {
                     margin: 0;
                     font-size: 11pt;
-                    color: #0f172a;
+                    color: #1f1f1f;
                     font-weight: 600;
                 }
                 
@@ -4029,8 +4029,8 @@ function printMealPlan(selectedRecipeIds = []) {
                 }
                 
                 .print-recipe-category {
-                    background: rgba(76, 175, 80, 0.16);
-                    color: #065f46;
+                    background: rgba(46, 204, 113, 0.16);
+                    color: #1c7c46;
                     padding: 1px 6px;
                     border-radius: 999px;
                     font-weight: 600;
@@ -4042,8 +4042,8 @@ function printMealPlan(selectedRecipeIds = []) {
                     display: grid;
                     grid-template-columns: repeat(2, minmax(80px, 1fr));
                     gap: 4px;
-                    background: #f4f8f6;
-                    border: 1px solid #d1ede1;
+                    background: #f3f3f3;
+                    border: 1px solid #d8d8d8;
                     border-radius: 6px;
                     padding: 8px;
                     margin-bottom: 6px;
@@ -4072,7 +4072,7 @@ function printMealPlan(selectedRecipeIds = []) {
                     align-items: center;
                     justify-content: center;
                     font-size: 7.6pt;
-                    color: #94a3b8;
+                    color: #8a8a8a;
                     font-style: italic;
                     border-radius: 4px;
                     border: 1px dashed #d8dee7;
