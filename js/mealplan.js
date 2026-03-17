@@ -1719,16 +1719,31 @@ function createMealItem(item, amount, itemIndex, slot) {
     });
 
     const displayName = item.emoji ? `${item.emoji} ${item.name}` : item.name;
+    let caloriesText = '';
+    if (item.nutrition && Number.isFinite(Number(item.nutrition.calories))) {
+        let caloriesForAmount = 0;
+        if (item.type === 'ingredient') {
+            caloriesForAmount = Number(item.nutrition.calories) * amount;
+        } else {
+            const servingSize = Number(item.servingSize) || (item.type === 'custommeal' ? 1 : 100);
+            caloriesForAmount = (Number(item.nutrition.calories) / servingSize) * amount;
+        }
+        if (Number.isFinite(caloriesForAmount) && caloriesForAmount > 0) {
+            caloriesText = `${Math.round(caloriesForAmount)} cal`;
+        }
+    }
+
     div.innerHTML = `
         <div class="meal-item-row">
             <span class="meal-item-name" title="${displayName}">${displayName}</span>
             <div class="meal-item-meta">
                 <span class="meal-item-amount">${Math.round(amount)}g</span>
+                ${caloriesText ? `<span class="meal-item-calories">${caloriesText}</span>` : ''}
             </div>
-            <div class="meal-item-actions">
-                <button class="duplicate-meal" title="Duplicate to next day"><i class="fas fa-copy"></i></button>
-                <button class="remove-meal" title="Remove Item">&times;</button>
-            </div>
+        </div>
+        <div class="meal-item-actions">
+            <button class="duplicate-meal" title="Duplicate to next day"><i class="fas fa-copy"></i></button>
+            <button class="remove-meal" title="Remove Item">&times;</button>
         </div>
     `;
     

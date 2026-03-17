@@ -1332,6 +1332,8 @@ tbody tr:hover {
     border: 1px solid var(--color-border);
     background: var(--color-surface-alt);
     padding: 0.32rem 0.45rem;
+    position: relative;
+    overflow: visible;
     transition: border-color var(--transition-base), background-color var(--transition-base);
 }
 
@@ -1347,21 +1349,27 @@ tbody tr:hover {
 .meal-item-header,
 .meal-item-row {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.35rem;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0.15rem;
 }
 
 .meal-item-actions {
-    display: inline-flex;
+    position: absolute;
+    top: -0.9rem;
+    right: 0.15rem;
+    display: flex;
     align-items: center;
-    gap: 0.2rem;
+    justify-content: flex-end;
+    gap: 0.14rem;
     flex-shrink: 0;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transform: translateX(3px);
+    transform: translateY(2px);
     transition: opacity var(--transition-base), transform var(--transition-base), visibility var(--transition-base);
+    z-index: 2;
 }
 
 .meal-item-name {
@@ -1369,45 +1377,51 @@ tbody tr:hover {
     font-size: 0.68rem;
     color: var(--color-text);
     line-height: 1.2;
-    flex: 1;
+    width: 100%;
     min-width: 0;
-    line-clamp: 3;
+    line-clamp: 2;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .meal-item-meta {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 0.25rem;
+    justify-content: flex-start;
+    gap: 0.35rem;
     flex-shrink: 0;
+    width: 100%;
 }
 
 .remove-meal {
     border: none;
-    background: transparent;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     color: var(--color-text-muted);
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.74rem;
     line-height: 1;
-    padding: 0.22rem 0.28rem;
+    padding: 0.16rem 0.28rem;
     border-radius: var(--radius-sm);
-    transition: color var(--transition-base), background-color var(--transition-base);
+    box-shadow: var(--shadow-sm);
+    transition: color var(--transition-base), background-color var(--transition-base), border-color var(--transition-base);
 }
 
 .duplicate-meal {
     border: none;
-    background: transparent;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     color: var(--color-text-muted);
     cursor: pointer;
-    font-size: 0.7rem;
+    font-size: 0.64rem;
     line-height: 1;
-    padding: 0.22rem 0.28rem;
+    padding: 0.16rem 0.28rem;
     border-radius: var(--radius-sm);
-    transition: color var(--transition-base), background-color var(--transition-base);
+    box-shadow: var(--shadow-sm);
+    transition: color var(--transition-base), background-color var(--transition-base), border-color var(--transition-base);
 }
 
 .duplicate-meal:hover,
@@ -1434,25 +1448,17 @@ tbody tr:hover {
 }
 
 .meal-item:hover .meal-item-actions,
-.meal-item:focus-within .meal-item-actions {
+.meal-item:focus-within .meal-item-actions,
+.meal-item:focus-visible .meal-item-actions {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transform: translateX(0);
+    transform: translateY(0);
 }
 
 .meal-item:focus-visible {
     outline: 2px solid var(--color-brand);
     outline-offset: 1px;
-}
-
-@media (hover: none) {
-    .meal-item-actions {
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-        transform: translateX(0);
-    }
 }
 
 .meal-item-details {
@@ -1499,6 +1505,13 @@ tbody tr:hover {
     color: var(--color-text-muted);
     white-space: nowrap;
     flex-shrink: 0;
+}
+
+.meal-item-calories {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    white-space: nowrap;
 }
 
 .empty-slot {
