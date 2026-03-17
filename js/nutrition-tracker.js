@@ -489,6 +489,12 @@ function displaySearchResults(results) {
                 } else if (result.data.source === 'openfoodfacts') {
                     sourceLabel = 'Open Food Facts';
                     sourceIcon = '🏷️ ';
+                } else if (result.data.source === 'costco') {
+                    sourceLabel = 'Costco Import';
+                    sourceIcon = '🛒 ';
+                } else if (result.data.source === 'wegmans') {
+                    sourceLabel = 'Wegmans Import';
+                    sourceIcon = '🧾 ';
                 } else {
                     sourceLabel = 'My Ingredient';
                     sourceIcon = '🏠 ';
@@ -571,6 +577,10 @@ function selectFood(foodResult) {
             sourceLabel = ' (USDA Database)';
         } else if (food.source === 'openfoodfacts') {
             sourceLabel = ' (Open Food Facts)';
+        } else if (food.source === 'costco') {
+            sourceLabel = ' (Costco Import)';
+        } else if (food.source === 'wegmans') {
+            sourceLabel = ' (Wegmans Import)';
         }
         nutritionInfo = `<p class="nutrition-info">Per 100g: ${Math.round(calories)} cal, ${Math.round(protein)}g protein, ${Math.round(carbs)}g carbs, ${Math.round(fat)}g fat${sourceLabel}</p>`;
     } else if (type === 'recipe') {

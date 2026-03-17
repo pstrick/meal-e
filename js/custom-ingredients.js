@@ -76,7 +76,7 @@ const imageInput = document.getElementById('ingredient-image');
 const imageUploadBtn = document.getElementById('ingredient-image-upload-btn');
 const imageRemoveBtn = document.getElementById('ingredient-image-remove-btn');
 const ingredientSourceUrlInput = document.getElementById('ingredient-source-url');
-const fetchWegmansUrlBtn = document.getElementById('fetch-wegmans-url-btn');
+const fetchProductUrlBtn = document.getElementById('fetch-wegmans-url-btn');
 const wegmansFetchProgress = document.getElementById('wegmans-fetch-progress');
 const wegmansFetchError = document.getElementById('wegmans-fetch-error');
 const addIngredientBtn = document.getElementById('add-ingredient-btn');
@@ -166,8 +166,24 @@ function setWegmansFetchLoading(isLoading) {
     if (wegmansFetchProgress) {
         wegmansFetchProgress.hidden = !isLoading;
     }
-    if (fetchWegmansUrlBtn) {
-        fetchWegmansUrlBtn.disabled = isLoading;
+    if (fetchProductUrlBtn) {
+        fetchProductUrlBtn.disabled = isLoading;
+    }
+}
+
+function getIngredientSourceFromUrl(rawUrl) {
+    try {
+        const parsedUrl = new URL(String(rawUrl || '').trim());
+        const host = parsedUrl.hostname.toLowerCase();
+        if (host.includes('wegmans.com')) {
+            return 'wegmans';
+        }
+        if (host === 'costco.com' || host === 'www.costco.com' || host.endsWith('.costco.com')) {
+            return 'costco';
+        }
+        return '';
+    } catch (error) {
+        return '';
     }
 }
 
@@ -185,6 +201,19 @@ function getWegmansProductIdFromUrl(rawUrl) {
         const slug = pathSegments[productIndex + 1];
         const candidateId = slug.split('-')[0];
         return /^\d+$/.test(candidateId) ? candidateId : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function getCostcoProductUrl(rawUrl) {
+    try {
+        const parsedUrl = new URL(String(rawUrl || '').trim());
+        const host = parsedUrl.hostname.toLowerCase();
+        if (!(host === 'costco.com' || host === 'www.costco.com' || host.endsWith('.costco.com'))) {
+            return null;
+        }
+        return parsedUrl.toString();
     } catch (error) {
         return null;
     }
@@ -353,10 +382,50 @@ function applyWegmansProductToForm(product, sourceUrl) {
     }
 }
 
-async function fetchWegmansProductFromUrl() {
-    const sourceUrl = String(ingredientSourceUrlInput?.value || '').trim();
+function applyCostcoProductToForm(product, sourceUrl) {
+    const name = String(product?.name || '').trim();
+    const imageUrl = String(product?.imageUrl || '').trim();
+    const totalPrice = Number.parseFloat(String(product?.totalPrice));
+    const totalWeight = Number.parseFloat(String(product?.totalWeightGrams));
+    const servingSize = Number.parseFloat(String(product?.servingSizeGrams));
+    const nutrition = product?.nutrition || {};
+    const calories = Number.parseFloat(String(nutrition?.calories));
+    const fat = Number.parseFloat(String(nutrition?.fat));
+    const carbs = Number.parseFloat(String(nutrition?.carbs));
+    const protein = Number.parseFloat(String(nutrition?.protein));
+    const storeInput = document.getElementById('store');
+    const storeSectionInput = document.getElementById('store-section');
+    const storeSection = String(product?.storeSection || '').trim();
+
+    if (name) document.getElementById('ingredient-name').value = name;
+    if (Number.isFinite(totalPrice)) document.getElementById('total-price').value = totalPrice.toFixed(2);
+    if (Number.isFinite(totalWeight) && totalWeight > 0) document.getElementById('total-weight').value = Math.round(totalWeight);
+    if (Number.isFinite(servingSize) && servingSize > 0) document.getElementById('serving-size').value = Math.round(servingSize);
+    if (Number.isFinite(calories)) document.getElementById('calories').value = Math.round(calories);
+    if (Number.isFinite(fat)) document.getElementById('fat').value = fat;
+    if (Number.isFinite(carbs)) document.getElementById('carbs').value = carbs;
+    if (Number.isFinite(protein)) document.getElementById('protein').value = protein;
+
+    if (storeInput && !storeInput.value.trim()) {
+        storeInput.value = 'Costco';
+    }
+    if (storeSectionInput && (!storeSectionInput.value.trim() || storeSectionInput.value.trim() === 'Uncategorized') && storeSection) {
+        storeSectionInput.value = storeSection;
+    }
+    if (ingredientSourceUrlInput) {
+        ingredientSourceUrlInput.value = sourceUrl;
+    }
+
+    if (imageUrl) {
+        selectedImageDataUrl = imageUrl;
+        updateImagePreview(imageUrl);
+    }
+}
+
+async function fetchWegmansProductFromUrl(sourceUrlInput) {
+    const sourceUrl = String(sourceUrlInput || ingredientSourceUrlInput?.value || '').trim();
     if (!sourceUrl) {
-        showWegmansFetchError('Please enter a Wegmans product URL first.');
+        showWegmansFetchError('Please enter a product URL first.');
         return;
     }
 
@@ -390,6 +459,64 @@ async function fetchWegmansProductFromUrl() {
     } finally {
         setWegmansFetchLoading(false);
     }
+}
+
+async function fetchCostcoProductFromUrl(sourceUrlInput) {
+    const sourceUrl = String(sourceUrlInput || ingredientSourceUrlInput?.value || '').trim();
+    if (!sourceUrl) {
+        showWegmansFetchError('Please enter a product URL first.');
+        return;
+    }
+
+    const costcoUrl = getCostcoProductUrl(sourceUrl);
+    if (!costcoUrl) {
+        showWegmansFetchError('Please provide a valid Costco product URL.');
+        return;
+    }
+
+    clearWegmansFetchMessages();
+    setWegmansFetchLoading(true);
+
+    try {
+        const response = await fetch(`/api/costco-product?url=${encodeURIComponent(costcoUrl)}`);
+        let payload = null;
+        try {
+            payload = await response.json();
+        } catch (error) {
+            payload = null;
+        }
+
+        if (!response.ok || !payload?.success || !payload?.product) {
+            throw new Error(payload?.error || 'Unable to fetch product details from Costco.');
+        }
+
+        applyCostcoProductToForm(payload.product, sourceUrl);
+    } catch (error) {
+        console.error('Error fetching Costco product details:', error);
+        showWegmansFetchError(error.message || 'Unable to fetch product details from Costco.');
+    } finally {
+        setWegmansFetchLoading(false);
+    }
+}
+
+async function fetchProductFromUrl() {
+    const sourceUrl = String(ingredientSourceUrlInput?.value || '').trim();
+    if (!sourceUrl) {
+        showWegmansFetchError('Please enter a product URL first.');
+        return;
+    }
+
+    const source = getIngredientSourceFromUrl(sourceUrl);
+    if (source === 'wegmans') {
+        await fetchWegmansProductFromUrl(sourceUrl);
+        return;
+    }
+    if (source === 'costco') {
+        await fetchCostcoProductFromUrl(sourceUrl);
+        return;
+    }
+
+    showWegmansFetchError('Unsupported URL. Please use a Wegmans or Costco US product URL.');
 }
 
 // Migrate old localStorage key to new key
@@ -540,6 +667,7 @@ async function saveCustomIngredient(event) {
             ? customIngredients.find(ing => ing.id === editingIngredientId)
             : null;
         const sourceUrl = String(ingredientSourceUrlInput?.value || '').trim();
+        const detectedSource = getIngredientSourceFromUrl(sourceUrl);
         
         const ingredient = {
             id: editingIngredientId || Date.now().toString(),
@@ -557,7 +685,7 @@ async function saveCustomIngredient(event) {
             store: storeInput ? storeInput.value.trim() : '',
             storeSection: normalizeStoreSectionName(storeSectionInput ? storeSectionInput.value : ''),
             sourceUrl,
-            source: sourceUrl ? 'wegmans' : (existingIngredient?.source || ''),
+            source: detectedSource || (sourceUrl ? (existingIngredient?.source || '') : (existingIngredient?.source || '')),
             emoji: '',
             image: selectedImageDataUrl || '' // Store uploaded image as data URL
         };
@@ -823,8 +951,12 @@ function renderIngredientsList() {
             const proteinPerServing = (nutrition.protein || 0).toFixed(1);
 
             let sourceBadge = '';
-            if (ingredient.source === 'usda' || ingredient.source === 'openfoodfacts' || ingredient.source === 'wegmans') {
-                const sourceLabel = ingredient.source === 'usda' ? 'USDA' : (ingredient.source === 'openfoodfacts' ? 'OFF' : 'Wegmans');
+            if (ingredient.source === 'usda' || ingredient.source === 'openfoodfacts' || ingredient.source === 'wegmans' || ingredient.source === 'costco') {
+                const sourceLabel = ingredient.source === 'usda'
+                    ? 'USDA'
+                    : (ingredient.source === 'openfoodfacts'
+                        ? 'OFF'
+                        : (ingredient.source === 'costco' ? 'Costco' : 'Wegmans'));
                 sourceBadge = `<span class="source-badge" title="Imported from ${sourceLabel}">${sourceLabel}</span>`;
             }
 
@@ -1237,8 +1369,8 @@ if (imageRemoveBtn) {
     imageRemoveBtn.addEventListener('click', removeImage);
 }
 
-if (fetchWegmansUrlBtn) {
-    fetchWegmansUrlBtn.addEventListener('click', fetchWegmansProductFromUrl);
+if (fetchProductUrlBtn) {
+    fetchProductUrlBtn.addEventListener('click', fetchProductFromUrl);
 }
 
 // Close modal when clicking outside
